@@ -39,6 +39,21 @@ const applicationTables = {
     thirdReminderTemplate: v.string(),
     signature: v.string(),
   }).index("by_user", ["userId"]),
+
+  reminders: defineTable({
+    userId: v.id("users"),
+    invoiceId: v.id("invoices"),
+    reminderDate: v.string(), // "2025-09-26 00:36:00"
+    reminderStatus: v.union(
+      v.literal("first_reminder"),
+      v.literal("second_reminder"),
+      v.literal("third_reminder")
+    ),
+    emailSubject: v.string(),
+    emailContent: v.string(),
+  })
+    .index("by_invoice", ["invoiceId"])
+    .index("by_user", ["userId"]),
 };
 
 export default defineSchema({

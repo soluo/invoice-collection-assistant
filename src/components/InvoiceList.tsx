@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { InvoiceEditModal } from "./InvoiceEditModal";
+import { ReminderModal } from "./ReminderModal";
 import { toast } from "sonner";
 
 const statusConfig = {
@@ -20,6 +21,7 @@ export function InvoiceList() {
   const markAsPaid = useMutation(api.invoices.markAsPaid);
   const updateStatus = useMutation(api.invoices.updateStatus);
   const [editingInvoice, setEditingInvoice] = useState<any>(null);
+  const [reminderModal, setReminderModal] = useState<{ invoice: any; status: string } | null>(null);
 
   if (invoices === undefined) {
     return (
@@ -52,25 +54,8 @@ export function InvoiceList() {
     }
   };
 
-  const handleSendReminder = async (invoiceId: Id<"invoices">, currentStatus: string) => {
-    try {
-      let newStatus: any = currentStatus;
-
-      if (currentStatus === "overdue" || currentStatus === "sent") {
-        newStatus = "first_reminder";
-      } else if (currentStatus === "first_reminder") {
-        newStatus = "second_reminder";
-      } else if (currentStatus === "second_reminder") {
-        newStatus = "third_reminder";
-      } else if (currentStatus === "third_reminder") {
-        newStatus = "litigation";
-      }
-
-      await updateStatus({ invoiceId, status: newStatus });
-      toast.success("Relance envoyée");
-    } catch (error) {
-      toast.error("Erreur lors de l'envoi de la relance");
-    }
+  const handleSendReminder = (invoice: any) => {
+    setReminderModal({ invoice, status: invoice.status });
   };
 
   return (
@@ -116,7 +101,7 @@ export function InvoiceList() {
                   </button>
                   {invoice.status !== "litigation" && (
                     <button
-                      onClick={() => handleSendReminder(invoice._id, invoice.status)}
+                      onClick={() => handleSendReminder(invoice)}
                       className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-blue-700"
                     >
                       Relancer
@@ -201,7 +186,7 @@ export function InvoiceList() {
                         </button>
                         {invoice.status !== "litigation" && (
                           <button
-                            onClick={() => handleSendReminder(invoice._id, invoice.status)}
+                            onClick={() => handleSendReminder(invoice)}
                             className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700"
                           >
                             Relancer
@@ -227,6 +212,14 @@ export function InvoiceList() {
         <InvoiceEditModal
           invoice={editingInvoice}
           onClose={() => setEditingInvoice(null)}
+        />
+      )}
+
+      {reminderModal && (
+        <ReminderModal
+          invoice={reminderModal.invoice}
+          currentStatus={reminderModal.status}
+          onClose={() => setReminderModal(null)}
         />
       )}
     </div>

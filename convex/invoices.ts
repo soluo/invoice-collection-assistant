@@ -167,3 +167,51 @@ export const getPdfUrl = query({
     return await ctx.storage.getUrl(args.storageId);
   },
 });
+
+export const sendReminder = mutation({
+  args: {
+    invoiceId: v.id("invoices"),
+    newStatus: v.union(
+      v.literal("first_reminder"),
+      v.literal("second_reminder"),
+      v.literal("third_reminder"),
+      v.literal("litigation")
+    ),
+    emailSubject: v.string(),
+    emailContent: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getLoggedInUser(ctx);
+
+    // Vérifier que la facture appartient à l'utilisateur
+    const invoice = await ctx.db.get(args.invoiceId);
+    if (!invoice || invoice.userId !== userId) {
+      throw new Error("Invoice not found or not authorized");
+    }
+
+    // Mettre à jour le statut de la facture et la date de dernière relance
+    const now = new Date();
+    const updateData: any = {
+      status: args.newStatus,
+      lastReminderDate: now.toISOString().split('T')[0]
+    };
+
+    await ctx.db.patch(args.invoiceId, updateData);
+
+    // Créer l'enregistrement dans l'historique des relances (sauf pour litigation)
+    if (args.newStatus !== "litigation") {
+      const reminderDate = now.toISOString().slice(0, 19).replace('T', ' ');
+
+      await ctx.db.insert("reminders", {
+        userId,
+        invoiceId: args.invoiceId,
+        reminderDate,
+        reminderStatus: args.newStatus,
+        emailSubject: args.emailSubject,
+        emailContent: args.emailContent,
+      });
+    }
+
+    return { success: true };
+  },
+});
