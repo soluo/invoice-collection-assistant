@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
@@ -19,11 +19,12 @@ export function ReminderSettings() {
   });
 
   // Mettre à jour le formulaire quand les données arrivent
-  useState(() => {
+  useEffect(() => {
     if (settings) {
       setFormData(settings);
+      console.log("✅ Données chargées depuis la base:", settings);
     }
-  });
+  }, [settings]);
 
   if (settings === undefined) {
     return (
@@ -35,11 +36,26 @@ export function ReminderSettings() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      await upsertSettings(formData);
+      // Filtrer les champs système avant envoi
+      const cleanData = {
+        firstReminderDelay: formData.firstReminderDelay,
+        secondReminderDelay: formData.secondReminderDelay,
+        thirdReminderDelay: formData.thirdReminderDelay,
+        litigationDelay: formData.litigationDelay,
+        firstReminderTemplate: formData.firstReminderTemplate,
+        secondReminderTemplate: formData.secondReminderTemplate,
+        thirdReminderTemplate: formData.thirdReminderTemplate,
+        signature: formData.signature,
+      };
+
+      console.log("💾 Sauvegarde des données:", cleanData);
+      await upsertSettings(cleanData);
+      console.log("✅ Sauvegarde réussie");
       toast.success("Paramètres sauvegardés");
     } catch (error) {
+      console.error("❌ Erreur sauvegarde:", error);
       toast.error("Erreur lors de la sauvegarde");
     }
   };
@@ -63,7 +79,7 @@ export function ReminderSettings() {
               <input
                 type="number"
                 value={formData.firstReminderDelay}
-                onChange={(e) => setFormData({ ...formData, firstReminderDelay: parseInt(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, firstReminderDelay: parseInt(e.target.value) || 1 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 min="1"
               />
@@ -76,7 +92,7 @@ export function ReminderSettings() {
               <input
                 type="number"
                 value={formData.secondReminderDelay}
-                onChange={(e) => setFormData({ ...formData, secondReminderDelay: parseInt(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, secondReminderDelay: parseInt(e.target.value) || 1 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 min="1"
               />
@@ -89,7 +105,7 @@ export function ReminderSettings() {
               <input
                 type="number"
                 value={formData.thirdReminderDelay}
-                onChange={(e) => setFormData({ ...formData, thirdReminderDelay: parseInt(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, thirdReminderDelay: parseInt(e.target.value) || 1 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 min="1"
               />
@@ -102,7 +118,7 @@ export function ReminderSettings() {
               <input
                 type="number"
                 value={formData.litigationDelay}
-                onChange={(e) => setFormData({ ...formData, litigationDelay: parseInt(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, litigationDelay: parseInt(e.target.value) || 1 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 min="1"
               />
