@@ -11,7 +11,7 @@ const statusConfig = {
   second_reminder: { label: "2e relance", color: "bg-yellow-100 text-yellow-800", priority: 2 },
   first_reminder: { label: "1re relance", color: "bg-blue-100 text-blue-800", priority: 3 },
   overdue: { label: "En retard", color: "bg-gray-100 text-gray-800", priority: 4 },
-  sent: { label: "Envoyée", color: "bg-green-100 text-green-800", priority: 5 },
+  sent: { label: "Envoyée", color: "bg-gray-100 text-gray-800", priority: 5 },
   paid: { label: "Payée", color: "bg-emerald-100 text-emerald-800", priority: 6 },
 };
 
@@ -84,7 +84,7 @@ export function InvoiceList() {
                 <h3 className="font-medium text-gray-900">{invoice.clientName}</h3>
                 <p className="text-sm text-gray-500">Facture #{invoice.invoiceNumber}</p>
               </div>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[invoice.status].color}`}>
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig[invoice.status].color}`}>
                 {statusConfig[invoice.status].label}
               </span>
             </div>
@@ -186,7 +186,7 @@ export function InvoiceList() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[invoice.status].color}`}>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${statusConfig[invoice.status].color}`}>
                       {statusConfig[invoice.status].label}
                     </span>
                   </td>
