@@ -8,10 +8,10 @@ export function ReminderSettings() {
   const upsertSettings = useMutation(api.reminderSettings.upsert);
   
   const [formData, setFormData] = useState({
-    firstReminderDelay: 30,
-    secondReminderDelay: 45,
-    thirdReminderDelay: 60,
-    litigationDelay: 90,
+    firstReminderDelay: 15,
+    secondReminderDelay: 30,
+    thirdReminderDelay: 45,
+    litigationDelay: 60,
     firstReminderTemplate: "",
     secondReminderTemplate: "",
     thirdReminderTemplate: "",
