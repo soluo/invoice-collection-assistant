@@ -11,7 +11,7 @@ export function SignInForm() {
   return (
     <div className="w-full">
       <form
-        className="flex flex-col gap-form-field"
+        className="flex flex-col gap-4 form-field"
         onSubmit={(e) => {
           e.preventDefault();
           setSubmitting(true);
@@ -43,34 +43,34 @@ export function SignInForm() {
           className="auth-input-field"
           type="password"
           name="password"
-          placeholder="Password"
+          placeholder="Mot de passe"
           required
         />
         <button className="auth-button" type="submit" disabled={submitting}>
-          {flow === "signIn" ? "Sign in" : "Sign up"}
+          {flow === "signIn" ? "Se connecter" : "S'inscrire"}
         </button>
         <div className="text-center text-sm text-secondary">
           <span>
             {flow === "signIn"
-              ? "Don't have an account? "
-              : "Already have an account? "}
+              ? "Vous n'avez pas de compte ? "
+              : "Vous avez déjà un compte ? "}
           </span>
           <button
             type="button"
             className="text-primary hover:text-primary-hover hover:underline font-medium cursor-pointer"
             onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
           >
-            {flow === "signIn" ? "Sign up instead" : "Sign in instead"}
+            {flow === "signIn" ? "S'inscrire" : "Se connecter"}
           </button>
         </div>
       </form>
       <div className="flex items-center justify-center my-3">
         <hr className="my-4 grow border-gray-200" />
-        <span className="mx-4 text-secondary">or</span>
+        <span className="mx-4 text-secondary">ou</span>
         <hr className="my-4 grow border-gray-200" />
       </div>
       <button className="auth-button" onClick={() => void signIn("anonymous")}>
-        Sign in anonymously
+        Se connecter anonymement
       </button>
     </div>
   );

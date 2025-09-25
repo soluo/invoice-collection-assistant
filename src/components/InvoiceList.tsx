@@ -55,7 +55,7 @@ export function InvoiceList() {
   const handleSendReminder = async (invoiceId: Id<"invoices">, currentStatus: string) => {
     try {
       let newStatus: any = currentStatus;
-      
+
       if (currentStatus === "overdue" || currentStatus === "sent") {
         newStatus = "first_reminder";
       } else if (currentStatus === "first_reminder") {
@@ -88,12 +88,12 @@ export function InvoiceList() {
                 {statusConfig[invoice.status].label}
               </span>
             </div>
-            
+
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Montant:</span>
               <span className="font-medium">{invoice.amountTTC.toFixed(2)} €</span>
             </div>
-            
+
             {invoice.daysOverdue > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Retard:</span>
@@ -101,9 +101,9 @@ export function InvoiceList() {
               </div>
             )}
 
-            <div className="flex gap-2 pt-2">
+            <div className="flex flex-col gap-2 pt-2">
               {invoice.status !== "paid" && (
-                <>
+                <div className="flex gap-2">
                   <button
                     onClick={() => handleMarkAsPaid(invoice._id)}
                     className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-green-700"
@@ -118,7 +118,7 @@ export function InvoiceList() {
                       Relancer
                     </button>
                   )}
-                </>
+                </div>
               )}
               <button
                 onClick={() => setEditingInvoice(invoice)}
