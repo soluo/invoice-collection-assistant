@@ -23,7 +23,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const generateUploadUrl = useMutation(api.invoices.generateUploadUrl);
-  const extractPdfData = useAction(api.pdfExtraction.extractPdfData);
+  const extractPdfData = useAction(api.pdfExtractionAI.extractPdfDataAI);
   const createInvoice = useMutation(api.invoices.create);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -96,11 +96,14 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
           invoiceDate: extractedData.invoiceDate,
           dueDate: extractedData.dueDate,
         });
-        
-        if (extractedData.clientName === "Extraction échouée - vérifiez manuellement") {
-          toast.warning("Extraction partiellement échouée. Vérifiez les données extraites.");
+
+        // Afficher le message en fonction du score de confiance
+        if (extractedData.confidence >= 80) {
+          toast.success(`✨ Extraction réussie (${extractedData.confidence}% de confiance). Vérifiez les données.`);
+        } else if (extractedData.confidence >= 50) {
+          toast.warning(`⚠️ Extraction partielle (${extractedData.confidence}% de confiance). Vérifiez attentivement.`);
         } else {
-          toast.success("Données extraites automatiquement. Vérifiez avant de sauvegarder.");
+          toast.error("🔍 Extraction difficile. Vérifiez et corrigez les données manuellement.");
         }
       } catch (extractError) {
         console.error("Erreur extraction:", extractError);
@@ -128,22 +131,28 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.clientName || !formData.clientEmail || !formData.invoiceNumber || !formData.amountTTC) {
       toast.error("Veuillez remplir tous les champs obligatoires");
       return;
     }
 
     try {
-      await createInvoice({
+      const invoiceData: any = {
         clientName: formData.clientName,
         clientEmail: formData.clientEmail,
         invoiceNumber: formData.invoiceNumber,
         amountTTC: parseFloat(formData.amountTTC),
         invoiceDate: formData.invoiceDate,
         dueDate: formData.dueDate,
-        pdfStorageId: pdfStorageId as any,
-      });
+      };
+
+      // N'inclure pdfStorageId que s'il n'est pas null
+      if (pdfStorageId) {
+        invoiceData.pdfStorageId = pdfStorageId;
+      }
+
+      await createInvoice(invoiceData);
       
       toast.success("Facture ajoutée avec succès");
       onSuccess();

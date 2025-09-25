@@ -11,6 +11,7 @@
     "lint": "tsc -p convex -noEmit --pretty false && tsc -p . -noEmit --pretty false && convex dev --once && vite build"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.63.1",
     "@convex-dev/auth": "^0.0.80",
     "@types/pdf-parse": "^1.1.5",
     "clsx": "^2.1.1",
