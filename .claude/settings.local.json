@@ -3,7 +3,10 @@
     "allow": [
       "Bash(npx convex dev:*)",
       "Bash(npm install:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "mcp__convex__tables",
+      "mcp__convex__envList",
+      "WebFetch(domain:docs.convex.dev)"
     ],
     "deny": [],
     "ask": []
