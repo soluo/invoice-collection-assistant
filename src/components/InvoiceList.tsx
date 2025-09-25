@@ -94,12 +94,16 @@ export function InvoiceList() {
               <span className="font-medium">{invoice.amountTTC.toFixed(2)} €</span>
             </div>
 
-            {invoice.daysOverdue > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Retard:</span>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Échéance:</span>
+              {invoice.daysOverdue > 0 ? (
                 <span className="font-medium text-red-600">{invoice.daysOverdue} jours</span>
-              </div>
-            )}
+              ) : (
+                <span className="text-gray-500">
+                  {new Date(invoice.dueDate).toLocaleDateString('fr-FR')}
+                </span>
+              )}
+            </div>
 
             <div className="flex flex-col gap-2 pt-2">
               {invoice.status !== "paid" && (
@@ -147,7 +151,7 @@ export function InvoiceList() {
                   Montant
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Jours de retard
+                  Echéance
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Statut
@@ -176,7 +180,9 @@ export function InvoiceList() {
                     {invoice.daysOverdue > 0 ? (
                       <span className="text-red-600 font-medium">{invoice.daysOverdue} jours</span>
                     ) : (
-                      <span className="text-gray-500">-</span>
+                      <span className="text-gray-500">
+                        {new Date(invoice.dueDate).toLocaleDateString('fr-FR')}
+                      </span>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
