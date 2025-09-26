@@ -198,6 +198,62 @@ export const deleteInvoice = mutation({
   },
 });
 
+export const listOngoing = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getLoggedInUser(ctx);
+
+    const invoices = await ctx.db
+      .query("invoices")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("status"), "sent"))
+      .collect();
+
+    // Filtrer les factures envoyées qui ne sont pas encore échues
+    const now = new Date();
+    const ongoingInvoices = invoices.filter((invoice) => {
+      const dueDate = new Date(invoice.dueDate);
+      return dueDate >= now; // Pas encore échue
+    });
+
+    return ongoingInvoices.map((invoice) => {
+      const dueDate = new Date(invoice.dueDate);
+      const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+      return {
+        ...invoice,
+        daysUntilDue: Math.max(0, daysUntilDue),
+      };
+    }).sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+  },
+});
+
+export const listPaid = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getLoggedInUser(ctx);
+
+    const invoices = await ctx.db
+      .query("invoices")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("status"), "paid"))
+      .collect();
+
+    return invoices
+      .map((invoice) => ({
+        ...invoice,
+        paidDateFormatted: invoice.paidDate ? new Date(invoice.paidDate).toLocaleDateString('fr-FR') : null,
+      }))
+      .sort((a, b) => {
+        // Trier par date de paiement, plus récent en premier
+        if (!a.paidDate && !b.paidDate) return 0;
+        if (!a.paidDate) return 1;
+        if (!b.paidDate) return -1;
+        return new Date(b.paidDate).getTime() - new Date(a.paidDate).getTime();
+      });
+  },
+});
+
 export const sendReminder = mutation({
   args: {
     invoiceId: v.id("invoices"),

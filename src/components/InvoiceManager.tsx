@@ -1,55 +1,33 @@
-import { useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
 import { Dashboard } from "./Dashboard";
-import { InvoiceList } from "./InvoiceList";
-import { InvoiceUpload } from "./InvoiceUpload";
+import { OngoingInvoices } from "./OngoingInvoices";
+import { PaidInvoices } from "./PaidInvoices";
 import { ReminderSettings } from "./ReminderSettings";
 
-export function InvoiceManager() {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "invoices" | "upload" | "settings">("dashboard");
-  const invoices = useQuery(api.invoices.list);
+type Route = "/" | "/ongoing" | "/paid" | "/settings";
 
-  const tabs = [
-    { id: "dashboard", label: "Tableau de bord" },
-    { id: "invoices", label: "Factures", count: invoices?.length || 0 },
-    { id: "upload", label: "Nouvelle facture" },
-    { id: "settings", label: "Paramètres" },
-  ] as const;
+interface InvoiceManagerProps {
+  currentRoute: Route;
+  onNavigate: (route: Route) => void;
+}
 
+export function InvoiceManager({ currentRoute, onNavigate }: InvoiceManagerProps) {
   return (
-    <div className="space-y-6">
-      {/* Navigation */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                activeTab === tab.id
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              {tab.label}
-              {"count" in tab && tab.count > 0 && (
-                <span className="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2.5 rounded-full text-xs">
-                  {tab.count}
-                </span>
-              )}
+    <div>
+      {/* Contenu basé sur la route */}
+      {currentRoute === "/" && <Dashboard onNavigate={onNavigate} />}
+      {currentRoute === "/ongoing" && <OngoingInvoices onNavigate={onNavigate} />}
+      {currentRoute === "/paid" && <PaidInvoices onNavigate={onNavigate} />}
+      {currentRoute === "/settings" && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <button onClick={() => onNavigate("/")} className="text-blue-600 hover:underline">
+              ← Retour au dashboard
             </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Contenu */}
-      <div className="min-h-[600px]">
-        {activeTab === "dashboard" && <Dashboard onNavigateToInvoices={() => setActiveTab("invoices")} />}
-        {activeTab === "invoices" && <InvoiceList />}
-        {activeTab === "upload" && <InvoiceUpload onSuccess={() => setActiveTab("invoices")} />}
-        {activeTab === "settings" && <ReminderSettings />}
-      </div>
+            <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
+          </div>
+          <ReminderSettings />
+        </div>
+      )}
     </div>
   );
 }
