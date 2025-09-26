@@ -19,6 +19,7 @@ const statusConfig = {
 
 export function Dashboard() {
   const stats = useQuery(api.dashboard.getDashboardStats);
+  const settings = useQuery(api.reminderSettings.get);
   const markAsPaid = useMutation(api.invoices.markAsPaid);
   const navigate = useNavigate();
   const [reminderModal, setReminderModal] = useState<{ invoice: any; status: string } | null>(null);
@@ -34,6 +35,20 @@ export function Dashboard() {
 
   const handleSendReminder = (invoice: any) => {
     setReminderModal({ invoice, status: invoice.status });
+  };
+
+  const getOverdueColorClass = (daysOverdue: number) => {
+    if (!settings) return 'text-red-600';
+
+    if (daysOverdue <= settings.firstReminderDelay) {
+      return 'text-blue-600';
+    } else if (daysOverdue <= settings.secondReminderDelay) {
+      return 'text-yellow-600';
+    } else if (daysOverdue <= settings.thirdReminderDelay) {
+      return 'text-orange-600';
+    } else {
+      return 'text-red-600 font-semibold';
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -90,13 +105,16 @@ export function Dashboard() {
                             {statusConfig[invoice.status].label}
                           </span>
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm text-gray-500">
-                          <span>Facture #{invoice.invoiceNumber}</span>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-6 text-sm text-gray-500">
+                          <span>#{invoice.invoiceNumber}</span>
                           <span className="font-medium text-gray-900">{formatCurrency(invoice.amountTTC)}</span>
-                          {invoice.daysOverdue > 0 && (
-                            <span className="font-medium text-red-600">
+                          <span>Échéance: {new Date(invoice.dueDate).toLocaleDateString('fr-FR')}</span>
+                          {invoice.daysOverdue > 0 ? (
+                            <span className={`font-medium ${getOverdueColorClass(invoice.daysOverdue)}`}>
                               {invoice.daysOverdue} jour{invoice.daysOverdue > 1 ? 's' : ''} de retard
                             </span>
+                          ) : (
+                            <span></span>
                           )}
                         </div>
                       </div>

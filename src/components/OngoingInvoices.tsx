@@ -65,14 +65,16 @@ export function OngoingInvoices() {
                         En cours
                       </span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm text-gray-500">
-                      <span>Facture #{invoice.invoiceNumber}</span>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-6 text-sm text-gray-500">
+                      <span>#{invoice.invoiceNumber}</span>
                       <span className="font-medium text-gray-900">{formatCurrency(invoice.amountTTC)}</span>
                       <span>Échéance: {new Date(invoice.dueDate).toLocaleDateString('fr-FR')}</span>
-                      {invoice.daysUntilDue > 0 && (
+                      {invoice.daysUntilDue > 0 ? (
                         <span className="text-blue-600">
                           Dans {invoice.daysUntilDue} jour{invoice.daysUntilDue > 1 ? 's' : ''}
                         </span>
+                      ) : (
+                        <span></span>
                       )}
                     </div>
                   </div>

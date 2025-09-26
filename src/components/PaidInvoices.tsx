@@ -79,11 +79,11 @@ export function PaidInvoices() {
                         Payée
                       </span>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm text-gray-500">
-                      <span>Facture #{invoice.invoiceNumber}</span>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-6 text-sm text-gray-500">
+                      <span>#{invoice.invoiceNumber}</span>
                       <span className="font-medium text-gray-900">{formatCurrency(invoice.amountTTC)}</span>
                       <span>Échéance: {new Date(invoice.dueDate).toLocaleDateString('fr-FR')}</span>
-                      {invoice.paidDateFormatted && (
+                      {invoice.paidDateFormatted ? (
                         <div className="flex items-center gap-2">
                           <span className="text-gray-500">
                             Payée le {invoice.paidDateFormatted}
@@ -97,11 +97,13 @@ export function PaidInvoices() {
                             );
                           })()}
                         </div>
+                      ) : (
+                        <span></span>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center text-green-600">
+                  <div className="hidden md:flex items-center text-green-600">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
