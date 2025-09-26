@@ -20,6 +20,7 @@ import type * as pdfExtractionAI from "../pdfExtractionAI.js";
 import type * as reminderSettings from "../reminderSettings.js";
 import type * as reminders from "../reminders.js";
 import type * as router from "../router.js";
+import type * as seed from "../seed.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   reminderSettings: typeof reminderSettings;
   reminders: typeof reminders;
   router: typeof router;
+  seed: typeof seed;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
