@@ -170,19 +170,19 @@ export function Dashboard() {
             <div className="flex flex-col gap-4">
               <button
                 onClick={() => navigate("/ongoing")}
-                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                className="w-full bg-gray-50 text-blue-600 border border-blue-400/70 px-6 py-3 rounded-lg font-medium hover:bg-blue-50 transition-colors"
               >
                 Factures en cours
               </button>
               <button
                 onClick={() => navigate("/paid")}
-                className="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
+                className="w-full bg-gray-50 text-green-600 border border-green-400/70 px-6 py-3 rounded-lg font-medium hover:bg-green-50 transition-colors"
               >
                 Factures payées
               </button>
               <button
                 onClick={() => navigate("/settings")}
-                className="w-full bg-gray-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-700 transition-colors"
+                className="w-full bg-gray-50 text-gray-600 border border-gray-300 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors"
               >
                 Paramètres
               </button>
