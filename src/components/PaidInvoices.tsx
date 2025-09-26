@@ -4,12 +4,38 @@ import { StatsNavigation } from "./StatsNavigation";
 
 export function PaidInvoices() {
   const invoices = useQuery(api.invoices.listPaid);
+  const settings = useQuery(api.reminderSettings.get);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
     }).format(amount);
+  };
+
+  const getPaymentDelayInfo = (invoice: any) => {
+    if (!invoice.paidDate || !settings) return null;
+
+    const dueDate = new Date(invoice.dueDate);
+    const paidDate = new Date(invoice.paidDate);
+    const daysPaid = Math.floor((paidDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    let colorClass = '';
+    if (daysPaid <= settings.firstReminderDelay) {
+      colorClass = 'text-green-600';
+    } else if (daysPaid <= settings.secondReminderDelay) {
+      colorClass = 'text-yellow-600';
+    } else if (daysPaid <= settings.thirdReminderDelay) {
+      colorClass = 'text-orange-600';
+    } else {
+      colorClass = 'text-red-600';
+    }
+
+    return {
+      daysPaid,
+      colorClass,
+      text: daysPaid <= 0 ? `en ${Math.abs(daysPaid)} jour${Math.abs(daysPaid) > 1 ? 's' : ''} d'avance` : `en ${daysPaid} jour${daysPaid > 1 ? 's' : ''}`
+    };
   };
 
   if (invoices === undefined) {
@@ -58,9 +84,19 @@ export function PaidInvoices() {
                       <span className="font-medium text-gray-900">{formatCurrency(invoice.amountTTC)}</span>
                       <span>Échéance: {new Date(invoice.dueDate).toLocaleDateString('fr-FR')}</span>
                       {invoice.paidDateFormatted && (
-                        <span className="text-green-600 font-medium">
-                          Payée le {invoice.paidDateFormatted}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-500">
+                            Payée le {invoice.paidDateFormatted}
+                          </span>
+                          {(() => {
+                            const delayInfo = getPaymentDelayInfo(invoice);
+                            return delayInfo && (
+                              <span className={`font-medium ${delayInfo.colorClass}`}>
+                                {delayInfo.text}
+                              </span>
+                            );
+                          })()}
+                        </div>
                       )}
                     </div>
                   </div>
