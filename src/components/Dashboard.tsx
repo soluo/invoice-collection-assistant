@@ -71,6 +71,16 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {/* Bouton Ajouter une facture */}
+      <div className="w-full md:flex md:justify-end">
+        <button
+          onClick={() => navigate("/upload")}
+          className="w-full md:w-auto bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+        >
+          + Ajouter une facture
+        </button>
+      </div>
+
       {/* Navigation avec stats */}
       <StatsNavigation />
 

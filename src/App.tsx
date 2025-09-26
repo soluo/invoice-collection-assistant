@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { Dashboard } from "./components/Dashboard";
 import { OngoingInvoices } from "./components/OngoingInvoices";
 import { PaidInvoices } from "./components/PaidInvoices";
+import { InvoiceUpload } from "./components/InvoiceUpload";
 import { ReminderSettings } from "./components/ReminderSettings";
 
 export default function App() {
@@ -79,6 +80,7 @@ function Content() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/ongoing" element={<OngoingInvoices />} />
           <Route path="/paid" element={<PaidInvoices />} />
+          <Route path="/upload" element={<InvoiceUpload />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </Authenticated>

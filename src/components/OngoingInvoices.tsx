@@ -2,11 +2,13 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { StatsNavigation } from "./StatsNavigation";
 
 export function OngoingInvoices() {
   const invoices = useQuery(api.invoices.listOngoing);
   const markAsPaid = useMutation(api.invoices.markAsPaid);
+  const navigate = useNavigate();
 
   const handleMarkAsPaid = async (invoiceId: Id<"invoices">) => {
     try {
@@ -34,6 +36,16 @@ export function OngoingInvoices() {
 
   return (
     <div className="space-y-8">
+      {/* Bouton Ajouter une facture */}
+      <div className="w-full md:flex md:justify-end">
+        <button
+          onClick={() => navigate("/upload")}
+          className="w-full md:w-auto bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+        >
+          + Ajouter une facture
+        </button>
+      </div>
+
       {/* Navigation avec stats */}
       <StatsNavigation />
 
