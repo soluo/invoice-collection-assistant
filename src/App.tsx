@@ -104,11 +104,10 @@ function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="text-center">
         <button onClick={() => navigate("/")} className="text-blue-600 hover:underline">
           ← Retour au dashboard
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
       </div>
       <ReminderSettings />
     </div>

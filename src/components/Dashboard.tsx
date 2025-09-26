@@ -4,6 +4,8 @@ import { Id } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { StatsNavigation } from "./StatsNavigation";
+import { ReminderModal } from "./ReminderModal";
+import { useState } from "react";
 
 const statusConfig = {
   litigation: { label: "Contentieux", color: "bg-red-100 text-red-800", actionColor: "bg-red-600 hover:bg-red-700" },
@@ -19,6 +21,7 @@ export function Dashboard() {
   const stats = useQuery(api.dashboard.getDashboardStats);
   const markAsPaid = useMutation(api.invoices.markAsPaid);
   const navigate = useNavigate();
+  const [reminderModal, setReminderModal] = useState<{ invoice: any; status: string } | null>(null);
 
   const handleMarkAsPaid = async (invoiceId: Id<"invoices">) => {
     try {
@@ -30,10 +33,7 @@ export function Dashboard() {
   };
 
   const handleSendReminder = (invoice: any) => {
-    // Pour l'instant, on redirige vers la liste des factures
-    // Plus tard on pourra implémenter une modal de relance directement ici
-    navigate("/");
-    toast.info("Fonctionnalité de relance en cours de développement");
+    setReminderModal({ invoice, status: invoice.status });
   };
 
   const formatCurrency = (amount: number) => {
@@ -162,6 +162,14 @@ export function Dashboard() {
           </div>
         </div>
       </div>
+
+      {reminderModal && (
+        <ReminderModal
+          invoice={reminderModal.invoice}
+          currentStatus={reminderModal.status}
+          onClose={() => setReminderModal(null)}
+        />
+      )}
     </div>
   );
 }
