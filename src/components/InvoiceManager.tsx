@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { Dashboard } from "./Dashboard";
 import { InvoiceList } from "./InvoiceList";
 import { InvoiceUpload } from "./InvoiceUpload";
 import { ReminderSettings } from "./ReminderSettings";
 
 export function InvoiceManager() {
-  const [activeTab, setActiveTab] = useState<"invoices" | "upload" | "settings">("invoices");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "invoices" | "upload" | "settings">("dashboard");
   const invoices = useQuery(api.invoices.list);
 
   const tabs = [
+    { id: "dashboard", label: "Tableau de bord" },
     { id: "invoices", label: "Factures", count: invoices?.length || 0 },
     { id: "upload", label: "Nouvelle facture" },
     { id: "settings", label: "Paramètres" },
@@ -43,6 +45,7 @@ export function InvoiceManager() {
 
       {/* Contenu */}
       <div className="min-h-[600px]">
+        {activeTab === "dashboard" && <Dashboard onNavigateToInvoices={() => setActiveTab("invoices")} />}
         {activeTab === "invoices" && <InvoiceList />}
         {activeTab === "upload" && <InvoiceUpload onSuccess={() => setActiveTab("invoices")} />}
         {activeTab === "settings" && <ReminderSettings />}
