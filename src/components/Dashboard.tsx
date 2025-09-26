@@ -38,6 +38,13 @@ export function Dashboard({ onNavigateToInvoices }: DashboardProps) {
     }
   };
 
+  const handleSendReminder = (invoice: any) => {
+    // Pour l'instant, on redirige vers la liste des factures
+    // Plus tard on pourra implémenter une modal de relance directement ici
+    onNavigateToInvoices();
+    toast.info("Redirection vers la liste des factures pour envoyer la relance");
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -47,11 +54,6 @@ export function Dashboard({ onNavigateToInvoices }: DashboardProps) {
 
   return (
     <div className="space-y-8">
-      {/* En-tête */}
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Tableau de bord</h1>
-        <p className="text-gray-600">Vue d'ensemble de vos factures</p>
-      </div>
 
       {/* Métriques principales */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -147,17 +149,19 @@ export function Dashboard({ onNavigateToInvoices }: DashboardProps) {
                       </div>
 
                       <div className="flex gap-2 sm:flex-shrink-0">
+                        {invoice.status !== "litigation" && (
+                          <button
+                            onClick={() => handleSendReminder(invoice)}
+                            className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
+                          >
+                            Relancer
+                          </button>
+                        )}
                         <button
                           onClick={() => handleMarkAsPaid(invoice._id)}
-                          className="bg-green-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-green-700 transition-colors"
+                          className="bg-gray-100 text-gray-700 px-4 py-2 rounded text-sm font-medium hover:bg-gray-200 border border-gray-300 transition-colors"
                         >
                           Marquer payé
-                        </button>
-                        <button
-                          onClick={onNavigateToInvoices}
-                          className="bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-gray-700 transition-colors"
-                        >
-                          Voir détails
                         </button>
                       </div>
                     </div>
