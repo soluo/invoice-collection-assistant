@@ -2,15 +2,9 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { StatsNavigation } from "./StatsNavigation";
 
-type Route = "/" | "/ongoing" | "/paid" | "/settings";
-
-interface OngoingInvoicesProps {
-  onNavigate: (route: Route) => void;
-}
-
-export function OngoingInvoices({ onNavigate }: OngoingInvoicesProps) {
+export function OngoingInvoices() {
   const invoices = useQuery(api.invoices.listOngoing);
   const markAsPaid = useMutation(api.invoices.markAsPaid);
 
@@ -39,21 +33,9 @@ export function OngoingInvoices({ onNavigate }: OngoingInvoicesProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={() => onNavigate("/")}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors"
-        >
-          <ArrowLeft size={20} />
-          <span>Retour au dashboard</span>
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Factures en cours</h1>
-          <p className="text-gray-600">Vos factures en attente de paiement</p>
-        </div>
-      </div>
+    <div className="space-y-8">
+      {/* Navigation avec stats */}
+      <StatsNavigation />
 
       {/* Liste des factures */}
       {invoices.length > 0 ? (

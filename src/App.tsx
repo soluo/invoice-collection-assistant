@@ -2,66 +2,66 @@ import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { SignInForm } from "./SignInForm";
 import { Toaster } from "sonner";
-import { InvoiceManager } from "./components/InvoiceManager";
 import { LogOut, Settings } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useState } from "react";
-
-type Route = "/" | "/ongoing" | "/paid" | "/settings";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { Dashboard } from "./components/Dashboard";
+import { OngoingInvoices } from "./components/OngoingInvoices";
+import { PaidInvoices } from "./components/PaidInvoices";
+import { ReminderSettings } from "./components/ReminderSettings";
 
 export default function App() {
+  return (
+    <BrowserRouter>
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <Header />
+        <main className="flex-1 p-4">
+          <Content />
+        </main>
+        <Toaster />
+      </div>
+    </BrowserRouter>
+  );
+}
+
+function Header() {
   const { signOut } = useAuthActions();
-  const [currentRoute, setCurrentRoute] = useState<Route>("/");
+  const navigate = useNavigate();
 
   const handleSignOut = () => {
     signOut();
   };
 
-  const navigate = (route: Route) => {
-    setCurrentRoute(route);
-  };
-
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b shadow-sm px-4">
-        <div className="max-w-7xl mx-auto h-16 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-blue-600">Gestion Factures</h2>
-          <Authenticated>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigate("/settings")}
-                className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Réglages"
-              >
-                <Settings size={20} />
-                <span className="hidden sm:inline">Réglages</span>
-              </button>
-              <button
-                onClick={handleSignOut}
-                className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Se déconnecter"
-              >
-                <LogOut size={20} />
-                <span className="hidden max-sm:hidden sm:inline">Se déconnecter</span>
-              </button>
-            </div>
-          </Authenticated>
-        </div>
-      </header>
-      <main className="flex-1 p-4">
-        <Content currentRoute={currentRoute} onNavigate={navigate} />
-      </main>
-      <Toaster />
-    </div>
+    <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b shadow-sm px-4">
+      <div className="max-w-7xl mx-auto h-16 flex justify-between items-center">
+        <h2 className="text-xl font-semibold text-blue-600">Gestion Factures</h2>
+        <Authenticated>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/settings")}
+              className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Réglages"
+            >
+              <Settings size={20} />
+              <span className="hidden sm:inline">Réglages</span>
+            </button>
+            <button
+              onClick={handleSignOut}
+              className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Se déconnecter"
+            >
+              <LogOut size={20} />
+              <span className="hidden max-sm:hidden sm:inline">Se déconnecter</span>
+            </button>
+          </div>
+        </Authenticated>
+      </div>
+    </header>
   );
 }
 
-interface ContentProps {
-  currentRoute: Route;
-  onNavigate: (route: Route) => void;
-}
-
-function Content({ currentRoute, onNavigate }: ContentProps) {
+function Content() {
   const loggedInUser = useQuery(api.auth.loggedInUser);
 
   if (loggedInUser === undefined) {
@@ -75,7 +75,12 @@ function Content({ currentRoute, onNavigate }: ContentProps) {
   return (
     <div className="max-w-7xl mx-auto">
       <Authenticated>
-        <InvoiceManager currentRoute={currentRoute} onNavigate={onNavigate} />
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/ongoing" element={<OngoingInvoices />} />
+          <Route path="/paid" element={<PaidInvoices />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Routes>
       </Authenticated>
       <Unauthenticated>
         <div className="max-w-md mx-auto mt-20">
@@ -90,6 +95,22 @@ function Content({ currentRoute, onNavigate }: ContentProps) {
           <SignInForm />
         </div>
       </Unauthenticated>
+    </div>
+  );
+}
+
+function SettingsPage() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <button onClick={() => navigate("/")} className="text-blue-600 hover:underline">
+          ← Retour au dashboard
+        </button>
+        <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
+      </div>
+      <ReminderSettings />
     </div>
   );
 }

@@ -2,6 +2,8 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { StatsNavigation } from "./StatsNavigation";
 
 const statusConfig = {
   litigation: { label: "Contentieux", color: "bg-red-100 text-red-800", actionColor: "bg-red-600 hover:bg-red-700" },
@@ -13,23 +15,10 @@ const statusConfig = {
   paid: { label: "Payée", color: "bg-emerald-100 text-emerald-800", actionColor: "bg-emerald-600 hover:bg-emerald-700" },
 };
 
-type Route = "/" | "/ongoing" | "/paid" | "/settings";
-
-interface DashboardProps {
-  onNavigate: (route: Route) => void;
-}
-
-export function Dashboard({ onNavigate }: DashboardProps) {
+export function Dashboard() {
   const stats = useQuery(api.dashboard.getDashboardStats);
   const markAsPaid = useMutation(api.invoices.markAsPaid);
-
-  if (stats === undefined) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  const navigate = useNavigate();
 
   const handleMarkAsPaid = async (invoiceId: Id<"invoices">) => {
     try {
@@ -43,7 +32,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   const handleSendReminder = (invoice: any) => {
     // Pour l'instant, on redirige vers la liste des factures
     // Plus tard on pourra implémenter une modal de relance directement ici
-    onNavigate("/");
+    navigate("/");
     toast.info("Fonctionnalité de relance en cours de développement");
   };
 
@@ -54,68 +43,21 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     }).format(amount);
   };
 
+  if (stats === undefined) {
+    return (
+      <div className="space-y-8">
+        <StatsNavigation />
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
-
-      {/* Métriques principales - Navigation */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Montant à recouvrir - Navigation vers Dashboard */}
-        <button
-          onClick={() => onNavigate("/")}
-          className="bg-white rounded-lg border p-6 hover:shadow-md transition-shadow text-left group"
-        >
-          <div className="flex items-center">
-            <div className="p-3 bg-red-100 rounded-full group-hover:bg-red-200 transition-colors">
-              <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-              </svg>
-            </div>
-            <div className="ml-4 flex-1">
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">À recouvrir</h3>
-              <p className="text-2xl font-bold text-red-600">{formatCurrency(stats.totaux.montantARecouvrir)}</p>
-              <p className="text-sm text-gray-500">{stats.nombreFacturesEnRetard} facture{stats.nombreFacturesEnRetard > 1 ? 's' : ''}</p>
-            </div>
-          </div>
-        </button>
-
-        {/* Montant en cours - Navigation vers /ongoing */}
-        <button
-          onClick={() => onNavigate("/ongoing")}
-          className="bg-white rounded-lg border p-6 hover:shadow-md transition-shadow text-left group"
-        >
-          <div className="flex items-center">
-            <div className="p-3 bg-blue-100 rounded-full group-hover:bg-blue-200 transition-colors">
-              <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="ml-4 flex-1">
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">En cours</h3>
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(stats.totaux.montantEnCours)}</p>
-              <p className="text-sm text-gray-500">À venir</p>
-            </div>
-          </div>
-        </button>
-
-        {/* Montant payé - Navigation vers /paid */}
-        <button
-          onClick={() => onNavigate("/paid")}
-          className="bg-white rounded-lg border p-6 hover:shadow-md transition-shadow text-left group"
-        >
-          <div className="flex items-center">
-            <div className="p-3 bg-green-100 rounded-full group-hover:bg-green-200 transition-colors">
-              <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div className="ml-4 flex-1">
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Payé</h3>
-              <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.totaux.montantPaye)}</p>
-              <p className="text-sm text-gray-500">Encaissé</p>
-            </div>
-          </div>
-        </button>
-      </div>
+      {/* Navigation avec stats */}
+      <StatsNavigation />
 
       {/* Grille desktop : Factures urgentes (2/3) + Actions rapides (1/3) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -199,19 +141,19 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions rapides</h2>
             <div className="flex flex-col gap-4">
               <button
-                onClick={() => onNavigate("/ongoing")}
+                onClick={() => navigate("/ongoing")}
                 className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
               >
                 Factures en cours
               </button>
               <button
-                onClick={() => onNavigate("/paid")}
+                onClick={() => navigate("/paid")}
                 className="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
               >
                 Factures payées
               </button>
               <button
-                onClick={() => onNavigate("/settings")}
+                onClick={() => navigate("/settings")}
                 className="w-full bg-gray-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-700 transition-colors"
               >
                 Paramètres
