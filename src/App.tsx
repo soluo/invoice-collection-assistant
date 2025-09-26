@@ -80,7 +80,7 @@ function Content() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/ongoing" element={<OngoingInvoices />} />
           <Route path="/paid" element={<PaidInvoices />} />
-          <Route path="/upload" element={<InvoiceUpload />} />
+          <Route path="/upload" element={<InvoiceUploadPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </Authenticated>
@@ -99,6 +99,16 @@ function Content() {
       </Unauthenticated>
     </div>
   );
+}
+
+function InvoiceUploadPage() {
+  const navigate = useNavigate();
+
+  const handleSuccess = () => {
+    navigate("/");
+  };
+
+  return <InvoiceUpload onSuccess={handleSuccess} />;
 }
 
 function SettingsPage() {
