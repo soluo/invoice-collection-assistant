@@ -168,6 +168,36 @@ export const getPdfUrl = query({
   },
 });
 
+export const deleteInvoice = mutation({
+  args: {
+    invoiceId: v.id("invoices"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getLoggedInUser(ctx);
+
+    // Vérifier que la facture appartient à l'utilisateur
+    const invoice = await ctx.db.get(args.invoiceId);
+    if (!invoice || invoice.userId !== userId) {
+      throw new Error("Invoice not found or not authorized");
+    }
+
+    // Supprimer d'abord tous les reminders associés
+    const reminders = await ctx.db
+      .query("reminders")
+      .withIndex("by_invoice", (q) => q.eq("invoiceId", args.invoiceId))
+      .collect();
+
+    for (const reminder of reminders) {
+      await ctx.db.delete(reminder._id);
+    }
+
+    // Supprimer la facture
+    await ctx.db.delete(args.invoiceId);
+
+    return { success: true };
+  },
+});
+
 export const sendReminder = mutation({
   args: {
     invoiceId: v.id("invoices"),
