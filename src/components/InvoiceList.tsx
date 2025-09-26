@@ -105,12 +105,6 @@ export function InvoiceList() {
             <div className="flex flex-col gap-2 pt-2">
               {invoice.status !== "paid" && (
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => handleMarkAsPaid(invoice._id)}
-                    className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-green-700"
-                  >
-                    Marquer payé
-                  </button>
                   {invoice.status !== "litigation" && (
                     <button
                       onClick={() => handleSendReminder(invoice)}
@@ -119,6 +113,12 @@ export function InvoiceList() {
                       Relancer
                     </button>
                   )}
+                  <button
+                    onClick={() => handleMarkAsPaid(invoice._id)}
+                    className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-green-700"
+                  >
+                    Marquer payé
+                  </button>
                 </div>
               )}
               <div className="flex gap-2">
@@ -201,12 +201,6 @@ export function InvoiceList() {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                     {invoice.status !== "paid" && (
                       <>
-                        <button
-                          onClick={() => handleMarkAsPaid(invoice._id)}
-                          className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700"
-                        >
-                          Marquer payé
-                        </button>
                         {invoice.status !== "litigation" && (
                           <button
                             onClick={() => handleSendReminder(invoice)}
@@ -215,6 +209,12 @@ export function InvoiceList() {
                             Relancer
                           </button>
                         )}
+                        <button
+                          onClick={() => handleMarkAsPaid(invoice._id)}
+                          className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700"
+                        >
+                          Marquer payé
+                        </button>
                       </>
                     )}
                     <button
