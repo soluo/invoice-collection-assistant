@@ -1,13 +1,20 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
+import { Id, Doc } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { StatsNavigation } from "./StatsNavigation";
 import { ReminderModal } from "./ReminderModal";
 import { useState } from "react";
 
-const statusConfig = {
+type InvoiceStatus = "sent" | "overdue" | "first_reminder" | "second_reminder" | "third_reminder" | "litigation" | "paid";
+
+type InvoiceWithDays = Doc<"invoices"> & {
+  daysOverdue: number;
+  priority: number;
+};
+
+const statusConfig: Record<InvoiceStatus, { label: string; color: string; actionColor: string }> = {
   litigation: { label: "Contentieux", color: "bg-red-100 text-red-800", actionColor: "bg-red-600 hover:bg-red-700" },
   third_reminder: { label: "3e relance", color: "bg-orange-100 text-orange-800", actionColor: "bg-orange-600 hover:bg-orange-700" },
   second_reminder: { label: "2e relance", color: "bg-yellow-100 text-yellow-800", actionColor: "bg-yellow-600 hover:bg-yellow-700" },
@@ -22,7 +29,7 @@ export function Dashboard() {
   const settings = useQuery(api.reminderSettings.get);
   const markAsPaid = useMutation(api.invoices.markAsPaid);
   const navigate = useNavigate();
-  const [reminderModal, setReminderModal] = useState<{ invoice: any; status: string } | null>(null);
+  const [reminderModal, setReminderModal] = useState<{ invoice: InvoiceWithDays; status: InvoiceStatus } | null>(null);
 
   const handleMarkAsPaid = async (invoiceId: Id<"invoices">) => {
     try {
@@ -33,7 +40,7 @@ export function Dashboard() {
     }
   };
 
-  const handleSendReminder = (invoice: any) => {
+  const handleSendReminder = (invoice: InvoiceWithDays) => {
     setReminderModal({ invoice, status: invoice.status });
   };
 
@@ -74,7 +81,7 @@ export function Dashboard() {
       {/* Bouton Ajouter une facture */}
       <div className="w-full md:flex md:justify-end">
         <button
-          onClick={() => navigate("/upload")}
+          onClick={() => void navigate("/upload")}
           className="w-full md:w-auto bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
         >
           + Ajouter une facture
@@ -139,7 +146,7 @@ export function Dashboard() {
                           </button>
                         )}
                         <button
-                          onClick={() => handleMarkAsPaid(invoice._id)}
+                          onClick={() => void handleMarkAsPaid(invoice._id)}
                           className="bg-gray-100 text-gray-700 px-4 py-2 rounded text-sm font-medium hover:bg-gray-200 border border-gray-300 transition-colors"
                         >
                           Marquer payé
@@ -169,19 +176,19 @@ export function Dashboard() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions rapides</h2>
             <div className="flex flex-col gap-4">
               <button
-                onClick={() => navigate("/ongoing")}
+                onClick={() => void navigate("/ongoing")}
                 className="w-full bg-gray-50 text-blue-600 border border-blue-400/70 px-6 py-3 rounded-lg font-medium hover:bg-blue-50 transition-colors"
               >
                 Factures en cours
               </button>
               <button
-                onClick={() => navigate("/paid")}
+                onClick={() => void navigate("/paid")}
                 className="w-full bg-gray-50 text-green-600 border border-green-400/70 px-6 py-3 rounded-lg font-medium hover:bg-green-50 transition-colors"
               >
                 Factures payées
               </button>
               <button
-                onClick={() => navigate("/settings")}
+                onClick={() => void navigate("/settings")}
                 className="w-full bg-gray-50 text-gray-600 border border-gray-300 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors"
               >
                 Paramètres
