@@ -34,15 +34,22 @@ Mise en place d'un système multi-utilisateurs pour une organisation type :
 }
 ```
 
-#### Table `users`
+#### Table `users` (extension de authTables.users)
 ```typescript
 {
-  name: string,
-  email: string,
-  role: "admin" | "technicien",
-  organizationId: Id<"organizations">,
-  invitedBy: Id<"users"> | null,  // null pour le créateur de l'org
-  createdAt: number,
+  // Champs Convex Auth
+  name?: string,
+  image?: string,
+  email?: string,
+  emailVerificationTime?: number,
+  phone?: string,
+  phoneVerificationTime?: number,
+  isAnonymous?: boolean,
+
+  // Nos champs personnalisés
+  role?: "admin" | "technicien",
+  organizationId?: Id<"organizations">,
+  invitedBy?: Id<"users">,  // undefined pour le créateur de l'org
 }
 ```
 
@@ -223,13 +230,13 @@ organizationId: Id<"organizations">,
 ## 6. Plan d'Implémentation
 
 ### Phase 1 : Backend - Schémas & Auth
-- [ ] 1.1. Créer le schéma `organizations`
-- [ ] 1.2. Créer le schéma `users`
-- [ ] 1.3. Créer le schéma `invitations`
-- [ ] 1.4. Modifier le schéma `invoices` (ajouter organizationId, createdBy, nouveaux index)
-- [ ] 1.5. Modifier le schéma `reminders` (ajouter organizationId)
+- [x] 1.1. Créer le schéma `organizations`
+- [x] 1.2. Étendre la table `users` avec champs personnalisés (role, organizationId, invitedBy)
+- [x] 1.3. Créer le schéma `invitations`
+- [x] 1.4. Modifier le schéma `invoices` (ajouter organizationId, createdBy, nouveaux index)
+- [x] 1.5. Modifier le schéma `reminders` (ajouter organizationId)
 - [ ] 1.6. Supprimer le schéma `reminderSettings`
-- [ ] 1.7. Configurer Convex Auth pour email/password
+- [x] 1.7. Retirer Anonymous auth, garder Password uniquement
 - [ ] 1.8. Créer mutation `signup` (création org + premier admin)
 - [ ] 1.9. Créer mutations pour les invitations (create, accept, list)
 
@@ -341,3 +348,10 @@ organizationId: Id<"organizations">,
 ## 10. Changelog
 
 - **2025-10-20** : Création de la spécification initiale
+- **2025-10-20** : ✅ Phase 1 partielle complétée (schémas + auth config)
+  - Créé tables : `organizations`, `invitations`
+  - Étendu table `users` avec champs personnalisés (role, organizationId, invitedBy)
+  - Modifié tables : `invoices` (+ organizationId, createdBy), `reminders` (+ organizationId)
+  - Retiré provider Anonymous, gardé Password uniquement
+  - Note : organizationId et createdBy temporairement optionnels (seront obligatoires en Phase 2)
+  - ✅ Refactorisation : supprimé table `profiles`, étendu directement `users` (meilleure pratique Convex Auth)

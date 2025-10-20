@@ -6,7 +6,9 @@
       "Bash(npm run dev:*)",
       "mcp__convex__tables",
       "mcp__convex__envList",
-      "WebFetch(domain:docs.convex.dev)"
+      "WebFetch(domain:docs.convex.dev)",
+      "Bash(pnpm dev:backend)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
