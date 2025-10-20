@@ -205,7 +205,7 @@ export const acceptInvitation = mutation({
 });
 
 /**
- * Query pour lister les invitations d'une organisation
+ * Query pour lister les invitations en attente ou expirées d'une organisation
  */
 export const listInvitations = query({
   args: {},
@@ -214,14 +214,11 @@ export const listInvitations = query({
       _id: v.id("invitations"),
       email: v.string(),
       role: v.union(v.literal("admin"), v.literal("technicien")),
-      status: v.union(
-        v.literal("pending"),
-        v.literal("accepted"),
-        v.literal("expired")
-      ),
       createdAt: v.number(),
       expiresAt: v.number(),
       invitedByName: v.optional(v.string()),
+      token: v.string(),
+      status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("expired")),
     })
   ),
   handler: async (ctx) => {
@@ -235,7 +232,6 @@ export const listInvitations = query({
       return [];
     }
 
-    // Seuls les admins peuvent voir les invitations
     if (user.role !== "admin") {
       return [];
     }
@@ -245,25 +241,32 @@ export const listInvitations = query({
     const invitations = await ctx.db
       .query("invitations")
       .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("status"), "pending"),
+          q.eq(q.field("status"), "expired")
+        )
+      )
+      .order("desc")
       .collect();
 
-    // Enrichir avec le nom de l'inviteur
-    const invitationsWithNames = await Promise.all(
+    const invitationsWithDetails = await Promise.all(
       invitations.map(async (invitation) => {
         const inviter = await ctx.db.get(invitation.invitedBy);
         return {
           _id: invitation._id,
           email: invitation.email,
           role: invitation.role,
-          status: invitation.status,
           createdAt: invitation.createdAt,
           expiresAt: invitation.expiresAt,
+          token: invitation.token,
+          status: invitation.status,
           invitedByName: inviter?.name,
         };
       })
     );
 
-    return invitationsWithNames;
+    return invitationsWithDetails;
   },
 });
 
@@ -463,5 +466,75 @@ export const getInvitationByToken = query({
       status: invitation.status,
       expiresAt: invitation.expiresAt,
     };
+  },
+});
+
+/**
+ * Mutation pour supprimer une invitation
+ */
+export const deleteInvitation = mutation({
+  args: {
+    invitationId: v.id("invitations"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+    const user = await ctx.db.get(userId);
+    if (user?.role !== "admin") {
+      throw new Error("Seuls les admins peuvent supprimer des invitations");
+    }
+
+    const invitation = await ctx.db.get(args.invitationId);
+    if (!invitation) {
+      throw new Error("Invitation introuvable");
+    }
+
+    if (invitation.organizationId !== user.organizationId) {
+      throw new Error("Permission refusée");
+    }
+
+    await ctx.db.delete(args.invitationId);
+  },
+});
+
+/**
+ * Mutation pour regénérer le token d'une invitation
+ */
+export const regenerateInvitationToken = mutation({
+  args: {
+    invitationId: v.id("invitations"),
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+    const user = await ctx.db.get(userId);
+    if (user?.role !== "admin") {
+      throw new Error("Seuls les admins peuvent regénérer des invitations");
+    }
+
+    const invitation = await ctx.db.get(args.invitationId);
+    if (!invitation) {
+      throw new Error("Invitation introuvable");
+    }
+
+    if (invitation.organizationId !== user.organizationId) {
+      throw new Error("Permission refusée");
+    }
+
+    const newToken = crypto.randomUUID();
+    const newExpiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 jours
+
+    await ctx.db.patch(args.invitationId, {
+      token: newToken,
+      expiresAt: newExpiresAt,
+      status: "pending", // Réinitialiser le statut au cas où il était expiré
+    });
+
+    return newToken;
   },
 });

@@ -1,12 +1,29 @@
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
-import { UserPlus, Users, Mail, Shield, Wrench, Clock, CheckCircle, XCircle } from "lucide-react";
+import {
+  UserPlus,
+  Users,
+  Mail,
+  Shield,
+  Wrench,
+  Copy,
+  RefreshCw,
+  Trash2,
+  Clock,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 import { api } from "../../convex/_generated/api";
 import { InviteUserModal } from "./InviteUserModal";
+import { toast } from "sonner";
+import { Tooltip } from "./Tooltip";
 
 export function TeamManagement() {
   const users = useQuery(api.organizations.listUsers);
   const invitations = useQuery(api.organizations.listInvitations);
+  const deleteInvitation = useMutation(api.organizations.deleteInvitation);
+  const regenerateToken = useMutation(api.organizations.regenerateInvitationToken);
+
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   if (users === undefined || invitations === undefined) {
@@ -17,15 +34,18 @@ export function TeamManagement() {
     );
   }
 
-  // Vérifier si l'utilisateur a les permissions (admins uniquement)
+  // Basic permission check - a more robust check is done on the backend
   if (users.length === 0 && invitations.length === 0) {
-    return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-        <p className="text-yellow-800">
-          Vous n'avez pas les permissions pour gérer l'équipe.
-        </p>
-      </div>
-    );
+    const currentUser = useQuery(api.auth.loggedInUser);
+    if (currentUser && currentUser.role !== "admin") {
+      return (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <p className="text-yellow-800">
+            Vous n'avez pas les permissions pour gérer l'équipe.
+          </p>
+        </div>
+      );
+    }
   }
 
   const formatDate = (timestamp: number) => {
@@ -78,6 +98,33 @@ export function TeamManagement() {
     );
   };
 
+  const handleCopyLink = (token: string) => {
+    const url = `${window.location.origin}/accept-invitation/${token}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Lien d'invitation copié !");
+  };
+
+  const handleRegenerate = async (invitationId: any) => {
+    try {
+      await regenerateToken({ invitationId });
+      toast.success("Lien d'invitation regénéré !");
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de la regénération.");
+    }
+  };
+
+  const handleDelete = (invitationId: any) => {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer cette invitation ?")) {
+      deleteInvitation({ invitationId })
+        .then(() => {
+          toast.success("Invitation supprimée.");
+        })
+        .catch((error: any) => {
+          toast.error(error.message || "Erreur lors de la suppression.");
+        });
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Header avec bouton d'invitation */}
@@ -85,7 +132,7 @@ export function TeamManagement() {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Gestion de l'équipe</h2>
           <p className="text-gray-600 mt-1">
-            Gérez les membres de votre organisation et les invitations
+            Gérez les membres de votre organisation et les invitations en attente.
           </p>
         </div>
         <button
@@ -168,39 +215,68 @@ export function TeamManagement() {
                   Statut
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
+                  Expire le
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Expire le
+                  Actions
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {invitations.map((invitation) => (
-                <tr key={invitation._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{invitation.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">{getRoleBadge(invitation.role)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(invitation.status)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-600">
-                      {formatDate(invitation.createdAt)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-600">
-                      {formatDate(invitation.expiresAt)}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {invitations.map((invitation) => {
+                const isExpired = invitation.expiresAt < Date.now();
+                const effectiveStatus = isExpired ? "expired" : invitation.status;
+
+                return (
+                  <tr key={invitation._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{invitation.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">{getRoleBadge(invitation.role)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(effectiveStatus)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-600">
+                        {formatDate(invitation.expiresAt)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center gap-2">
+                        <Tooltip content="Copier le lien d'invitation">
+                          <button
+                            onClick={() => handleCopyLink(invitation.token)}
+                            className="p-2 text-gray-500 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={isExpired}
+                          >
+                            <Copy size={16} />
+                          </button>
+                        </Tooltip>
+                        <Tooltip content="Regénérer le lien">
+                          <button
+                            onClick={() => handleRegenerate(invitation._id)}
+                            className="p-2 text-gray-500 hover:bg-gray-100 rounded-md"
+                          >
+                            <RefreshCw size={16} />
+                          </button>
+                        </Tooltip>
+                        <Tooltip content="Supprimer l'invitation">
+                          <button
+                            onClick={() => handleDelete(invitation._id)}
+                            className="p-2 text-red-500 hover:bg-red-100 rounded-md"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </Tooltip>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {invitations.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                    Aucune invitation en cours
+                    Aucune invitation en cours ou expirée
                   </td>
                 </tr>
               )}
