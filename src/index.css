@@ -1,6 +1,28 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  /* Couleurs personnalisées */
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-secondary: #64748b;
+
+  /* Spacing personnalisé */
+  --spacing-section: 2rem;
+  --spacing-container: 1rem;
+
+  /* Border radius personnalisé */
+  --radius-container: 0.5rem;
+
+  /* Ombres personnalisées (valeurs Tailwind v3) */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+@layer base {
+    * {
+        @apply border-gray-200;
+    }
+}
 
 :root {
   --color-light: #ffffff;

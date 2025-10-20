@@ -66,7 +66,7 @@ export function PaidInvoices() {
       {/* Liste des factures */}
       {invoices.length > 0 ? (
         <div className="bg-white rounded-lg border">
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-6 border-b">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">
                 Factures payées
