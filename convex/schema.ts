@@ -70,17 +70,7 @@ const applicationTables = {
     .index("by_organization_and_creator", ["organizationId", "createdBy"])
     .index("by_organization_and_status", ["organizationId", "status"]),
 
-  reminderSettings: defineTable({
-    userId: v.id("users"),
-    firstReminderDelay: v.number(), // jours après échéance
-    secondReminderDelay: v.number(),
-    thirdReminderDelay: v.number(),
-    litigationDelay: v.number(),
-    firstReminderTemplate: v.string(),
-    secondReminderTemplate: v.string(),
-    thirdReminderTemplate: v.string(),
-    signature: v.string(),
-  }).index("by_user", ["userId"]),
+  // Table reminderSettings supprimée - paramètres déplacés vers organizations
 
   reminders: defineTable({
     userId: v.id("users"),

@@ -16,8 +16,15 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
   const [submitting, setSubmitting] = useState(false);
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  // Validation email (même regex que le backend)
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +48,7 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
     setEmail("");
     setRole("technicien");
     setCopied(false);
+    setEmailError(null);
     onClose();
   };
 
@@ -56,7 +64,7 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-md w-full p-6 relative">
         <button
           onClick={handleClose}
@@ -83,10 +91,26 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onBlur={(e) => {
+                  const value = e.target.value;
+                  if (value && !validateEmail(value)) {
+                    setEmailError("Format d'email invalide (ex: utilisateur@example.com)");
+                  } else {
+                    setEmailError(null);
+                  }
+                }}
+                pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  emailError
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-gray-300 focus:ring-blue-500"
+                }`}
                 placeholder="utilisateur@example.com"
                 required
               />
+              {emailError && (
+                <p className="mt-1 text-sm text-red-600">{emailError}</p>
+              )}
             </div>
 
             <div>
@@ -122,7 +146,7 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
               </button>
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || !!emailError || !email}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? "Envoi..." : "Envoyer l'invitation"}

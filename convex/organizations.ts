@@ -38,9 +38,9 @@ export const createOrganizationWithAdmin = mutation({
       thirdReminderDelay: 30,
       litigationDelay: 45,
       // Templates par défaut
-      firstReminderTemplate: `Bonjour,\n\nNous constatons que notre facture n°[INVOICE_NUMBER] d'un montant de [AMOUNT]€ TTC émise le [INVOICE_DATE] est arrivée à échéance le [DUE_DATE].\n\nPourriez-vous nous confirmer la réception de cette facture et nous indiquer la date de règlement prévue ?\n\nCordialement,`,
-      secondReminderTemplate: `Bonjour,\n\nMalgré notre première relance, nous constatons que notre facture n°[INVOICE_NUMBER] d'un montant de [AMOUNT]€ TTC reste impayée.\n\nNous vous remercions de procéder au règlement dans les plus brefs délais.\n\nCordialement,`,
-      thirdReminderTemplate: `Bonjour,\n\nNous vous informons que notre facture n°[INVOICE_NUMBER] d'un montant de [AMOUNT]€ TTC demeure impayée malgré nos précédentes relances.\n\nSans règlement sous 7 jours, nous serons contraints d'engager une procédure de recouvrement.\n\nCordialement,`,
+      firstReminderTemplate: `Bonjour,\n\nNous constatons que notre facture n°{numero_facture} d'un montant de {montant}€ TTC émise le {date_facture} est arrivée à échéance le {date_echeance}.\n\nPourriez-vous nous confirmer la réception de cette facture et nous indiquer la date de règlement prévue ?\n\nCordialement,`,
+      secondReminderTemplate: `Bonjour,\n\nMalgré notre première relance, nous constatons que notre facture n°{numero_facture} d'un montant de {montant}€ TTC reste impayée (échue depuis {jours_retard} jours).\n\nNous vous remercions de procéder au règlement dans les plus brefs délais.\n\nCordialement,`,
+      thirdReminderTemplate: `Bonjour,\n\nNous vous informons que notre facture n°{numero_facture} d'un montant de {montant}€ TTC demeure impayée malgré nos précédentes relances ({jours_retard} jours de retard).\n\nSans règlement sous 7 jours, nous serons contraints d'engager une procédure de recouvrement.\n\nCordialement,`,
       signature: `L'équipe ${args.organizationName}`,
     });
 
@@ -76,6 +76,12 @@ export const inviteUser = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Non authentifié");
+    }
+
+    // Valider le format de l'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(args.email)) {
+      throw new Error("Format d'email invalide");
     }
 
     // Récupérer l'utilisateur et vérifier qu'il est admin
@@ -536,5 +542,119 @@ export const regenerateInvitationToken = mutation({
     });
 
     return newToken;
+  },
+});
+
+/**
+ * Mutation pour changer le rôle d'un utilisateur
+ */
+export const updateUserRole = mutation({
+  args: {
+    userId: v.id("users"),
+    newRole: v.union(v.literal("admin"), v.literal("technicien")),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const currentUserId = await getAuthUserId(ctx);
+    if (!currentUserId) {
+      throw new Error("Non authentifié");
+    }
+
+    const currentUser = await ctx.db.get(currentUserId);
+    if (!currentUser?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+    if (currentUser.role !== "admin") {
+      throw new Error("Seuls les admins peuvent changer les rôles");
+    }
+
+    const targetUser = await ctx.db.get(args.userId);
+    if (!targetUser) {
+      throw new Error("Utilisateur introuvable");
+    }
+
+    if (targetUser.organizationId !== currentUser.organizationId) {
+      throw new Error("Cet utilisateur n'appartient pas à votre organisation");
+    }
+
+    // Empêcher de retirer le dernier admin
+    if (targetUser.role === "admin" && args.newRole === "technicien") {
+      const allAdmins = await ctx.db
+        .query("users")
+        .withIndex("by_organizationId", (q) =>
+          q.eq("organizationId", currentUser.organizationId)
+        )
+        .filter((q) => q.eq(q.field("role"), "admin"))
+        .collect();
+
+      if (allAdmins.length <= 1) {
+        throw new Error(
+          "Impossible de retirer le dernier admin de l'organisation"
+        );
+      }
+    }
+
+    await ctx.db.patch(args.userId, { role: args.newRole });
+
+    return null;
+  },
+});
+
+/**
+ * Mutation pour supprimer un utilisateur de l'organisation
+ */
+export const removeUser = mutation({
+  args: {
+    userId: v.id("users"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const currentUserId = await getAuthUserId(ctx);
+    if (!currentUserId) {
+      throw new Error("Non authentifié");
+    }
+
+    const currentUser = await ctx.db.get(currentUserId);
+    if (!currentUser?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+    if (currentUser.role !== "admin") {
+      throw new Error("Seuls les admins peuvent supprimer des utilisateurs");
+    }
+
+    const targetUser = await ctx.db.get(args.userId);
+    if (!targetUser) {
+      throw new Error("Utilisateur introuvable");
+    }
+
+    if (targetUser.organizationId !== currentUser.organizationId) {
+      throw new Error("Cet utilisateur n'appartient pas à votre organisation");
+    }
+
+    // Empêcher de supprimer le dernier admin
+    if (targetUser.role === "admin") {
+      const allAdmins = await ctx.db
+        .query("users")
+        .withIndex("by_organizationId", (q) =>
+          q.eq("organizationId", currentUser.organizationId)
+        )
+        .filter((q) => q.eq(q.field("role"), "admin"))
+        .collect();
+
+      if (allAdmins.length <= 1) {
+        throw new Error(
+          "Impossible de supprimer le dernier admin de l'organisation"
+        );
+      }
+    }
+
+    // Retirer l'utilisateur de l'organisation (soft delete)
+    await ctx.db.patch(args.userId, {
+      organizationId: undefined,
+      role: undefined,
+      invitedBy: undefined,
+    });
+
+    return null;
   },
 });

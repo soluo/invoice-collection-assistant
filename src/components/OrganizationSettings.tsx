@@ -182,8 +182,7 @@ export function OrganizationSettings() {
         <div className="bg-white rounded-lg border p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Templates d'emails</h3>
           <p className="text-sm text-gray-600 mb-6">
-            Variables disponibles : [INVOICE_NUMBER], [AMOUNT], [INVOICE_DATE], [DUE_DATE],
-            [CLIENT_NAME]
+            Variables disponibles : {"{numero_facture}"}, {"{nom_client}"}, {"{montant}"}, {"{date_facture}"}, {"{date_echeance}"}, {"{jours_retard}"}
           </p>
 
           <div className="space-y-6">

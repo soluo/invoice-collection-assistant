@@ -5,7 +5,8 @@ import { StatsNavigation } from "./StatsNavigation";
 
 export function PaidInvoices() {
   const invoices = useQuery(api.invoices.listPaid);
-  const settings = useQuery(api.reminderSettings.get);
+  const organization = useQuery(api.organizations.getCurrentOrganization);
+  const settings = organization; // Alias pour compatibilité
   const navigate = useNavigate();
 
   const formatCurrency = (amount: number) => {

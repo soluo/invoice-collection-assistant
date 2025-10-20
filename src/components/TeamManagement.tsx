@@ -12,6 +12,7 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  MoreVertical,
 } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 import { InviteUserModal } from "./InviteUserModal";
@@ -23,8 +24,11 @@ export function TeamManagement() {
   const invitations = useQuery(api.organizations.listInvitations);
   const deleteInvitation = useMutation(api.organizations.deleteInvitation);
   const regenerateToken = useMutation(api.organizations.regenerateInvitationToken);
+  const updateUserRole = useMutation(api.organizations.updateUserRole);
+  const removeUser = useMutation(api.organizations.removeUser);
 
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   if (users === undefined || invitations === undefined) {
     return (
@@ -125,6 +129,33 @@ export function TeamManagement() {
     }
   };
 
+  const handleChangeRole = async (userId: any, currentRole?: "admin" | "technicien") => {
+    const newRole = currentRole === "admin" ? "technicien" : "admin";
+    const roleName = newRole === "admin" ? "Administrateur" : "Technicien";
+
+    if (window.confirm(`Changer le rôle en ${roleName} ?`)) {
+      try {
+        await updateUserRole({ userId, newRole });
+        toast.success(`Rôle changé en ${roleName}`);
+        setOpenDropdown(null);
+      } catch (error: any) {
+        toast.error(error.message || "Erreur lors du changement de rôle");
+      }
+    }
+  };
+
+  const handleRemoveUser = async (userId: any, userName?: string) => {
+    if (window.confirm(`Êtes-vous sûr de vouloir retirer ${userName || "cet utilisateur"} de l'organisation ?`)) {
+      try {
+        await removeUser({ userId });
+        toast.success("Utilisateur retiré de l'organisation");
+        setOpenDropdown(null);
+      } catch (error: any) {
+        toast.error(error.message || "Erreur lors de la suppression");
+      }
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Header avec bouton d'invitation */}
@@ -165,6 +196,9 @@ export function TeamManagement() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Rôle
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -179,11 +213,45 @@ export function TeamManagement() {
                     <div className="text-sm text-gray-600">{user.email || "—"}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">{getRoleBadge(user.role)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="relative">
+                      <button
+                        onClick={() => setOpenDropdown(openDropdown === user._id ? null : user._id)}
+                        className="p-2 text-gray-500 hover:bg-gray-100 rounded-md"
+                      >
+                        <MoreVertical size={16} />
+                      </button>
+                      {openDropdown === user._id && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setOpenDropdown(null)}
+                          />
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border z-20">
+                            <button
+                              onClick={() => handleChangeRole(user._id, user.role)}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            >
+                              <Shield size={14} />
+                              Changer le rôle
+                            </button>
+                            <button
+                              onClick={() => handleRemoveUser(user._id, user.name)}
+                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                            >
+                              <Trash2 size={14} />
+                              Retirer de l'organisation
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
                     Aucun membre dans l'équipe
                   </td>
                 </tr>

@@ -26,7 +26,8 @@ const statusConfig: Record<InvoiceStatus, { label: string; color: string; action
 
 export function Dashboard() {
   const stats = useQuery(api.dashboard.getDashboardStats);
-  const settings = useQuery(api.reminderSettings.get);
+  const organization = useQuery(api.organizations.getCurrentOrganization);
+  const settings = organization; // Alias pour compatibilité
   const markAsPaid = useMutation(api.invoices.markAsPaid);
   const navigate = useNavigate();
   const [reminderModal, setReminderModal] = useState<{ invoice: InvoiceWithDays; status: InvoiceStatus } | null>(null);

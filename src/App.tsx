@@ -11,7 +11,6 @@ import { Dashboard } from "./components/Dashboard";
 import { OngoingInvoices } from "./components/OngoingInvoices";
 import { PaidInvoices } from "./components/PaidInvoices";
 import { InvoiceUpload } from "./components/InvoiceUpload";
-import { ReminderSettings } from "./components/ReminderSettings";
 import { TeamManagement } from "./components/TeamManagement";
 import { OrganizationSettings } from "./components/OrganizationSettings";
 import { useState, useEffect } from "react";
@@ -73,6 +72,9 @@ function Content() {
   const loggedInUser = useQuery(api.auth.loggedInUser);
   const createOrganization = useMutation(api.organizations.createOrganizationWithAdmin);
   const acceptInvitation = useMutation(api.organizations.acceptInvitation);
+  const { signOut } = useAuthActions();
+  const [orgSetupError, setOrgSetupError] = useState<string | null>(null);
+  const [isCreatingOrg, setIsCreatingOrg] = useState(false);
 
   useEffect(() => {
     // Flow d'inscription : création de l'organisation
@@ -80,16 +82,22 @@ function Content() {
     if (loggedInUser && pendingOrgDataRaw && !loggedInUser.organizationId) {
       const pendingOrgData = JSON.parse(pendingOrgDataRaw);
       const createOrg = async () => {
+        setIsCreatingOrg(true);
         try {
           await createOrganization(pendingOrgData);
           toast.success("Organisation créée avec succès !");
           sessionStorage.removeItem("pendingOrgData");
+          setOrgSetupError(null);
+          setIsCreatingOrg(false);
         } catch (error: any) {
           console.error("Erreur lors de la création de l'organisation:", error);
-          toast.error(
-            error.message || "Erreur lors de la création de l'organisation"
-          );
+          const errorMessage = error.message || "Erreur lors de la création de l'organisation";
+          toast.error(errorMessage);
+          setOrgSetupError(errorMessage);
+          setIsCreatingOrg(false);
+          // Déconnecter l'utilisateur pour permettre une nouvelle tentative
           sessionStorage.removeItem("pendingOrgData");
+          setTimeout(() => signOut(), 2000);
         }
       };
       void createOrg();
@@ -106,26 +114,45 @@ function Content() {
     ) {
       const pendingInvitationData = JSON.parse(pendingInvitationDataRaw);
       const acceptInv = async () => {
+        setIsCreatingOrg(true);
         try {
           await acceptInvitation(pendingInvitationData);
           toast.success("Vous avez rejoint l'organisation avec succès !");
           sessionStorage.removeItem("pendingInvitationData");
+          setOrgSetupError(null);
+          setIsCreatingOrg(false);
         } catch (error: any) {
           console.error("Erreur lors de l'acceptation de l'invitation:", error);
-          toast.error(
-            error.message || "Erreur lors de l'acceptation de l'invitation"
-          );
+          const errorMessage = error.message || "Erreur lors de l'acceptation de l'invitation";
+          toast.error(errorMessage);
+          setOrgSetupError(errorMessage);
+          setIsCreatingOrg(false);
+          // Déconnecter l'utilisateur pour permettre une nouvelle tentative
           sessionStorage.removeItem("pendingInvitationData");
+          setTimeout(() => signOut(), 2000);
         }
       };
       void acceptInv();
     }
-  }, [loggedInUser, createOrganization, acceptInvitation]);
+  }, [loggedInUser, createOrganization, acceptInvitation, signOut]);
 
-  if (loggedInUser === undefined) {
+  if (loggedInUser === undefined || isCreatingOrg) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
+      <div className="flex flex-col justify-center items-center min-h-[400px] gap-4">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        {isCreatingOrg && (
+          <p className="text-gray-600">
+            {sessionStorage.getItem("pendingOrgData")
+              ? "Création de votre organisation..."
+              : "Acceptation de l'invitation..."}
+          </p>
+        )}
+        {orgSetupError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-md">
+            <p className="text-red-800 text-sm">{orgSetupError}</p>
+            <p className="text-red-600 text-xs mt-2">Vous allez être déconnecté pour réessayer...</p>
+          </div>
+        )}
       </div>
     );
   }
@@ -189,13 +216,25 @@ function InvoiceUploadPage() {
 
 function SettingsPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"organization" | "team" | "reminders">("organization");
+  const loggedInUser = useQuery(api.auth.loggedInUser);
+  const [activeTab, setActiveTab] = useState<"organization" | "team">("organization");
 
-  const tabs = [
-    { id: "organization" as const, label: "Organisation", icon: Building2 },
-    { id: "team" as const, label: "Équipe", icon: Users },
-    { id: "reminders" as const, label: "Relances (ancien)", icon: Settings },
+  const isAdmin = loggedInUser?.role === "admin";
+
+  // Filtrer les onglets selon le rôle
+  const allTabs = [
+    { id: "organization" as const, label: "Organisation", icon: Building2, adminOnly: true },
+    { id: "team" as const, label: "Équipe", icon: Users, adminOnly: true },
   ];
+
+  const tabs = allTabs.filter(tab => !tab.adminOnly || isAdmin);
+
+  // Si l'utilisateur n'est pas admin et essaie d'accéder à un onglet admin, rediriger vers le dashboard
+  useEffect(() => {
+    if (loggedInUser && !isAdmin && (activeTab === "organization" || activeTab === "team")) {
+      navigate("/");
+    }
+  }, [loggedInUser, isAdmin, activeTab, navigate]);
 
   return (
     <div className="space-y-6">
@@ -235,7 +274,6 @@ function SettingsPage() {
       <div>
         {activeTab === "organization" && <OrganizationSettings />}
         {activeTab === "team" && <TeamManagement />}
-        {activeTab === "reminders" && <ReminderSettings />}
       </div>
     </div>
   );

@@ -8,7 +8,8 @@
       "mcp__convex__envList",
       "WebFetch(domain:docs.convex.dev)",
       "Bash(pnpm dev:backend)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(pnpm lint)"
     ],
     "deny": [],
     "ask": []

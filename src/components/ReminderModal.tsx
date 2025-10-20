@@ -11,7 +11,8 @@ interface ReminderModalProps {
 }
 
 export function ReminderModal({ invoice, currentStatus, onClose }: ReminderModalProps) {
-  const settings = useQuery(api.reminderSettings.get);
+  const organization = useQuery(api.organizations.getCurrentOrganization);
+  const settings = organization; // Alias pour compatibilité
   const reminders = useQuery(api.reminders.getByInvoice, { invoiceId: invoice._id });
   const sendReminder = useMutation(api.invoices.sendReminder);
 
@@ -54,10 +55,19 @@ export function ReminderModal({ invoice, currentStatus, onClose }: ReminderModal
   const replaceVariables = (template: string) => {
     if (!template) return "";
 
+    // Formater les dates en français (DD/MM/YYYY)
+    const formatDateFr = (dateStr: string) => {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('fr-FR');
+    };
+
     return template
-      .replace(/\{clientName\}/g, invoice.clientName)
-      .replace(/\{invoiceNumber\}/g, invoice.invoiceNumber)
-      .replace(/\{amount\}/g, invoice.amountTTC.toString());
+      .replace(/\{numero_facture\}/g, invoice.invoiceNumber)
+      .replace(/\{nom_client\}/g, invoice.clientName)
+      .replace(/\{montant\}/g, invoice.amountTTC.toString())
+      .replace(/\{date_facture\}/g, formatDateFr(invoice.invoiceDate))
+      .replace(/\{date_echeance\}/g, formatDateFr(invoice.dueDate))
+      .replace(/\{jours_retard\}/g, invoice.daysOverdue?.toString() || "0");
   };
 
   // Initialiser le formulaire quand les settings et reminders sont chargées
@@ -98,7 +108,7 @@ export function ReminderModal({ invoice, currentStatus, onClose }: ReminderModal
 
   if (!settings || reminders === undefined) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 !m-0 z-50">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 !m-0 z-50">
         <div className="bg-white rounded-lg p-6">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
         </div>
@@ -107,7 +117,7 @@ export function ReminderModal({ invoice, currentStatus, onClose }: ReminderModal
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 !m-0 z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 !m-0 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">

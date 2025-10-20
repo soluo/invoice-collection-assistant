@@ -229,16 +229,18 @@ organizationId: Id<"organizations">,
 
 ## 6. Plan d'Implémentation
 
-### Phase 1 : Backend - Schémas & Auth ✅
+### Phase 1 : Backend - Schémas & Auth ✅ COMPLÉTÉE
 - [x] 1.1. Créer le schéma `organizations`
 - [x] 1.2. Étendre la table `users` avec champs personnalisés (role, organizationId, invitedBy)
 - [x] 1.3. Créer le schéma `invitations`
 - [x] 1.4. Modifier le schéma `invoices` (ajouter organizationId, createdBy, nouveaux index)
 - [x] 1.5. Modifier le schéma `reminders` (ajouter organizationId)
-- [ ] 1.6. Supprimer le schéma `reminderSettings` (sera fait en Phase 3)
+- [x] 1.6. Supprimer le schéma `reminderSettings` (FAIT - wrapper de compatibilité créé)
 - [x] 1.7. Retirer Anonymous auth, garder Password uniquement
 - [x] 1.8. Créer mutation `createOrganizationWithAdmin` (création org + premier admin)
 - [x] 1.9. Créer mutations pour les invitations (inviteUser, acceptInvitation, listInvitations, listUsers)
+- [x] 1.10. Créer mutations pour la gestion des utilisateurs (updateUserRole, removeUser)
+- [x] 1.11. Créer mutations pour la gestion des invitations (deleteInvitation, regenerateInvitationToken)
 
 ### Phase 2 : Permissions & Queries
 - [ ] 2.1. Créer helpers de permissions (isAdmin, canAccessInvoice, etc.)
@@ -254,20 +256,25 @@ organizationId: Id<"organizations">,
 - [ ] 3.3. Créer action cron `checkAndSendReminders` (quotidienne)
 - [ ] 3.4. Tester l'envoi d'emails avec l'adresse de l'organisation
 
-### Phase 4 : Interface Utilisateur - Auth
-- [ ] 4.1. Créer composant `SignupForm.tsx` (avec nom de société)
-- [ ] 4.2. Créer composant `LoginForm.tsx`
-- [ ] 4.3. Créer page `/signup` et `/login`
-- [ ] 4.4. Créer page `/accept-invitation/:token`
-- [ ] 4.5. Modifier `App.tsx` pour gérer les nouvelles routes auth
-- [ ] 4.6. Gérer la redirection selon l'état d'auth
+### Phase 4 : Interface Utilisateur - Auth ✅ COMPLÉTÉE
+- [x] 4.1. Créer composant `SignupForm.tsx` (avec nom de société)
+- [x] 4.2. Créer composant `LoginForm.tsx` (SignInForm.tsx)
+- [x] 4.3. Créer page `/signup` et `/login`
+- [x] 4.4. Créer page `/accept-invitation/:token`
+- [x] 4.5. Modifier `App.tsx` pour gérer les nouvelles routes auth
+- [x] 4.6. Gérer la redirection selon l'état d'auth
+- [x] 4.7. Gestion d'erreur améliorée (déconnexion si échec création org/invitation)
+- [x] 4.8. Loading state contextualisé (message clair pendant création)
 
-### Phase 5 : Interface Utilisateur - Gestion d'Équipe
-- [ ] 5.1. Créer composant `InviteUserModal.tsx`
-- [ ] 5.2. Créer composant `TeamManagement.tsx` (liste users, actions)
-- [ ] 5.3. Créer composant `InvitationsList.tsx` (invitations en attente)
-- [ ] 5.4. Intégrer ces composants dans la page Settings
-- [ ] 5.5. Ajouter champ "Email expéditeur" dans Settings
+### Phase 5 : Interface Utilisateur - Gestion d'Équipe ✅ COMPLÉTÉE
+- [x] 5.1. Créer composant `InviteUserModal.tsx`
+- [x] 5.2. Créer composant `TeamManagement.tsx` (liste users, actions)
+- [x] 5.3. Liste des invitations intégrée dans `TeamManagement.tsx`
+- [x] 5.4. Intégrer ces composants dans la page Settings (onglets)
+- [x] 5.5. Créer composant `OrganizationSettings.tsx` avec email expéditeur
+- [x] 5.6. Actions utilisateurs : changer rôle, retirer de l'organisation
+- [x] 5.7. Actions invitations : copier lien, regénérer, supprimer
+- [x] 5.8. Filtrage des onglets Settings selon le rôle (admins only pour Org/Team)
 
 ### Phase 6 : Interface Utilisateur - Filtres & Adaptations
 - [ ] 6.1. Créer composant `InvoiceFilterBar.tsx` (pour les admins)
@@ -354,12 +361,69 @@ organizationId: Id<"organizations">,
   - Modifié tables : `invoices` (+ organizationId, createdBy), `reminders` (+ organizationId)
   - Retiré provider Anonymous, gardé Password uniquement
   - ✅ Refactorisation : supprimé table `profiles`, étendu directement `users` (meilleure pratique Convex Auth)
-  - Créé fichier `convex/organizations.ts` avec 8 fonctions :
+  - Créé fichier `convex/organizations.ts` avec 12 fonctions :
     - `createOrganizationWithAdmin` : création org + premier admin avec paramètres par défaut
-    - `inviteUser` : inviter un utilisateur (génère token, expire après 7j)
+    - `inviteUser` : inviter un utilisateur (génère token, expire après 7j) + validation email
     - `acceptInvitation` : accepter une invitation
     - `listInvitations` : lister les invitations (admins uniquement)
     - `listUsers` : lister les utilisateurs de l'org (admins uniquement)
     - `getCurrentOrganization` : récupérer l'org courante
     - `updateOrganizationSettings` : mettre à jour les paramètres (admins uniquement)
+    - `getInvitationByToken` : récupérer les détails d'une invitation (public)
+    - `deleteInvitation` : supprimer une invitation (admins uniquement)
+    - `regenerateInvitationToken` : regénérer le token d'une invitation (admins uniquement)
+    - `updateUserRole` : changer le rôle d'un utilisateur (admins uniquement, protection dernier admin)
+    - `removeUser` : retirer un utilisateur de l'organisation (admins uniquement, soft delete)
+  - Supprimé table `reminderSettings`, paramètres déplacés vers `organizations`
+  - Créé wrapper de compatibilité dans `reminderSettings.ts` pour compatibilité avec ancien composant
   - Note : organizationId et createdBy temporairement optionnels (seront obligatoires en Phase 2)
+
+- **2025-10-20** : ✅ **Phase 4 COMPLÉTÉE** - Interface Auth
+  - Créé `SignupForm.tsx` : formulaire d'inscription avec org name + email/password
+  - Créé `AcceptInvitation.tsx` : page d'acceptation d'invitation avec validation token
+  - Modifié `SignInForm.tsx` : lien vers signup
+  - Routes auth configurées dans `App.tsx` : `/signup`, `/login`, `/accept-invitation/:token`
+  - Flow signup : sessionStorage → création org dans useEffect après auth
+  - Flow invitation : sessionStorage → acceptation dans useEffect après auth
+  - Gestion d'erreur robuste : déconnexion automatique si échec + message explicite
+  - Loading state contextualisé : "Création de votre organisation..." ou "Acceptation de l'invitation..."
+
+- **2025-10-20** : ✅ **Phase 5 COMPLÉTÉE** - Interface Gestion d'Équipe
+  - Créé `TeamManagement.tsx` : liste users + liste invitations + actions
+  - Créé `InviteUserModal.tsx` : modal d'invitation avec email + rôle
+  - Créé `OrganizationSettings.tsx` : paramètres org (email expéditeur, délais, templates, signature)
+  - Intégré dans `App.tsx` → SettingsPage avec 3 onglets
+  - Actions utilisateurs : menu dropdown avec "Changer le rôle" et "Retirer de l'organisation"
+  - Actions invitations : boutons "Copier le lien", "Regénérer", "Supprimer"
+  - Filtrage des onglets selon le rôle : techniciens voient uniquement "Relances (ancien)"
+  - Protection backend : impossible de retirer le dernier admin
+
+## 11. Bugs Corrigés (2025-10-20)
+
+### 🔴 Priorité Haute
+1. **Gestion d'erreur incomplète dans App.tsx** ✅
+   - Problème : Utilisateur authentifié mais sans organisation si création/invitation échoue
+   - Solution : Déconnexion automatique + message d'erreur + timeout 2s
+
+2. **Pas de validation du format email dans inviteUser** ✅
+   - Problème : Invitations avec emails invalides acceptées
+   - Solution : Regex de validation côté backend
+
+3. **Onglets Settings visibles pour les techniciens** ✅
+   - Problème : Techniciens voyaient onglets "Organisation" et "Équipe" mais recevaient erreurs
+   - Solution : Filtrage des onglets selon le rôle (adminOnly: true)
+
+4. **Table reminderSettings toujours présente** ✅
+   - Problème : Table obsolète dans le schema
+   - Solution : Supprimée du schema, wrapper de compatibilité créé
+
+### 🟡 Priorité Moyenne
+5. **Pas de mutations pour gérer les utilisateurs** ✅
+   - Solution : Créé `updateUserRole` et `removeUser` avec protection dernier admin
+
+6. **Loading state peu clair pendant création org/invitation** ✅
+   - Solution : Message contextualisé selon le flow (pendingOrgData vs pendingInvitationData)
+
+### 🟢 Notes
+- Bug 7 (cleanup invitations expirées via cron) : reporté à Phase 3
+- Bug 9 (limit nombre invitations) : reporté ultérieurement
