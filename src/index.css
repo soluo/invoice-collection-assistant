@@ -22,6 +22,9 @@
     * {
         @apply border-gray-200;
     }
+    ::placeholder {
+        @apply text-gray-400 opacity-100;
+    }
 }
 
 :root {

@@ -38,27 +38,9 @@ export const createOrganizationWithAdmin = mutation({
       thirdReminderDelay: 30,
       litigationDelay: 45,
       // Templates par défaut
-      firstReminderTemplate: `Bonjour,
-
-Nous constatons que notre facture n°[INVOICE_NUMBER] d'un montant de [AMOUNT]€ TTC émise le [INVOICE_DATE] est arrivée à échéance le [DUE_DATE].
-
-Pourriez-vous nous confirmer la réception de cette facture et nous indiquer la date de règlement prévue ?
-
-Cordialement,`,
-      secondReminderTemplate: `Bonjour,
-
-Malgré notre première relance, nous constatons que notre facture n°[INVOICE_NUMBER] d'un montant de [AMOUNT]€ TTC reste impayée.
-
-Nous vous remercions de procéder au règlement dans les plus brefs délais.
-
-Cordialement,`,
-      thirdReminderTemplate: `Bonjour,
-
-Nous vous informons que notre facture n°[INVOICE_NUMBER] d'un montant de [AMOUNT]€ TTC demeure impayée malgré nos précédentes relances.
-
-Sans règlement sous 7 jours, nous serons contraints d'engager une procédure de recouvrement.
-
-Cordialement,`,
+      firstReminderTemplate: `Bonjour,\n\nNous constatons que notre facture n°[INVOICE_NUMBER] d'un montant de [AMOUNT]€ TTC émise le [INVOICE_DATE] est arrivée à échéance le [DUE_DATE].\n\nPourriez-vous nous confirmer la réception de cette facture et nous indiquer la date de règlement prévue ?\n\nCordialement,`,
+      secondReminderTemplate: `Bonjour,\n\nMalgré notre première relance, nous constatons que notre facture n°[INVOICE_NUMBER] d'un montant de [AMOUNT]€ TTC reste impayée.\n\nNous vous remercions de procéder au règlement dans les plus brefs délais.\n\nCordialement,`,
+      thirdReminderTemplate: `Bonjour,\n\nNous vous informons que notre facture n°[INVOICE_NUMBER] d'un montant de [AMOUNT]€ TTC demeure impayée malgré nos précédentes relances.\n\nSans règlement sous 7 jours, nous serons contraints d'engager une procédure de recouvrement.\n\nCordialement,`,
       signature: `L'équipe ${args.organizationName}`,
     });
 
@@ -108,7 +90,7 @@ export const inviteUser = mutation({
     // Vérifier qu'un utilisateur avec cet email n'existe pas déjà dans l'organisation
     const existingUserWithEmail = await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
 
     if (
@@ -317,7 +299,7 @@ export const listUsers = query({
 
     const users = await ctx.db
       .query("users")
-      .withIndex("organizationId", (q) => q.eq("organizationId", user.organizationId))
+      .withIndex("by_organizationId", (q) => q.eq("organizationId", user.organizationId))
       .collect();
 
     return users.map((u) => ({
@@ -436,5 +418,50 @@ export const updateOrganizationSettings = mutation({
     await ctx.db.patch(user.organizationId, updates);
 
     return null;
+  },
+});
+
+/**
+ * Query publique pour récupérer les détails d'une invitation par token
+ */
+export const getInvitationByToken = query({
+  args: {
+    token: v.string(),
+  },
+  returns: v.union(
+    v.object({
+      email: v.string(),
+      organizationName: v.string(),
+      status: v.union(
+        v.literal("pending"),
+        v.literal("accepted"),
+        v.literal("expired")
+      ),
+      expiresAt: v.number(),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, args) => {
+    const invitation = await ctx.db
+      .query("invitations")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .first();
+
+    if (!invitation) {
+      return null;
+    }
+
+    const organization = await ctx.db.get(invitation.organizationId);
+    if (!organization) {
+      // Ne devrait pas arriver, mais bonne pratique
+      return null;
+    }
+
+    return {
+      email: invitation.email,
+      organizationName: organization.name,
+      status: invitation.status,
+      expiresAt: invitation.expiresAt,
+    };
   },
 });

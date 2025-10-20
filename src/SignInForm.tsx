@@ -1,11 +1,11 @@
-"use client";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 export function SignInForm() {
   const { signIn } = useAuthActions();
-  const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
+  const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
 
   return (
@@ -16,16 +16,15 @@ export function SignInForm() {
           e.preventDefault();
           setSubmitting(true);
           const formData = new FormData(e.target as HTMLFormElement);
-          formData.set("flow", flow);
+          formData.set("flow", "signIn");
           void signIn("password", formData).catch((error) => {
-            let toastTitle = "";
-            if (error.message.includes("Invalid password")) {
-              toastTitle = "Invalid password. Please try again.";
-            } else {
-              toastTitle =
-                flow === "signIn"
-                  ? "Could not sign in, did you mean to sign up?"
-                  : "Could not sign up, did you mean to sign in?";
+            let toastTitle = "Erreur de connexion";
+            if (error.message?.includes("Invalid password")) {
+              toastTitle = "Mot de passe incorrect";
+            } else if (error.message?.includes("not found")) {
+              toastTitle = "Compte introuvable. Avez-vous créé un compte ?";
+            } else if (error.message) {
+              toastTitle = error.message;
             }
             toast.error(toastTitle);
             setSubmitting(false);
@@ -47,31 +46,19 @@ export function SignInForm() {
           required
         />
         <button className="auth-button" type="submit" disabled={submitting}>
-          {flow === "signIn" ? "Se connecter" : "S'inscrire"}
+          Se connecter
         </button>
         <div className="text-center text-sm text-secondary">
-          <span>
-            {flow === "signIn"
-              ? "Vous n'avez pas de compte ? "
-              : "Vous avez déjà un compte ? "}
-          </span>
+          <span>Vous n'avez pas de compte ? </span>
           <button
             type="button"
             className="text-primary hover:text-primary-hover hover:underline font-medium cursor-pointer"
-            onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
+            onClick={() => navigate("/signup")}
           >
-            {flow === "signIn" ? "S'inscrire" : "Se connecter"}
+            Créer une organisation
           </button>
         </div>
       </form>
-      <div className="flex items-center justify-center my-3">
-        <hr className="my-4 grow border-gray-200" />
-        <span className="mx-4 text-secondary">ou</span>
-        <hr className="my-4 grow border-gray-200" />
-      </div>
-      <button className="auth-button" onClick={() => void signIn("anonymous")}>
-        Se connecter anonymement
-      </button>
     </div>
   );
 }

@@ -3,7 +3,19 @@ import { Password } from "@convex-dev/auth/providers/Password";
 import { query } from "./_generated/server";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
-  providers: [Password],
+  providers: [
+    Password({
+      profile(params) {
+        const profileData: { email: string; name?: string } = {
+          email: params.email as string,
+        };
+        if (params.name) {
+          profileData.name = params.name as string;
+        }
+        return profileData;
+      },
+    }),
+  ],
 });
 
 export const loggedInUser = query({

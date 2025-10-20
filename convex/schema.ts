@@ -120,6 +120,6 @@ export default defineSchema({
     organizationId: v.optional(v.id("organizations")),
     invitedBy: v.optional(v.id("users")),
   })
-    .index("email", ["email"])
-    .index("organizationId", ["organizationId"]),
+    .index("by_email", ["email"])
+    .index("by_organizationId", ["organizationId"]),
 });
