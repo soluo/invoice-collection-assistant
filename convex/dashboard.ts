@@ -1,23 +1,54 @@
 import { query } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { v } from "convex/values";
+import { getUserWithOrg, isAdmin } from "./permissions";
 
-async function getLoggedInUser(ctx: any) {
-  const userId = await getAuthUserId(ctx);
-  if (!userId) {
-    throw new Error("User not authenticated");
-  }
-  return userId;
-}
-
+/**
+ * Récupère les statistiques du dashboard
+ * - Technicien : stats uniquement sur ses propres factures
+ * - Admin : stats sur toutes les factures de l'org (ou filtrées par technicien)
+ *
+ * @param filterByUserId - (Admins uniquement) ID d'un technicien pour filtrer les stats
+ */
 export const getDashboardStats = query({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getLoggedInUser(ctx);
+  args: {
+    filterByUserId: v.optional(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    const user = await getUserWithOrg(ctx);
 
-    const invoices = await ctx.db
-      .query("invoices")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+    // Si un filtre est fourni, vérifier que l'utilisateur est admin
+    if (args.filterByUserId && !isAdmin(user)) {
+      throw new Error("Seuls les admins peuvent filtrer les statistiques");
+    }
+
+    let invoices;
+
+    if (isAdmin(user)) {
+      if (args.filterByUserId) {
+        // Admin : filtrer par technicien spécifique
+        const filterUserId = args.filterByUserId; // TypeScript narrowing
+        invoices = await ctx.db
+          .query("invoices")
+          .withIndex("by_organization_and_creator", (q) =>
+            q.eq("organizationId", user.organizationId).eq("createdBy", filterUserId)
+          )
+          .collect();
+      } else {
+        // Admin : toutes les factures de l'organisation
+        invoices = await ctx.db
+          .query("invoices")
+          .withIndex("by_organization", (q) => q.eq("organizationId", user.organizationId))
+          .collect();
+      }
+    } else {
+      // Technicien : uniquement ses propres factures
+      invoices = await ctx.db
+        .query("invoices")
+        .withIndex("by_organization_and_creator", (q) =>
+          q.eq("organizationId", user.organizationId).eq("createdBy", user.userId)
+        )
+        .collect();
+    }
 
     // Calculer les totaux par catégorie
     const now = new Date();
@@ -40,7 +71,10 @@ export const getDashboardStats = query({
 
       if (invoice.status === "paid") {
         montantPaye += invoice.amountTTC;
-      } else if (daysOverdue > 0 || ["first_reminder", "second_reminder", "third_reminder", "litigation"].includes(invoice.status)) {
+      } else if (
+        daysOverdue > 0 ||
+        ["first_reminder", "second_reminder", "third_reminder", "litigation"].includes(invoice.status)
+      ) {
         // Factures à recouvrir (en retard ou avec relances)
         montantARecouvrir += invoice.amountTTC;
         factunesUrgentes.push(invoiceWithDays);

@@ -242,13 +242,16 @@ organizationId: Id<"organizations">,
 - [x] 1.10. Créer mutations pour la gestion des utilisateurs (updateUserRole, removeUser)
 - [x] 1.11. Créer mutations pour la gestion des invitations (deleteInvitation, regenerateInvitationToken)
 
-### Phase 2 : Permissions & Queries
-- [ ] 2.1. Créer helpers de permissions (isAdmin, canAccessInvoice, etc.)
-- [ ] 2.2. Modifier `invoices.list` pour filtrer par org/user selon rôle
-- [ ] 2.3. Créer query `invoices.listWithFilter` pour les admins
-- [ ] 2.4. Modifier toutes les mutations invoices (create, update, delete) avec checks de permissions
-- [ ] 2.5. Créer queries pour la gestion des utilisateurs (list, update role, delete)
-- [ ] 2.6. Modifier `dashboard.ts` pour supporter les filtres
+### Phase 2 : Permissions & Queries ✅ COMPLÉTÉE
+- [x] 2.1. Créer helpers de permissions (isAdmin, canAccessInvoice, etc.)
+- [x] 2.2. Modifier `invoices.list` pour filtrer par org/user selon rôle
+- [x] 2.3. Créer query `invoices.listWithFilter` pour les admins
+- [x] 2.4. Modifier toutes les mutations invoices (create, update, delete) avec checks de permissions
+- [x] 2.5. Sécuriser toutes les queries/mutations invoices (listOngoing, listPaid, sendReminder)
+- [x] 2.6. Modifier `dashboard.ts` pour supporter les filtres
+- [x] 2.7. Sécuriser `reminders.ts` avec vérifications permissions
+- [x] 2.8. Rendre organizationId et createdBy obligatoires dans schema
+- [x] 2.9. Nettoyer les données existantes (redémarrage à zéro)
 
 ### Phase 3 : Relances Automatiques
 - [ ] 3.1. Migrer la configuration des relances vers `organizations`
@@ -398,9 +401,44 @@ organizationId: Id<"organizations">,
   - Filtrage des onglets selon le rôle : techniciens voient uniquement "Relances (ancien)"
   - Protection backend : impossible de retirer le dernier admin
 
-## 11. Bugs Corrigés (2025-10-20)
+- **2025-10-21** : ✅ **Phase 2 COMPLÉTÉE** - Permissions & Queries (Sécurité critique)
+  - Créé `convex/permissions.ts` : système complet de gestion des permissions
+    - Helper `getUserWithOrg()` : récupère l'utilisateur avec contexte organisation
+    - Helpers de vérification : `isAdmin()`, `canAccessInvoice()`, `canModifyInvoice()`, `canDeleteInvoice()`, `canUpdateInvoiceStatus()`, `canSendReminder()`
+    - Assertions pour validation : `assertIsAdmin()`, `assertCanAccessInvoice()`, etc.
+    - Type `UserWithOrg` pour typage fort
+  - Sécurisé `convex/invoices.ts` avec contrôle d'accès strict :
+    - `list()` : filtrage automatique admin (toutes factures org) vs technicien (ses propres factures uniquement)
+    - `listWithFilter()` : nouvelle query pour admins avec filtre optionnel par technicien
+    - `create()` : ajout paramètre `assignToUserId` pour que les admins puissent assigner des factures
+    - `update()` : seuls les admins peuvent modifier (techniciens = factures immutables)
+    - `deleteInvoice()` : admins (toutes) + techniciens (leurs propres factures pour ré-import)
+    - `updateStatus()` + `markAsPaid()` : contrôle basé sur rôle et ownership
+    - `sendReminder()` : vérification permissions avant envoi
+    - `listOngoing()` + `listPaid()` : filtrage automatique par rôle avec index optimisés
+  - Adapté `convex/dashboard.ts` pour filtrage dynamique :
+    - `getDashboardStats()` : nouveau paramètre `filterByUserId` pour admins
+    - Stats calculées selon le rôle (admin = org entière, technicien = ses factures)
+  - Sécurisé `convex/reminders.ts` :
+    - Ajout champ `organizationId` obligatoire lors de la création
+    - Vérifications permissions via `assertCanAccessInvoice`
+    - Queries filtrées par organisation avec index
+  - Mis à jour `convex/schema.ts` : **BREAKING CHANGE**
+    - `organizationId` et `createdBy` maintenant **obligatoires** dans `invoices`
+    - `organizationId` maintenant **obligatoire** dans `reminders`
+    - Permet d'utiliser les index composés pour performances optimales
+  - **Nettoyage base de données** (redémarrage à zéro comme prévu dans spec) :
+    - Supprimé toutes les données dans `invoices`, `reminders`, `users`
+    - Note importante : nécessite aussi de nettoyer `authAccounts`, `authSessions`, `authRefreshTokens` pour éviter comptes orphelins
+  - **Utilisation systématique des index Convex** :
+    - `by_organization` pour queries admin sur toutes les factures
+    - `by_organization_and_creator` pour filtrage par technicien
+    - `by_organization_and_status` pour queries par statut
+    - Performances optimales garanties quelle que soit la taille de la base
 
-### 🔴 Priorité Haute
+## 11. Bugs Corrigés
+
+### 🔴 Priorité Haute (2025-10-20)
 1. **Gestion d'erreur incomplète dans App.tsx** ✅
    - Problème : Utilisateur authentifié mais sans organisation si création/invitation échoue
    - Solution : Déconnexion automatique + message d'erreur + timeout 2s
@@ -423,6 +461,14 @@ organizationId: Id<"organizations">,
 
 6. **Loading state peu clair pendant création org/invitation** ✅
    - Solution : Message contextualisé selon le flow (pendingOrgData vs pendingInvitationData)
+
+### 🔴 Priorité Haute (2025-10-21)
+7. **Erreur signup "Cannot read properties of null (reading '_id')" après nettoyage partiel de la base** ✅
+   - Problème : Après avoir nettoyé uniquement `users` sans les tables auth, tentative de signup avec même email échoue
+   - Cause : Comptes orphelins dans `authAccounts` pointent vers des `userId` inexistants
+   - Symptôme : `Password.ts:120` essaie de lire `user._id` mais `user` est `null`
+   - Solution : Lors d'un reset complet, nettoyer également `authAccounts`, `authSessions`, `authRefreshTokens`
+   - Leçon : Pour un reset complet, nettoyer **toutes** les tables (application + auth) sauf `authVerificationCodes`, `authVerifiers`, `authRateLimits`
 
 ### 🟢 Notes
 - Bug 7 (cleanup invitations expirées via cron) : reporté à Phase 3

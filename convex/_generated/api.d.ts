@@ -14,6 +14,7 @@ import type * as http from "../http.js";
 import type * as invoices from "../invoices.js";
 import type * as organizations from "../organizations.js";
 import type * as pdfExtractionAI from "../pdfExtractionAI.js";
+import type * as permissions from "../permissions.js";
 import type * as reminders from "../reminders.js";
 import type * as router from "../router.js";
 
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   invoices: typeof invoices;
   organizations: typeof organizations;
   pdfExtractionAI: typeof pdfExtractionAI;
+  permissions: typeof permissions;
   reminders: typeof reminders;
   router: typeof router;
 }>;

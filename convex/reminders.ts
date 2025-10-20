@@ -1,14 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
-
-async function getLoggedInUser(ctx: any) {
-  const userId = await getAuthUserId(ctx);
-  if (!userId) {
-    throw new Error("User not authenticated");
-  }
-  return userId;
-}
+import { getUserWithOrg } from "./permissions";
 
 export const create = mutation({
   args: {
@@ -22,20 +14,25 @@ export const create = mutation({
     emailContent: v.string(),
   },
   handler: async (ctx, args) => {
-    const userId = await getLoggedInUser(ctx);
+    const user = await getUserWithOrg(ctx);
 
-    // Vérifier que la facture appartient à l'utilisateur
+    // Vérifier que la facture appartient à l'organisation
     const invoice = await ctx.db.get(args.invoiceId);
-    if (!invoice || invoice.userId !== userId) {
-      throw new Error("Invoice not found or not authorized");
+    if (!invoice) {
+      throw new Error("Facture introuvable");
     }
+
+    // Vérifier les permissions
+    const { assertCanAccessInvoice } = await import("./permissions");
+    assertCanAccessInvoice(user, invoice);
 
     // Créer l'enregistrement de relance
     const now = new Date();
-    const reminderDate = now.toISOString().slice(0, 19).replace('T', ' '); // "2025-09-26 00:36:00"
+    const reminderDate = now.toISOString().slice(0, 19).replace("T", " "); // "2025-09-26 00:36:00"
 
     return await ctx.db.insert("reminders", {
-      userId,
+      userId: user.userId,
+      organizationId: user.organizationId,
       invoiceId: args.invoiceId,
       reminderDate,
       reminderStatus: args.reminderStatus,
@@ -48,13 +45,17 @@ export const create = mutation({
 export const getByInvoice = query({
   args: { invoiceId: v.id("invoices") },
   handler: async (ctx, args) => {
-    const userId = await getLoggedInUser(ctx);
+    const user = await getUserWithOrg(ctx);
 
-    // Vérifier que la facture appartient à l'utilisateur
+    // Vérifier que la facture appartient à l'organisation
     const invoice = await ctx.db.get(args.invoiceId);
-    if (!invoice || invoice.userId !== userId) {
-      throw new Error("Invoice not found or not authorized");
+    if (!invoice) {
+      throw new Error("Facture introuvable");
     }
+
+    // Vérifier les permissions
+    const { assertCanAccessInvoice } = await import("./permissions");
+    assertCanAccessInvoice(user, invoice);
 
     return await ctx.db
       .query("reminders")
@@ -66,11 +67,11 @@ export const getByInvoice = query({
 export const getByUser = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getLoggedInUser(ctx);
+    const user = await getUserWithOrg(ctx);
 
     return await ctx.db
       .query("reminders")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .withIndex("by_organization", (q) => q.eq("organizationId", user.organizationId))
       .collect();
   },
 });

@@ -42,8 +42,8 @@ const applicationTables = {
 
   invoices: defineTable({
     userId: v.id("users"),
-    organizationId: v.optional(v.id("organizations")), // TODO: rendre obligatoire en Phase 2
-    createdBy: v.optional(v.id("users")), // TODO: rendre obligatoire en Phase 2
+    organizationId: v.id("organizations"), // ✅ Phase 2 : maintenant obligatoire
+    createdBy: v.id("users"), // ✅ Phase 2 : maintenant obligatoire
     clientName: v.string(),
     clientEmail: v.string(),
     invoiceNumber: v.string(),
@@ -74,7 +74,7 @@ const applicationTables = {
 
   reminders: defineTable({
     userId: v.id("users"),
-    organizationId: v.optional(v.id("organizations")), // TODO: rendre obligatoire en Phase 2
+    organizationId: v.id("organizations"), // ✅ Phase 2 : maintenant obligatoire
     invoiceId: v.id("invoices"),
     reminderDate: v.string(), // "2025-09-26 00:36:00"
     reminderStatus: v.union(
