@@ -229,16 +229,16 @@ organizationId: Id<"organizations">,
 
 ## 6. Plan d'Implémentation
 
-### Phase 1 : Backend - Schémas & Auth
+### Phase 1 : Backend - Schémas & Auth ✅
 - [x] 1.1. Créer le schéma `organizations`
 - [x] 1.2. Étendre la table `users` avec champs personnalisés (role, organizationId, invitedBy)
 - [x] 1.3. Créer le schéma `invitations`
 - [x] 1.4. Modifier le schéma `invoices` (ajouter organizationId, createdBy, nouveaux index)
 - [x] 1.5. Modifier le schéma `reminders` (ajouter organizationId)
-- [ ] 1.6. Supprimer le schéma `reminderSettings`
+- [ ] 1.6. Supprimer le schéma `reminderSettings` (sera fait en Phase 3)
 - [x] 1.7. Retirer Anonymous auth, garder Password uniquement
-- [ ] 1.8. Créer mutation `signup` (création org + premier admin)
-- [ ] 1.9. Créer mutations pour les invitations (create, accept, list)
+- [x] 1.8. Créer mutation `createOrganizationWithAdmin` (création org + premier admin)
+- [x] 1.9. Créer mutations pour les invitations (inviteUser, acceptInvitation, listInvitations, listUsers)
 
 ### Phase 2 : Permissions & Queries
 - [ ] 2.1. Créer helpers de permissions (isAdmin, canAccessInvoice, etc.)
@@ -348,10 +348,18 @@ organizationId: Id<"organizations">,
 ## 10. Changelog
 
 - **2025-10-20** : Création de la spécification initiale
-- **2025-10-20** : ✅ Phase 1 partielle complétée (schémas + auth config)
+- **2025-10-20** : ✅ **Phase 1 COMPLÉTÉE** - Backend (schémas + auth + mutations)
   - Créé tables : `organizations`, `invitations`
   - Étendu table `users` avec champs personnalisés (role, organizationId, invitedBy)
   - Modifié tables : `invoices` (+ organizationId, createdBy), `reminders` (+ organizationId)
   - Retiré provider Anonymous, gardé Password uniquement
-  - Note : organizationId et createdBy temporairement optionnels (seront obligatoires en Phase 2)
   - ✅ Refactorisation : supprimé table `profiles`, étendu directement `users` (meilleure pratique Convex Auth)
+  - Créé fichier `convex/organizations.ts` avec 8 fonctions :
+    - `createOrganizationWithAdmin` : création org + premier admin avec paramètres par défaut
+    - `inviteUser` : inviter un utilisateur (génère token, expire après 7j)
+    - `acceptInvitation` : accepter une invitation
+    - `listInvitations` : lister les invitations (admins uniquement)
+    - `listUsers` : lister les utilisateurs de l'org (admins uniquement)
+    - `getCurrentOrganization` : récupérer l'org courante
+    - `updateOrganizationSettings` : mettre à jour les paramètres (admins uniquement)
+  - Note : organizationId et createdBy temporairement optionnels (seront obligatoires en Phase 2)

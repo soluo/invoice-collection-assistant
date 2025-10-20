@@ -12,6 +12,7 @@ import type * as auth from "../auth.js";
 import type * as dashboard from "../dashboard.js";
 import type * as http from "../http.js";
 import type * as invoices from "../invoices.js";
+import type * as organizations from "../organizations.js";
 import type * as pdfExtractionAI from "../pdfExtractionAI.js";
 import type * as reminderSettings from "../reminderSettings.js";
 import type * as reminders from "../reminders.js";
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   dashboard: typeof dashboard;
   http: typeof http;
   invoices: typeof invoices;
+  organizations: typeof organizations;
   pdfExtractionAI: typeof pdfExtractionAI;
   reminderSettings: typeof reminderSettings;
   reminders: typeof reminders;
