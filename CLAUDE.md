@@ -6,31 +6,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a French invoice collection management application built with Convex as the backend and React/TypeScript as the frontend. The application allows users to upload PDF invoices, automatically extract invoice data using AI, track payment status, and manage automated reminder workflows for overdue payments.
 
+## Package Manager
+
+This project uses **pnpm** as its package manager. All commands should use pnpm instead of npm.
+
 ## Development Commands
 
 **Start development servers (frontend + backend):**
 ```bash
-npm run dev
+pnpm dev
 ```
 
 **Start frontend only:**
 ```bash
-npm run dev:frontend
+pnpm dev:frontend
 ```
 
 **Start Convex backend only:**
 ```bash
-npm run dev:backend
+pnpm dev:backend
 ```
 
 **Build for production:**
 ```bash
-npm run build
+pnpm build
 ```
 
 **Lint and typecheck (comprehensive):**
 ```bash
-npm run lint
+pnpm lint
 ```
 
 This command runs TypeScript compilation check for both convex and frontend code, runs convex dev once, and builds with vite.
