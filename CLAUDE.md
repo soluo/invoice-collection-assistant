@@ -74,7 +74,30 @@ Built with **React 19 + TypeScript + Vite** in `/src/`:
 - `src/components/ReminderModal.tsx`: Send reminders with preview
 - `src/components/StatsNavigation.tsx`: Navigation tabs for different views
 
-**Styling:** TailwindCSS with utility classes and component-based architecture
+**Styling:** Tailwind CSS v4 with utility classes and component-based architecture
+
+### Tailwind CSS v4 Configuration
+This project uses **Tailwind CSS v4**, which has significant changes from v3:
+
+**Configuration Location:**
+- **No tailwind.config.js**: Configuration is now defined directly in CSS using the `@theme` directive
+- All theme customization is in `src/index.css` using CSS variables
+
+**Key v4 Syntax:**
+- `@import "tailwindcss"` at the top of `src/index.css` (replaces `@tailwind base/components/utilities`)
+- `@theme { }` block for custom theme configuration (replaces tailwind.config.js theme section)
+- Vite plugin: `@tailwindcss/vite` imported in `vite.config.ts`
+
+**Custom Theme Variables:**
+The project defines custom CSS variables in the `@theme` block:
+- Colors: `--color-primary`, `--color-primary-hover`, `--color-secondary`
+- Spacing: `--spacing-section`, `--spacing-container`
+- Border radius: `--radius-container`
+- Shadows: `--shadow-sm`, `--shadow`
+
+These can be used in Tailwind classes (e.g., `bg-primary`, `rounded-container`, `shadow-sm`)
+
+**Important:** When adding new theme customizations, add them to the `@theme` block in `src/index.css`, not in a config file.
 
 ### Database Schema
 - **invoices**: User invoices with status tracking, client info (name, email), amounts, dates (invoice, due, paid), and optional PDF storage
@@ -160,3 +183,4 @@ This project follows the Convex function syntax defined in `convex_rules.txt` at
 - Navigation handled by React Router v7
 - Toast notifications via `sonner`
 - Icons from `lucide-react`
+- **Styling uses Tailwind CSS v4** with CSS-based configuration (no config file)
