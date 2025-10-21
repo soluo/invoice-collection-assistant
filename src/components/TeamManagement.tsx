@@ -157,11 +157,14 @@ export function TeamManagement() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pt-6">
       {/* Header avec bouton d'invitation */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Gestion de l'équipe</h2>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Users size={24} />
+            Gestion de l'équipe
+          </h2>
           <p className="text-gray-600 mt-1">
             Gérez les membres de votre organisation et les invitations en attente.
           </p>

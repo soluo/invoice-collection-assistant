@@ -379,6 +379,7 @@ export const getCurrentOrganization = query({
  */
 export const updateOrganizationSettings = mutation({
   args: {
+    name: v.optional(v.string()),
     senderEmail: v.optional(v.string()),
     firstReminderDelay: v.optional(v.number()),
     secondReminderDelay: v.optional(v.number()),
@@ -408,6 +409,7 @@ export const updateOrganizationSettings = mutation({
 
     // Mettre à jour uniquement les champs fournis
     const updates: any = {};
+    if (args.name !== undefined) updates.name = args.name;
     if (args.senderEmail !== undefined) updates.senderEmail = args.senderEmail;
     if (args.firstReminderDelay !== undefined)
       updates.firstReminderDelay = args.firstReminderDelay;

@@ -9,6 +9,7 @@ export function OrganizationSettings() {
   const updateSettings = useMutation(api.organizations.updateOrganizationSettings);
 
   const [formData, setFormData] = useState({
+    organizationName: "",
     senderEmail: "",
     firstReminderDelay: 7,
     secondReminderDelay: 15,
@@ -26,6 +27,7 @@ export function OrganizationSettings() {
   useEffect(() => {
     if (organization) {
       setFormData({
+        organizationName: organization.name,
         senderEmail: organization.senderEmail,
         firstReminderDelay: organization.firstReminderDelay,
         secondReminderDelay: organization.secondReminderDelay,
@@ -62,7 +64,18 @@ export function OrganizationSettings() {
     setSubmitting(true);
 
     try {
-      await updateSettings(formData);
+      await updateSettings({
+        name: formData.organizationName,
+        senderEmail: formData.senderEmail,
+        firstReminderDelay: formData.firstReminderDelay,
+        secondReminderDelay: formData.secondReminderDelay,
+        thirdReminderDelay: formData.thirdReminderDelay,
+        litigationDelay: formData.litigationDelay,
+        firstReminderTemplate: formData.firstReminderTemplate,
+        secondReminderTemplate: formData.secondReminderTemplate,
+        thirdReminderTemplate: formData.thirdReminderTemplate,
+        signature: formData.signature,
+      });
       toast.success("Paramètres de l'organisation sauvegardés");
     } catch (error: any) {
       console.error("Erreur lors de la sauvegarde:", error);
@@ -73,18 +86,40 @@ export function OrganizationSettings() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pt-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Building2 size={24} />
           Paramètres de l'organisation
         </h2>
         <p className="text-gray-600 mt-1">
-          Organisation : <span className="font-semibold">{organization.name}</span>
+          Configurez les paramètres de votre organisation, les délais de relance et les templates d'emails.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Nom de l'organisation */}
+        <div className="bg-white rounded-lg border p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Nom de l'organisation</h3>
+          <div>
+            <label
+              htmlFor="organizationName"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Nom
+            </label>
+            <input
+              id="organizationName"
+              type="text"
+              value={formData.organizationName}
+              onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Mon entreprise"
+              required
+            />
+          </div>
+        </div>
+
         {/* Email expéditeur */}
         <div className="bg-white rounded-lg border p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Email expéditeur</h3>

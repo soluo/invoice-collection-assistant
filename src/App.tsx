@@ -4,9 +4,9 @@ import { SignInForm } from "./SignInForm";
 import { SignupForm } from "./components/SignupForm";
 import { AcceptInvitation } from "./components/AcceptInvitation";
 import { Toaster } from "sonner";
-import { LogOut, Settings, Users, Building2 } from "lucide-react";
+import { LogOut, Settings, Users, Home } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { BrowserRouter, Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, Navigate, useLocation } from "react-router-dom";
 import { Dashboard } from "./components/Dashboard";
 import { OngoingInvoices } from "./components/OngoingInvoices";
 import { PaidInvoices } from "./components/PaidInvoices";
@@ -34,24 +34,60 @@ export default function App() {
 function Header() {
   const { signOut } = useAuthActions();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSignOut = () => {
     signOut();
   };
 
+  const isActive = (path: string) => {
+    if (path === "/") {
+      return location.pathname === "/";
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  const getButtonClass = (path: string) => {
+    const baseClass = "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors";
+    if (isActive(path)) {
+      return `${baseClass} bg-blue-100 text-blue-700 font-medium`;
+    }
+    return `${baseClass} text-gray-600 hover:text-gray-900 hover:bg-gray-100`;
+  };
+
   return (
     <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b shadow-sm px-4">
       <div className="max-w-7xl mx-auto h-16 flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-blue-600">Gestion Factures</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-semibold text-gray-900">Gestion Factures</h2>
+          <Authenticated>
+            <button
+              onClick={() => navigate("/")}
+              className={getButtonClass("/")}
+              title="Tableau de bord"
+            >
+              <Home size={20} />
+              <span className="hidden sm:inline">Tableau de bord</span>
+            </button>
+          </Authenticated>
+        </div>
         <Authenticated>
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate("/settings")}
-              className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className={getButtonClass("/settings")}
               title="Réglages"
             >
               <Settings size={20} />
               <span className="hidden sm:inline">Réglages</span>
+            </button>
+            <button
+              onClick={() => navigate("/team")}
+              className={getButtonClass("/team")}
+              title="Équipe"
+            >
+              <Users size={20} />
+              <span className="hidden sm:inline">Équipe</span>
             </button>
             <button
               onClick={handleSignOut}
@@ -167,6 +203,7 @@ function Content() {
             <Route path="/paid" element={<PaidInvoices />} />
             <Route path="/upload" element={<InvoiceUploadPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/team" element={<TeamManagement />} />
             {/* Les routes d'auth ne sont plus accessibles une fois connecté */}
             <Route path="/login" element={<Navigate to="/" />} />
             <Route path="/signup" element={<Navigate to="/" />} />
@@ -215,66 +252,5 @@ function InvoiceUploadPage() {
 }
 
 function SettingsPage() {
-  const navigate = useNavigate();
-  const loggedInUser = useQuery(api.auth.loggedInUser);
-  const [activeTab, setActiveTab] = useState<"organization" | "team">("organization");
-
-  const isAdmin = loggedInUser?.role === "admin";
-
-  // Filtrer les onglets selon le rôle
-  const allTabs = [
-    { id: "organization" as const, label: "Organisation", icon: Building2, adminOnly: true },
-    { id: "team" as const, label: "Équipe", icon: Users, adminOnly: true },
-  ];
-
-  const tabs = allTabs.filter(tab => !tab.adminOnly || isAdmin);
-
-  // Si l'utilisateur n'est pas admin et essaie d'accéder à un onglet admin, rediriger vers le dashboard
-  useEffect(() => {
-    if (loggedInUser && !isAdmin && (activeTab === "organization" || activeTab === "team")) {
-      navigate("/");
-    }
-  }, [loggedInUser, isAdmin, activeTab, navigate]);
-
-  return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <button onClick={() => navigate("/")} className="text-blue-600 hover:underline">
-          ← Retour au dashboard
-        </button>
-      </div>
-
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="flex gap-8" aria-label="Tabs">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors
-                  ${
-                    activeTab === tab.id
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }
-                `}
-              >
-                <Icon size={18} />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Tab Content */}
-      <div>
-        {activeTab === "organization" && <OrganizationSettings />}
-        {activeTab === "team" && <TeamManagement />}
-      </div>
-    </div>
-  );
+  return <OrganizationSettings />;
 }
