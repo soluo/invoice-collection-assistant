@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getUserWithOrg } from "./permissions";
+import { getUserWithOrg, assertCanAccessInvoice } from "./permissions";
 
 export const create = mutation({
   args: {
@@ -23,7 +23,6 @@ export const create = mutation({
     }
 
     // Vérifier les permissions
-    const { assertCanAccessInvoice } = await import("./permissions");
     assertCanAccessInvoice(user, invoice);
 
     // Créer l'enregistrement de relance
@@ -54,7 +53,6 @@ export const getByInvoice = query({
     }
 
     // Vérifier les permissions
-    const { assertCanAccessInvoice } = await import("./permissions");
     assertCanAccessInvoice(user, invoice);
 
     return await ctx.db

@@ -1,7 +1,14 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { getUserWithOrg, isAdmin } from "./permissions";
+import {
+  getUserWithOrg,
+  isAdmin,
+  assertCanUpdateInvoiceStatus,
+  assertCanModifyInvoice,
+  assertCanDeleteInvoice,
+  assertCanSendReminder
+} from "./permissions";
 
 async function getLoggedInUser(ctx: any) {
   const userId = await getAuthUserId(ctx);
@@ -218,7 +225,6 @@ export const updateStatus = mutation({
     }
 
     // Vérifier les permissions avec l'helper
-    const { assertCanUpdateInvoiceStatus } = await import("./permissions");
     assertCanUpdateInvoiceStatus(user, invoice);
 
     const updateData: any = { status: args.status };
@@ -253,7 +259,6 @@ export const markAsPaid = mutation({
     }
 
     // Vérifier les permissions
-    const { assertCanUpdateInvoiceStatus } = await import("./permissions");
     assertCanUpdateInvoiceStatus(user, invoice);
 
     return await ctx.db.patch(args.invoiceId, {
@@ -287,7 +292,6 @@ export const update = mutation({
     }
 
     // Vérifier les permissions (seuls les admins peuvent modifier)
-    const { assertCanModifyInvoice } = await import("./permissions");
     assertCanModifyInvoice(user, invoice);
 
     const { invoiceId, ...updateData } = args;
@@ -329,7 +333,6 @@ export const deleteInvoice = mutation({
     }
 
     // Vérifier les permissions
-    const { assertCanDeleteInvoice } = await import("./permissions");
     assertCanDeleteInvoice(user, invoice);
 
     // Supprimer d'abord tous les reminders associés
@@ -473,7 +476,6 @@ export const sendReminder = mutation({
     }
 
     // Vérifier les permissions
-    const { assertCanSendReminder } = await import("./permissions");
     assertCanSendReminder(user, invoice);
 
     // Mettre à jour le statut de la facture et la date de dernière relance
