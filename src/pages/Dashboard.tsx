@@ -92,112 +92,80 @@ export function Dashboard() {
       {/* Navigation avec stats */}
       <StatsNavigation />
 
-      {/* Grille desktop : Factures urgentes (2/3) + Actions rapides (1/3) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Section factures urgentes - 2/3 sur desktop */}
-        <div className="lg:col-span-2">
-          {stats.facturesUrgentes.length > 0 ? (
-            <div className="bg-white rounded-lg border">
-              <div className="p-6 border-b">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Factures urgentes à traiter
-                  </h2>
-                  <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-1 rounded-full">
-                    {stats.facturesUrgentes.length} facture{stats.facturesUrgentes.length > 1 ? 's' : ''}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 mt-1">
-                  Agissez rapidement pour améliorer votre trésorerie.
-                </p>
-              </div>
+      {/* Section factures urgentes */}
+      {stats.facturesUrgentes.length > 0 ? (
+        <div className="bg-white rounded-lg border">
+          <div className="p-6 border-b">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Factures urgentes à traiter
+              </h2>
+              <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-1 rounded-full">
+                {stats.facturesUrgentes.length} facture{stats.facturesUrgentes.length > 1 ? 's' : ''}
+              </span>
+            </div>
+            <p className="text-sm text-gray-600 mt-1">
+              Agissez rapidement pour améliorer votre trésorerie.
+            </p>
+          </div>
 
-              <div className="divide-y divide-gray-200">
-                {stats.facturesUrgentes.map((invoice) => (
-                  <div key={invoice._id} className="p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-medium text-gray-900">{invoice.clientName}</h3>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[invoice.status].color}`}>
-                            {statusConfig[invoice.status].label}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-6 text-sm text-gray-500">
-                          <span>#{invoice.invoiceNumber}</span>
-                          <span className="font-medium text-gray-900">{formatCurrency(invoice.amountTTC)}</span>
-                          <span>Échéance: {new Date(invoice.dueDate).toLocaleDateString('fr-FR')}</span>
-                          {invoice.daysOverdue > 0 ? (
-                            <span className={`font-medium ${getOverdueColorClass(invoice.daysOverdue)}`}>
-                              {invoice.daysOverdue} jour{invoice.daysOverdue > 1 ? 's' : ''} de retard
-                            </span>
-                          ) : (
-                            <span></span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 sm:flex-shrink-0">
-                        {invoice.status !== "litigation" && (
-                          <button
-                            onClick={() => handleSendReminder(invoice)}
-                            className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
-                          >
-                            Relancer
-                          </button>
-                        )}
-                        <button
-                          onClick={() => void handleMarkAsPaid(invoice._id)}
-                          className="bg-gray-100 text-gray-700 px-4 py-2 rounded text-sm font-medium hover:bg-gray-200 border border-gray-300 transition-colors"
-                        >
-                          Marquer payé
-                        </button>
-                      </div>
+          <div className="divide-y divide-gray-200">
+            {stats.facturesUrgentes.map((invoice) => (
+              <div key={invoice._id} className="p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="font-medium text-gray-900">{invoice.clientName}</h3>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[invoice.status].color}`}>
+                        {statusConfig[invoice.status].label}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-6 text-sm text-gray-500">
+                      <span>#{invoice.invoiceNumber}</span>
+                      <span className="font-medium text-gray-900">{formatCurrency(invoice.amountTTC)}</span>
+                      <span>Échéance: {new Date(invoice.dueDate).toLocaleDateString('fr-FR')}</span>
+                      {invoice.daysOverdue > 0 ? (
+                        <span className={`font-medium ${getOverdueColorClass(invoice.daysOverdue)}`}>
+                          {invoice.daysOverdue} jour{invoice.daysOverdue > 1 ? 's' : ''} de retard
+                        </span>
+                      ) : (
+                        <span></span>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg border p-8 text-center">
-              <div className="mx-auto h-16 w-16 text-green-400 mb-4">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Félicitations, vous gérez bien votre tréso !</h3>
-              <p className="text-gray-500">Aucune facture urgente à traiter.</p>
-            </div>
-          )}
-        </div>
 
-        {/* Actions rapides - 1/3 sur desktop */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg border p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions rapides</h2>
-            <div className="flex flex-col gap-4">
-              <button
-                onClick={() => void navigate("/ongoing")}
-                className="w-full bg-gray-50 text-blue-600 border border-blue-400/70 px-6 py-3 rounded-lg font-medium hover:bg-blue-50 transition-colors"
-              >
-                Factures en cours
-              </button>
-              <button
-                onClick={() => void navigate("/paid")}
-                className="w-full bg-gray-50 text-green-600 border border-green-400/70 px-6 py-3 rounded-lg font-medium hover:bg-green-50 transition-colors"
-              >
-                Factures payées
-              </button>
-              <button
-                onClick={() => void navigate("/settings")}
-                className="w-full bg-gray-50 text-gray-600 border border-gray-300 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors"
-              >
-                Paramètres
-              </button>
-            </div>
+                  <div className="flex gap-2 sm:flex-shrink-0">
+                    {invoice.status !== "litigation" && (
+                      <button
+                        onClick={() => handleSendReminder(invoice)}
+                        className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
+                      >
+                        Relancer
+                      </button>
+                    )}
+                    <button
+                      onClick={() => void handleMarkAsPaid(invoice._id)}
+                      className="bg-gray-100 text-gray-700 px-4 py-2 rounded text-sm font-medium hover:bg-gray-200 border border-gray-300 transition-colors"
+                    >
+                      Marquer payé
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-white rounded-lg border p-8 text-center">
+          <div className="mx-auto h-16 w-16 text-green-400 mb-4">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Félicitations, vous gérez bien votre tréso !</h3>
+          <p className="text-gray-500">Aucune facture urgente à traiter.</p>
+        </div>
+      )}
 
       {reminderModal && (
         <ReminderModal
