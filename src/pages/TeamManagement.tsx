@@ -15,9 +15,9 @@ import {
   MoreVertical,
 } from "lucide-react";
 import { api } from "../../convex/_generated/api";
-import { InviteUserModal } from "./InviteUserModal";
+import { InviteUserModal } from "@components/InviteUserModal";
 import { toast } from "sonner";
-import { Tooltip } from "./Tooltip";
+import { Tooltip } from "@components/Tooltip";
 
 export function TeamManagement() {
   const users = useQuery(api.organizations.listUsers);

@@ -3,8 +3,8 @@ import { api } from "../../convex/_generated/api";
 import { Id, Doc } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { StatsNavigation } from "./StatsNavigation";
-import { ReminderModal } from "./ReminderModal";
+import { StatsNavigation } from "@components/StatsNavigation";
+import { ReminderModal } from "@components/ReminderModal";
 import { useState } from "react";
 
 type InvoiceStatus = "sent" | "overdue" | "first_reminder" | "second_reminder" | "third_reminder" | "litigation" | "paid";

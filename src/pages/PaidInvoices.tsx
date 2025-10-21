@@ -1,7 +1,7 @@
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useNavigate } from "react-router-dom";
-import { StatsNavigation } from "./StatsNavigation";
+import { StatsNavigation } from "@components/StatsNavigation";
 
 export function PaidInvoices() {
   const invoices = useQuery(api.invoices.listPaid);

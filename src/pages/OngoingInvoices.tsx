@@ -3,7 +3,7 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { StatsNavigation } from "./StatsNavigation";
+import { StatsNavigation } from "@components/StatsNavigation";
 
 export function OngoingInvoices() {
   const invoices = useQuery(api.invoices.listOngoing);
