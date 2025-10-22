@@ -7,8 +7,11 @@ import { StatsNavigation } from "@components/StatsNavigation";
 
 export function OngoingInvoices() {
   const invoices = useQuery(api.invoices.listOngoing);
+  const currentUser = useQuery(api.auth.loggedInUser);
   const markAsPaid = useMutation(api.invoices.markAsPaid);
   const navigate = useNavigate();
+
+  const isAdmin = currentUser?.role === "admin";
 
   const handleMarkAsPaid = async (invoiceId: Id<"invoices">) => {
     try {
@@ -89,6 +92,11 @@ export function OngoingInvoices() {
                         <span></span>
                       )}
                     </div>
+                    {isAdmin && (
+                      <div className="mt-2 text-xs text-gray-500">
+                        Créé par: <span className="text-gray-700 font-medium">{invoice.creatorName}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2 sm:flex-shrink-0">

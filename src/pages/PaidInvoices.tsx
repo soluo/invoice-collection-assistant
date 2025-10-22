@@ -6,8 +6,11 @@ import { StatsNavigation } from "@components/StatsNavigation";
 export function PaidInvoices() {
   const invoices = useQuery(api.invoices.listPaid);
   const organization = useQuery(api.organizations.getCurrentOrganization);
+  const currentUser = useQuery(api.auth.loggedInUser);
   const settings = organization; // Alias pour compatibilité
   const navigate = useNavigate();
+
+  const isAdmin = currentUser?.role === "admin";
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -114,6 +117,11 @@ export function PaidInvoices() {
                         <span></span>
                       )}
                     </div>
+                    {isAdmin && (
+                      <div className="mt-2 text-xs text-gray-500">
+                        Créé par: <span className="text-gray-700 font-medium">{invoice.creatorName}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="hidden md:flex items-center text-green-600">

@@ -18,11 +18,14 @@ const statusConfig = {
 
 export function InvoiceList() {
   const invoices = useQuery(api.invoices.list);
+  const currentUser = useQuery(api.auth.loggedInUser);
   const markAsPaid = useMutation(api.invoices.markAsPaid);
   const updateStatus = useMutation(api.invoices.updateStatus);
   const deleteInvoice = useMutation(api.invoices.deleteInvoice);
   const [editingInvoice, setEditingInvoice] = useState<any>(null);
   const [reminderModal, setReminderModal] = useState<{ invoice: any; status: string } | null>(null);
+
+  const isAdmin = currentUser?.role === "admin";
 
   if (invoices === undefined) {
     return (
@@ -102,6 +105,13 @@ export function InvoiceList() {
               )}
             </div>
 
+            {isAdmin && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Créé par:</span>
+                <span className="text-gray-700">{invoice.creatorName}</span>
+              </div>
+            )}
+
             <div className="flex flex-col gap-2 pt-2">
               {invoice.status !== "paid" && (
                 <div className="flex gap-2">
@@ -164,6 +174,11 @@ export function InvoiceList() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Statut
                 </th>
+                {isAdmin && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Créé par
+                  </th>
+                )}
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
@@ -198,6 +213,11 @@ export function InvoiceList() {
                       {statusConfig[invoice.status].label}
                     </span>
                   </td>
+                  {isAdmin && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {invoice.creatorName}
+                    </td>
+                  )}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                     {invoice.status !== "paid" && (
                       <>

@@ -27,10 +27,13 @@ const statusConfig: Record<InvoiceStatus, { label: string; color: string; action
 export function Dashboard() {
   const stats = useQuery(api.dashboard.getDashboardStats);
   const organization = useQuery(api.organizations.getCurrentOrganization);
+  const currentUser = useQuery(api.auth.loggedInUser);
   const settings = organization; // Alias pour compatibilité
   const markAsPaid = useMutation(api.invoices.markAsPaid);
   const navigate = useNavigate();
   const [reminderModal, setReminderModal] = useState<{ invoice: InvoiceWithDays; status: InvoiceStatus } | null>(null);
+
+  const isAdmin = currentUser?.role === "admin";
 
   const handleMarkAsPaid = async (invoiceId: Id<"invoices">) => {
     try {
@@ -132,6 +135,11 @@ export function Dashboard() {
                         <span></span>
                       )}
                     </div>
+                    {isAdmin && (
+                      <div className="mt-2 text-xs text-gray-500">
+                        Créé par: <span className="text-gray-700 font-medium">{invoice.creatorName}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2 sm:flex-shrink-0">

@@ -9,6 +9,8 @@ import {
   assertCanDeleteInvoice,
   assertCanSendReminder
 } from "./permissions";
+import { Doc } from "./_generated/dataModel";
+import { QueryCtx } from "./_generated/server";
 
 async function getLoggedInUser(ctx: any) {
   const userId = await getAuthUserId(ctx);
@@ -16,6 +18,21 @@ async function getLoggedInUser(ctx: any) {
     throw new Error("User not authenticated");
   }
   return userId;
+}
+
+/**
+ * Helper pour enrichir les factures avec le nom du créateur
+ */
+async function enrichInvoicesWithCreator(ctx: QueryCtx, invoices: Doc<"invoices">[]) {
+  return Promise.all(
+    invoices.map(async (invoice) => {
+      const creator = await ctx.db.get(invoice.createdBy);
+      return {
+        ...invoice,
+        creatorName: creator?.name || creator?.email || "Utilisateur inconnu",
+      };
+    })
+  );
 }
 
 /**
@@ -46,9 +63,12 @@ export const list = query({
         .collect();
     }
 
+    // Enrichir avec le nom du créateur
+    const invoicesWithCreator = await enrichInvoicesWithCreator(ctx, invoices);
+
     // Calculer les jours de retard et trier par urgence
     const now = new Date();
-    const invoicesWithDays = invoices.map((invoice) => {
+    const invoicesWithDays = invoicesWithCreator.map((invoice) => {
       const dueDate = new Date(invoice.dueDate);
       const daysOverdue = Math.max(0, Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
 
@@ -116,9 +136,12 @@ export const listWithFilter = query({
         .collect();
     }
 
+    // Enrichir avec le nom du créateur
+    const invoicesWithCreator = await enrichInvoicesWithCreator(ctx, invoices);
+
     // Calculer les jours de retard et trier par urgence
     const now = new Date();
-    const invoicesWithDays = invoices.map((invoice) => {
+    const invoicesWithDays = invoicesWithCreator.map((invoice) => {
       const dueDate = new Date(invoice.dueDate);
       const daysOverdue = Math.max(0, Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
 
@@ -383,9 +406,12 @@ export const listOngoing = query({
         .collect();
     }
 
+    // Enrichir avec le nom du créateur
+    const invoicesWithCreator = await enrichInvoicesWithCreator(ctx, invoices);
+
     // Filtrer les factures envoyées qui ne sont pas encore échues
     const now = new Date();
-    const ongoingInvoices = invoices.filter((invoice) => {
+    const ongoingInvoices = invoicesWithCreator.filter((invoice) => {
       const dueDate = new Date(invoice.dueDate);
       return dueDate >= now; // Pas encore échue
     });
@@ -435,7 +461,10 @@ export const listPaid = query({
         .collect();
     }
 
-    return invoices
+    // Enrichir avec le nom du créateur
+    const invoicesWithCreator = await enrichInvoicesWithCreator(ctx, invoices);
+
+    return invoicesWithCreator
       .map((invoice) => ({
         ...invoice,
         paidDateFormatted: invoice.paidDate ? new Date(invoice.paidDate).toLocaleDateString("fr-FR") : null,

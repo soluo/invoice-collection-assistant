@@ -1,6 +1,22 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { getUserWithOrg, isAdmin } from "./permissions";
+import { Doc } from "./_generated/dataModel";
+
+/**
+ * Helper pour enrichir les factures avec le nom du créateur
+ */
+async function enrichInvoicesWithCreator(ctx: any, invoices: Doc<"invoices">[]) {
+  return Promise.all(
+    invoices.map(async (invoice) => {
+      const creator = await ctx.db.get(invoice.createdBy);
+      return {
+        ...invoice,
+        creatorName: creator?.name || creator?.email || "Utilisateur inconnu",
+      };
+    })
+  );
+}
 
 /**
  * Récupère les statistiques du dashboard
@@ -50,6 +66,9 @@ export const getDashboardStats = query({
         .collect();
     }
 
+    // Enrichir avec le nom du créateur
+    const invoicesWithCreator = await enrichInvoicesWithCreator(ctx, invoices);
+
     // Calculer les totaux par catégorie
     const now = new Date();
 
@@ -59,7 +78,7 @@ export const getDashboardStats = query({
 
     const factunesUrgentes: any[] = [];
 
-    invoices.forEach((invoice) => {
+    invoicesWithCreator.forEach((invoice) => {
       const dueDate = new Date(invoice.dueDate);
       const daysOverdue = Math.max(0, Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
 
@@ -102,7 +121,7 @@ export const getDashboardStats = query({
         montantPaye,
       },
       facturesUrgentes: top5Urgentes,
-      nombreFacturesTotal: invoices.length,
+      nombreFacturesTotal: invoicesWithCreator.length,
       nombreFacturesEnRetard: factunesUrgentes.length,
     };
   },
