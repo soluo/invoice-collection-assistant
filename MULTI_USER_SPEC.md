@@ -201,6 +201,28 @@ organizationId: Id<"organizations">,
 - Tableau : Nom, Email, Rôle, Date d'ajout, Actions
 - Actions : Changer le rôle, Supprimer
 
+#### Page Factures (`/invoices`) ✅ NOUVEAU
+- **Vue table complète** avec toutes les factures (admin) ou ses factures (technicien)
+- **Section filtres** :
+  - Dropdown "Responsable" (admin uniquement) : filtre par technicien
+  - Placeholders "Date" et "Montant" (à implémenter)
+- **Colonnes du tableau** :
+  - Numéro | Client | Date facture | Montant | Échéance | État | Responsable* | Actions
+  - *Colonne "Responsable" visible uniquement pour admin
+- **État simplifié** calculé dynamiquement :
+  - "Payée" (vert) si status = paid
+  - "En retard" (rouge) si non payée ET échéance dépassée
+  - "En cours" (bleu) si non payée ET échéance future
+- **Actions contextuelles** :
+  - "Relancer" : visible si non payée ET en retard → ouvre ReminderModal
+  - "Marquer payée" : visible si non payée
+- **Bouton "Ajouter une facture"** :
+  - Positionné en haut à droite
+  - Redirige vers `/upload?returnTo=/invoices`
+  - Retour automatique vers `/invoices` après upload réussi
+- **Vue responsive** : Cards empilées sur mobile
+- **Navigation** : Accessible via bouton "Factures" dans le header
+
 ---
 
 ## 5. Relances Automatiques
@@ -279,13 +301,12 @@ organizationId: Id<"organizations">,
 - [x] 5.7. Actions invitations : copier lien, regénérer, supprimer
 - [x] 5.8. Filtrage des onglets Settings selon le rôle (admins only pour Org/Team)
 
-### Phase 6 : Interface Utilisateur - Filtres & Adaptations
-- [ ] 6.1. Créer composant `InvoiceFilterBar.tsx` (pour les admins)
-- [ ] 6.2. Adapter `Dashboard.tsx` pour supporter les filtres
-- [ ] 6.3. Adapter `InvoiceList.tsx` pour afficher le créateur (badge)
-- [ ] 6.4. Adapter `OngoingInvoices.tsx` et `PaidInvoices.tsx`
-- [ ] 6.5. Adapter `InvoiceUpload.tsx` (option "Assigner à" pour admins)
-- [ ] 6.6. Adapter `ReminderSettings.tsx` (déplacer vers paramètres org)
+### Phase 6 : Interface Utilisateur - Filtres & Adaptations ✅ EN COURS
+- [x] 6.1. Créer page `/invoices` avec filtres et vue table complète
+- [ ] 6.2. Adapter `Dashboard.tsx` pour supporter les filtres par technicien
+- [x] 6.3. Adapter toutes les vues pour afficher le créateur (InvoiceList, Dashboard, OngoingInvoices, PaidInvoices)
+- [ ] 6.4. Adapter `InvoiceUpload.tsx` (option "Assigner à" pour admins)
+- [ ] 6.5. Adapter `ReminderSettings.tsx` (déplacer vers paramètres org)
 
 ### Phase 7 : Tests & Nettoyage
 - [ ] 7.1. Tester le flow d'inscription + création org

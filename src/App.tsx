@@ -4,15 +4,16 @@ import { SignInForm } from "./SignInForm";
 import { SignupForm } from "@pages/SignupForm";
 import { AcceptInvitation } from "@pages/AcceptInvitation";
 import { Toaster } from "sonner";
-import { LogOut, Settings, Users, Home } from "lucide-react";
+import { LogOut, Settings, Users, Home, FileText } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { BrowserRouter, Routes, Route, useNavigate, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { Dashboard } from "@pages/Dashboard";
 import { OngoingInvoices } from "@pages/OngoingInvoices";
 import { PaidInvoices } from "@pages/PaidInvoices";
 import { InvoiceUpload } from "@pages/InvoiceUpload";
 import { TeamManagement } from "@pages/TeamManagement";
 import { OrganizationSettings } from "@pages/OrganizationSettings";
+import { Invoices } from "@pages/Invoices";
 import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
@@ -68,6 +69,14 @@ function Header() {
             >
               <Home size={20} />
               <span className="hidden sm:inline">Tableau de bord</span>
+            </button>
+            <button
+              onClick={() => navigate("/invoices")}
+              className={getButtonClass("/invoices")}
+              title="Factures"
+            >
+              <FileText size={20} />
+              <span className="hidden sm:inline">Factures</span>
             </button>
           </Authenticated>
         </div>
@@ -199,6 +208,7 @@ function Content() {
         {loggedInUser ? (
           <>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/invoices" element={<Invoices />} />
             <Route path="/ongoing" element={<OngoingInvoices />} />
             <Route path="/paid" element={<PaidInvoices />} />
             <Route path="/upload" element={<InvoiceUploadPage />} />
@@ -243,9 +253,11 @@ function SignInPage() {
 
 function InvoiceUploadPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const handleSuccess = () => {
-    navigate("/");
+    const returnTo = searchParams.get("returnTo") || "/";
+    navigate(returnTo);
   };
 
   return <InvoiceUpload onSuccess={handleSuccess} />;
