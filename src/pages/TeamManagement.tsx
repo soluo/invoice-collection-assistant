@@ -232,14 +232,14 @@ export function TeamManagement() {
                           />
                           <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border z-20">
                             <button
-                              onClick={() => handleChangeRole(user._id, user.role)}
+                              onClick={() => void handleChangeRole(user._id, user.role)}
                               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                             >
                               <Shield size={14} />
                               Changer le rôle
                             </button>
                             <button
-                              onClick={() => handleRemoveUser(user._id, user.name)}
+                              onClick={() => void handleRemoveUser(user._id, user.name)}
                               className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                             >
                               <Trash2 size={14} />
@@ -325,7 +325,7 @@ export function TeamManagement() {
                         </Tooltip>
                         <Tooltip content="Regénérer le lien">
                           <button
-                            onClick={() => handleRegenerate(invitation._id)}
+                            onClick={() => void handleRegenerate(invitation._id)}
                             className="p-2 text-gray-500 hover:bg-gray-100 rounded-md"
                           >
                             <RefreshCw size={16} />
@@ -333,7 +333,7 @@ export function TeamManagement() {
                         </Tooltip>
                         <Tooltip content="Supprimer l'invitation">
                           <button
-                            onClick={() => handleDelete(invitation._id)}
+                            onClick={() => void handleDelete(invitation._id)}
                             className="p-2 text-red-500 hover:bg-red-100 rounded-md"
                           >
                             <Trash2 size={16} />

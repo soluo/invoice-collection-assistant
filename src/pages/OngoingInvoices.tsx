@@ -101,7 +101,7 @@ export function OngoingInvoices() {
 
                   <div className="flex gap-2 sm:flex-shrink-0">
                     <button
-                      onClick={() => handleMarkAsPaid(invoice._id)}
+                      onClick={() => void handleMarkAsPaid(invoice._id)}
                       className="bg-green-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-green-700 transition-colors"
                     >
                       Marquer payé
