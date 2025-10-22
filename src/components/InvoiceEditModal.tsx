@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 
@@ -11,29 +11,47 @@ interface InvoiceEditModalProps {
 export function InvoiceEditModal({ invoice, onClose }: InvoiceEditModalProps) {
   const [formData, setFormData] = useState({
     clientName: invoice.clientName,
-    clientEmail: invoice.clientEmail,
+    clientEmail: invoice.clientEmail || "",
     invoiceNumber: invoice.invoiceNumber,
     amountTTC: invoice.amountTTC.toString(),
     invoiceDate: invoice.invoiceDate,
     dueDate: invoice.dueDate,
   });
-  
+
+  // ✅ Récupérer l'utilisateur actuel et la liste des utilisateurs
+  const loggedInUser = useQuery(api.auth.loggedInUser);
+  const users = useQuery(api.organizations.listUsers);
+  const [selectedUserId, setSelectedUserId] = useState<string>(invoice.createdBy);
+
+  const isAdmin = loggedInUser?.role === "admin";
+
   const updateInvoice = useMutation(api.invoices.update);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      await updateInvoice({
+      const updateData: any = {
         invoiceId: invoice._id,
         clientName: formData.clientName,
-        clientEmail: formData.clientEmail,
         invoiceNumber: formData.invoiceNumber,
         amountTTC: parseFloat(formData.amountTTC),
         invoiceDate: formData.invoiceDate,
         dueDate: formData.dueDate,
-      });
-      
+      };
+
+      // ✅ Inclure clientEmail uniquement s'il est fourni
+      if (formData.clientEmail) {
+        updateData.clientEmail = formData.clientEmail;
+      }
+
+      // ✅ Envoyer assignToUserId si un utilisateur différent est sélectionné
+      if (selectedUserId && selectedUserId !== invoice.createdBy) {
+        updateData.assignToUserId = selectedUserId;
+      }
+
+      await updateInvoice(updateData);
+
       toast.success("Facture mise à jour");
       onClose();
     } catch (error) {
@@ -82,7 +100,6 @@ export function InvoiceEditModal({ invoice, onClose }: InvoiceEditModalProps) {
                 value={formData.clientEmail}
                 onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
               />
             </div>
             
@@ -112,7 +129,7 @@ export function InvoiceEditModal({ invoice, onClose }: InvoiceEditModalProps) {
                 required
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Date de facture
@@ -124,7 +141,7 @@ export function InvoiceEditModal({ invoice, onClose }: InvoiceEditModalProps) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Date d'échéance
@@ -136,6 +153,26 @@ export function InvoiceEditModal({ invoice, onClose }: InvoiceEditModalProps) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+
+            {/* ✅ Dropdown pour sélectionner le responsable (admins uniquement) */}
+            {isAdmin && users && users.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Responsable de la facture
+                </label>
+                <select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {users.map((user) => (
+                    <option key={user._id} value={user._id}>
+                      {user.name || user.email} {user.role === "admin" ? "(Admin)" : "(Technicien)"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             
             <div className="flex gap-3 pt-4">
               <button

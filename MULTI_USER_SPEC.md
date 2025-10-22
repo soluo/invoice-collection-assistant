@@ -156,13 +156,16 @@ organizationId: Id<"organizations">,
 ### Modifications des Écrans Existants
 
 #### Dashboard
-- **Admin :** Filtre en haut "Toutes les factures" | "Mes factures" | Liste des techniciens
+- **Admin :** Filtre en haut "Toutes les factures" | "Mes factures" | Liste des techniciens (⏳ À implémenter)
 - **Technicien :** Affichage direct de ses factures (pas de filtre)
 - Statistiques adaptées au filtre sélectionné
+- ✅ Affichage du créateur sous chaque facture urgente (admin uniquement)
 
-#### Liste des Factures (Ongoing, Paid)
-- Même logique de filtrage que le dashboard
-- Badge visible indiquant le créateur de la facture (pour les admins)
+#### Liste des Factures (Ongoing, Paid, InvoiceList)
+- ✅ Affichage du créateur visible pour les admins :
+  - `InvoiceList.tsx` : colonne "Créé par" (desktop) + ligne dans cards (mobile)
+  - `OngoingInvoices.tsx` + `PaidInvoices.tsx` : info créateur en petit texte
+- ⏳ Logique de filtrage Dashboard à reporter sur ces pages (futur)
 
 #### Upload de Facture
 - Aucun changement pour les techniciens
@@ -456,6 +459,31 @@ organizationId: Id<"organizations">,
     - `by_organization_and_creator` pour filtrage par technicien
     - `by_organization_and_status` pour queries par statut
     - Performances optimales garanties quelle que soit la taille de la base
+
+- **2025-10-22** : ✅ **Phase 6 Partielle - Affichage Créateur & Page /invoices**
+  - **6.3 COMPLÉTÉE** - Affichage du créateur des factures pour les admins :
+    - Backend enrichi : toutes les queries retournent `creatorName` (name || email || "Utilisateur inconnu")
+    - Helper `enrichInvoicesWithCreator()` dans `invoices.ts` et `dashboard.ts`
+    - Frontend adapté :
+      - `InvoiceList.tsx` : colonne "Créé par" (desktop) + ligne dans cards (mobile)
+      - `Dashboard.tsx` : info créateur sous les factures urgentes
+      - `OngoingInvoices.tsx` + `PaidInvoices.tsx` : info créateur en petit texte
+    - Visible uniquement pour les admins (via `currentUser.role === "admin"`)
+  - **6.1 COMPLÉTÉE** - Nouvelle page `/invoices` (vue table complète) :
+    - Créé `src/pages/Invoices.tsx` avec :
+      - Affichage intelligent : admin (toutes factures org) vs technicien (ses factures)
+      - Section filtres : dropdown "Responsable" (admin) + placeholders Date/Montant
+      - Tableau desktop : 8 colonnes dont "État" simplifié (En cours/En retard/Payée)
+      - Vue mobile responsive : cards empilées
+      - Actions contextuelles : "Relancer" (si retard) + "Marquer payée"
+      - Bouton "Ajouter une facture" avec redirection intelligente
+    - Modifié `App.tsx` :
+      - Ajouté route `/invoices`
+      - Ajouté bouton "Factures" (icône FileText) dans Header navigation
+      - Support query param `returnTo` dans `InvoiceUploadPage` pour redirection après upload
+    - Utilise queries backend existantes : `listWithFilter` (admin) et `list` (technicien)
+    - Réutilise composants existants : `ReminderModal` pour les relances
+  - **Prochaine priorité** : 6.2 (Filtrage Dashboard par technicien)
 
 ## 11. Bugs Corrigés
 

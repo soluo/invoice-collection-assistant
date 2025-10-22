@@ -180,7 +180,7 @@ export const listWithFilter = query({
 export const create = mutation({
   args: {
     clientName: v.string(),
-    clientEmail: v.string(),
+    clientEmail: v.optional(v.string()), // ✅ Email facultatif
     invoiceNumber: v.string(),
     amountTTC: v.number(),
     invoiceDate: v.string(),
@@ -300,11 +300,12 @@ export const update = mutation({
   args: {
     invoiceId: v.id("invoices"),
     clientName: v.string(),
-    clientEmail: v.string(),
+    clientEmail: v.optional(v.string()), // ✅ Email facultatif
     invoiceNumber: v.string(),
     amountTTC: v.number(),
     invoiceDate: v.string(),
     dueDate: v.string(),
+    assignToUserId: v.optional(v.id("users")), // ✅ Pour les admins : changer le créateur
   },
   handler: async (ctx, args) => {
     const user = await getUserWithOrg(ctx);
@@ -317,8 +318,28 @@ export const update = mutation({
     // Vérifier les permissions (seuls les admins peuvent modifier)
     assertCanModifyInvoice(user, invoice);
 
-    const { invoiceId, ...updateData } = args;
-    return await ctx.db.patch(invoiceId, updateData);
+    // Gérer le changement de créateur (admins uniquement)
+    let updateData: any = {
+      clientName: args.clientName,
+      clientEmail: args.clientEmail,
+      invoiceNumber: args.invoiceNumber,
+      amountTTC: args.amountTTC,
+      invoiceDate: args.invoiceDate,
+      dueDate: args.dueDate,
+    };
+
+    if (args.assignToUserId) {
+      // Vérifier que l'utilisateur assigné appartient à la même organisation
+      const assignedUser = await ctx.db.get(args.assignToUserId);
+      if (!assignedUser || assignedUser.organizationId !== user.organizationId) {
+        throw new Error("L'utilisateur assigné n'appartient pas à votre organisation");
+      }
+
+      updateData.createdBy = args.assignToUserId;
+      updateData.userId = args.assignToUserId; // Pour compatibilité
+    }
+
+    return await ctx.db.patch(args.invoiceId, updateData);
   },
 });
 

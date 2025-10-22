@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useMutation, useAction } from "convex/react";
+import { useState, useRef, useEffect } from "react";
+import { useMutation, useAction, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 
@@ -16,15 +16,29 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
     clientEmail: "",
     invoiceNumber: "",
     amountTTC: "",
-    invoiceDate: "",
-    dueDate: "",
+    invoiceDate: new Date().toISOString().split('T')[0], // ✅ Date du jour par défaut
+    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // ✅ J+7 par défaut
   });
   const [pdfStorageId, setPdfStorageId] = useState<any>(null);
-  
+
+  // ✅ Récupérer l'utilisateur actuel et la liste des utilisateurs
+  const loggedInUser = useQuery(api.auth.loggedInUser);
+  const users = useQuery(api.organizations.listUsers);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+
+  // ✅ Initialiser selectedUserId avec l'utilisateur actuel
+  useEffect(() => {
+    if (loggedInUser && !selectedUserId) {
+      setSelectedUserId(loggedInUser._id);
+    }
+  }, [loggedInUser, selectedUserId]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const generateUploadUrl = useMutation(api.invoices.generateUploadUrl);
   const extractPdfData = useAction(api.pdfExtractionAI.extractPdfDataAI);
   const createInvoice = useMutation(api.invoices.create);
+
+  const isAdmin = loggedInUser?.role === "admin";
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -39,10 +53,10 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const files = Array.from(e.dataTransfer.files);
     const pdfFile = files.find(file => file.type === "application/pdf");
-    
+
     if (pdfFile) {
       handleFileUpload(pdfFile);
     } else {
@@ -61,33 +75,33 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
 
   const handleFileUpload = async (file: File) => {
     setIsUploading(true);
-    
+
     try {
       // Générer l'URL d'upload
       const postUrl = await generateUploadUrl();
-      
+
       // Uploader le fichier
       const result = await fetch(postUrl, {
         method: "POST",
         headers: { "Content-Type": file.type },
         body: file,
       });
-      
+
       const json = await result.json();
       if (!result.ok) {
         throw new Error(`Upload failed: ${JSON.stringify(json)}`);
       }
-      
+
       setPdfStorageId(json.storageId);
       toast.success("PDF uploadé avec succès");
-      
+
       // Extraire les données avec l'IA
       setIsExtracting(true);
       toast.info("Extraction des données en cours...");
-      
+
       try {
         const extractedData = await extractPdfData({ storageId: json.storageId });
-        
+
         setFormData({
           clientName: extractedData.clientName,
           clientEmail: extractedData.clientEmail,
@@ -108,7 +122,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
       } catch (extractError) {
         console.error("Erreur extraction:", extractError);
         toast.error("Erreur lors de l'extraction. Saisissez les données manuellement.");
-        
+
         // Pré-remplir avec des données par défaut
         const fileName = file.name.replace('.pdf', '');
         setFormData({
@@ -132,7 +146,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.clientName || !formData.clientEmail || !formData.invoiceNumber || !formData.amountTTC) {
+    if (!formData.clientName || !formData.invoiceNumber || !formData.amountTTC) {
       toast.error("Veuillez remplir tous les champs obligatoires");
       return;
     }
@@ -140,20 +154,29 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
     try {
       const invoiceData: any = {
         clientName: formData.clientName,
-        clientEmail: formData.clientEmail,
         invoiceNumber: formData.invoiceNumber,
         amountTTC: parseFloat(formData.amountTTC),
         invoiceDate: formData.invoiceDate,
         dueDate: formData.dueDate,
       };
 
+      // ✅ Inclure clientEmail uniquement s'il est fourni
+      if (formData.clientEmail) {
+        invoiceData.clientEmail = formData.clientEmail;
+      }
+
       // N'inclure pdfStorageId que s'il n'est pas null
       if (pdfStorageId) {
         invoiceData.pdfStorageId = pdfStorageId;
       }
 
+      // ✅ Envoyer assignToUserId si un utilisateur différent est sélectionné
+      if (selectedUserId && selectedUserId !== loggedInUser?._id) {
+        invoiceData.assignToUserId = selectedUserId;
+      }
+
       await createInvoice(invoiceData);
-      
+
       toast.success("Facture ajoutée avec succès");
       onSuccess();
     } catch (error) {
@@ -187,13 +210,13 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="mx-auto h-12 w-12 text-gray-400">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 text-gray-400">
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
             </div>
-            <div>
+            <div className="flex-1">
               <p className="text-lg font-medium text-gray-900">
                 Glissez votre PDF ici ou{" "}
                 <button
@@ -209,7 +232,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
             </div>
           </div>
         )}
-        
+
         <input
           ref={fileInputRef}
           type="file"
@@ -224,7 +247,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
         <h3 className="text-lg font-medium text-gray-900 mb-4">
           Informations de la facture
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -238,20 +261,19 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email du client *
+              Email du client
             </label>
             <input
               type="email"
               value={formData.clientEmail}
               onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               N° de facture *
@@ -264,7 +286,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Montant TTC (€) *
@@ -278,7 +300,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Date de facture
@@ -290,7 +312,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Date d'échéance
@@ -302,8 +324,28 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
+
+          {/* ✅ Dropdown pour sélectionner le responsable (admins uniquement) */}
+          {isAdmin && users && users.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Responsable de la facture
+              </label>
+              <select
+                value={selectedUserId}
+                onChange={(e) => setSelectedUserId(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {users.map((user) => (
+                  <option key={user._id} value={user._id}>
+                    {user.name || user.email} {user.role === "admin" ? "(Admin)" : "(Technicien)"}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
-        
+
         <div className="flex gap-3 pt-4">
           <button
             type="submit"

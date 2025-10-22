@@ -45,7 +45,7 @@ const applicationTables = {
     organizationId: v.id("organizations"), // ✅ Phase 2 : maintenant obligatoire
     createdBy: v.id("users"), // ✅ Phase 2 : maintenant obligatoire
     clientName: v.string(),
-    clientEmail: v.string(),
+    clientEmail: v.optional(v.string()), // ✅ Email facultatif
     invoiceNumber: v.string(),
     amountTTC: v.number(),
     invoiceDate: v.string(),
