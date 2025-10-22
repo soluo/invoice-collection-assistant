@@ -16,6 +16,38 @@ const statusConfig = {
   paid: { label: "Payée", color: "bg-emerald-100 text-emerald-800", priority: 6 },
 };
 
+/**
+ * Génère le label du badge de statut avec les informations de jours
+ * Utilisé pour l'affichage desktop (≥ md)
+ */
+const getStatusLabel = (invoice: any): string => {
+  const status = invoice.status;
+
+  // Facture payée : afficher le délai de paiement
+  if (status === "paid" && invoice.paidDate) {
+    const invoiceDate = new Date(invoice.invoiceDate);
+    const paidDate = new Date(invoice.paidDate);
+    const days = Math.floor((paidDate.getTime() - invoiceDate.getTime()) / (1000 * 60 * 60 * 24));
+    return `Payée en ${days} jour${days > 1 ? 's' : ''}`;
+  }
+
+  // Facture envoyée (en cours) : afficher les jours restants
+  if (status === "sent") {
+    const now = new Date();
+    const dueDate = new Date(invoice.dueDate);
+    const daysRemaining = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return `Due dans ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''}`;
+  }
+
+  // Factures en retard (overdue, relances, contentieux)
+  if (invoice.daysOverdue > 0) {
+    return `En retard de ${invoice.daysOverdue} jour${invoice.daysOverdue > 1 ? 's' : ''}`;
+  }
+
+  // Fallback sur le label par défaut
+  return statusConfig[status].label;
+};
+
 export function InvoiceList() {
   const invoices = useQuery(api.invoices.list);
   const currentUser = useQuery(api.auth.loggedInUser);
@@ -124,7 +156,7 @@ export function InvoiceList() {
                     </button>
                   )}
                   <button
-                    onClick={() => handleMarkAsPaid(invoice._id)}
+                    onClick={() => void handleMarkAsPaid(invoice._id)}
                     className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-green-700"
                   >
                     Marquer payé
@@ -139,7 +171,7 @@ export function InvoiceList() {
                   Modifier
                 </button>
                 <button
-                  onClick={() => handleDelete(invoice._id)}
+                  onClick={() => void handleDelete(invoice._id)}
                   className="px-3 py-2 border border-red-300 rounded text-sm font-medium text-red-700 hover:bg-red-50"
                   title="Supprimer"
                 >
@@ -210,7 +242,7 @@ export function InvoiceList() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${statusConfig[invoice.status].color}`}>
-                      {statusConfig[invoice.status].label}
+                      {getStatusLabel(invoice)}
                     </span>
                   </td>
                   {isAdmin && (
@@ -230,7 +262,7 @@ export function InvoiceList() {
                           </button>
                         )}
                         <button
-                          onClick={() => handleMarkAsPaid(invoice._id)}
+                          onClick={() => void handleMarkAsPaid(invoice._id)}
                           className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700"
                         >
                           Marquer payé
@@ -244,7 +276,7 @@ export function InvoiceList() {
                       Modifier
                     </button>
                     <button
-                      onClick={() => handleDelete(invoice._id)}
+                      onClick={() => void handleDelete(invoice._id)}
                       className="text-red-600 hover:text-red-900 px-2 py-1 border border-red-300 rounded text-xs hover:bg-red-50"
                       title="Supprimer"
                     >

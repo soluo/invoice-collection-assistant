@@ -24,6 +24,38 @@ const statusConfig: Record<InvoiceStatus, { label: string; color: string; action
   paid: { label: "Payée", color: "bg-emerald-100 text-emerald-800", actionColor: "bg-emerald-600 hover:bg-emerald-700" },
 };
 
+/**
+ * Génère le label du badge de statut avec les informations de jours
+ * Utilisé pour l'affichage desktop (≥ md)
+ */
+const getStatusLabel = (invoice: InvoiceWithDays): string => {
+  const status = invoice.status;
+
+  // Facture payée : afficher le délai de paiement
+  if (status === "paid" && invoice.paidDate) {
+    const invoiceDate = new Date(invoice.invoiceDate);
+    const paidDate = new Date(invoice.paidDate);
+    const days = Math.floor((paidDate.getTime() - invoiceDate.getTime()) / (1000 * 60 * 60 * 24));
+    return `Payée en ${days} jour${days > 1 ? 's' : ''}`;
+  }
+
+  // Facture envoyée (en cours) : afficher les jours restants
+  if (status === "sent") {
+    const now = new Date();
+    const dueDate = new Date(invoice.dueDate);
+    const daysRemaining = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return `Due dans ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''}`;
+  }
+
+  // Factures en retard (overdue, relances, contentieux)
+  if (invoice.daysOverdue > 0) {
+    return `En retard de ${invoice.daysOverdue} jour${invoice.daysOverdue > 1 ? 's' : ''}`;
+  }
+
+  // Fallback sur le label par défaut
+  return statusConfig[status].label;
+};
+
 export function Dashboard() {
   const stats = useQuery(api.dashboard.getDashboardStats);
   const organization = useQuery(api.organizations.getCurrentOrganization);
@@ -120,7 +152,7 @@ export function Dashboard() {
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-medium text-gray-900">{invoice.clientName}</h3>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[invoice.status].color}`}>
-                        {statusConfig[invoice.status].label}
+                        {getStatusLabel(invoice)}
                       </span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-6 text-sm text-gray-500">

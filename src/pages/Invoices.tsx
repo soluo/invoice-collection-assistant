@@ -8,9 +8,103 @@ import { useNavigate } from "react-router-dom";
 
 type InvoiceStatus = "sent" | "overdue" | "first_reminder" | "second_reminder" | "third_reminder" | "litigation" | "paid";
 
-type SimplifiedStatus = {
-  label: string;
-  color: string;
+const overdueStatuses = new Set<InvoiceStatus>([
+  "overdue",
+  "first_reminder",
+  "second_reminder",
+  "third_reminder",
+  "litigation",
+]);
+
+const DAY_IN_MS = 1000 * 60 * 60 * 24;
+
+type StatusDisplay = {
+  badgeLabel: string;
+  complement?: string;
+  colorClass: string;
+};
+
+const pluralizeDays = (days: number): string => `jour${Math.abs(days) > 1 ? "s" : ""}`;
+
+const formatComplementDue = (days: number): string => {
+  if (days <= 0) {
+    return "aujourd'hui";
+  }
+  return `dans ${days} ${pluralizeDays(days)}`;
+};
+
+const formatComplementOverdue = (days: number): string => {
+  if (days <= 0) {
+    return "aujourd'hui";
+  }
+  return `de ${days} ${pluralizeDays(days)}`;
+};
+
+const formatComplementPaid = (days: number): string => {
+  if (days <= 0) {
+    return "le jour même";
+  }
+  return `en ${days} ${pluralizeDays(days)}`;
+};
+
+const getStatusDisplay = (invoice: any): StatusDisplay => {
+  const status: InvoiceStatus = invoice.status;
+  const dueDate = invoice.dueDate ? new Date(invoice.dueDate) : undefined;
+  const now = new Date();
+
+  if (status === "paid") {
+    const invoiceDate = invoice.invoiceDate ? new Date(invoice.invoiceDate) : undefined;
+    const paidDate = invoice.paidDate ? new Date(invoice.paidDate) : undefined;
+    if (invoiceDate && paidDate) {
+      const days = Math.max(0, Math.round((paidDate.getTime() - invoiceDate.getTime()) / DAY_IN_MS));
+      return {
+        badgeLabel: "Payée",
+        complement: formatComplementPaid(days),
+        colorClass: "bg-emerald-100 text-emerald-800",
+      };
+    }
+    return {
+      badgeLabel: "Payée",
+      colorClass: "bg-emerald-100 text-emerald-800",
+    };
+  }
+
+  if (dueDate && !Number.isNaN(dueDate.getTime())) {
+    const remainingRaw = Math.ceil((dueDate.getTime() - now.getTime()) / DAY_IN_MS);
+    const daysOverdue = invoice.daysOverdue ?? Math.max(0, Math.ceil((now.getTime() - dueDate.getTime()) / DAY_IN_MS));
+
+    if (status === "sent" && remainingRaw >= 0) {
+      const daysRemaining = Math.max(0, remainingRaw);
+      return {
+        badgeLabel: "Due",
+        complement: formatComplementDue(daysRemaining),
+        colorClass: "bg-blue-100 text-blue-800",
+      };
+    }
+
+    if (status === "sent" && remainingRaw < 0) {
+      const overdueDays = Math.max(1, Math.abs(remainingRaw));
+      return {
+        badgeLabel: "En retard",
+        complement: formatComplementOverdue(overdueDays),
+        colorClass: "bg-red-100 text-red-800",
+      };
+    }
+
+    if (overdueStatuses.has(status)) {
+      const overdueDays = Math.max(1, daysOverdue);
+      return {
+        badgeLabel: "En retard",
+        complement: formatComplementOverdue(overdueDays),
+        colorClass: "bg-red-100 text-red-800",
+      };
+    }
+  }
+
+  return {
+    badgeLabel: "À envoyer",
+    colorClass: "bg-gray-100 text-gray-800",
+  };
 };
 
 export function Invoices() {
@@ -29,18 +123,6 @@ export function Invoices() {
   );
 
   const markAsPaid = useMutation(api.invoices.markAsPaid);
-
-  // Calculer l'état simplifié
-  const getSimplifiedStatus = (invoice: any): SimplifiedStatus => {
-    if (invoice.status === "paid") {
-      return { label: "Payée", color: "bg-green-100 text-green-800" };
-    }
-    const now = new Date();
-    const dueDate = new Date(invoice.dueDate);
-    return dueDate < now
-      ? { label: "En retard", color: "bg-red-100 text-red-800" }
-      : { label: "En cours", color: "bg-blue-100 text-blue-800" };
-  };
 
   // Vérifier si on peut envoyer une relance
   const canSendReminder = (invoice: any): boolean => {
@@ -96,7 +178,7 @@ export function Invoices() {
         </div>
 
         <button
-          onClick={() => navigate("/upload?returnTo=/invoices")}
+          onClick={() => void navigate("/upload?returnTo=/invoices")}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -161,80 +243,79 @@ export function Invoices() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Numéro
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Facture client
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Client
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Émission
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Montant
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Échéance
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     État
                   </th>
                   {isAdmin && (
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Responsable
                     </th>
                   )}
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {invoices.map((invoice) => {
-                  const simplifiedStatus = getSimplifiedStatus(invoice);
+                  const statusDisplay = getStatusDisplay(invoice);
                   return (
                     <tr key={invoice._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        #{invoice.invoiceNumber}
+                      <td className="px-5 py-3 whitespace-nowrap">
+                        <div className="font-semibold text-gray-900">#{invoice.invoiceNumber}</div>
+                        <div className="text-sm text-gray-600">{invoice.clientName}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{invoice.clientName}</div>
-                        <div className="text-sm text-gray-500">{invoice.clientEmail}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-5 py-3 whitespace-nowrap text-gray-500">
                         {formatDate(invoice.invoiceDate)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-5 py-3 whitespace-nowrap font-medium text-gray-900">
                         {formatCurrency(invoice.amountTTC)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-5 py-3 whitespace-nowrap text-gray-500">
                         {formatDate(invoice.dueDate)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${simplifiedStatus.color}`}
-                        >
-                          {simplifiedStatus.label}
-                        </span>
+                      <td className="px-5 py-3 whitespace-nowrap">
+                        <div className="flex flex-col items-start gap-1">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.75 rounded-full text-xs font-medium ${statusDisplay.colorClass}`}
+                          >
+                            {statusDisplay.badgeLabel}
+                          </span>
+                          {statusDisplay.complement && (
+                            <span className="text-sm text-gray-500 pl-2.5">{statusDisplay.complement}</span>
+                          )}
+                        </div>
                       </td>
                       {isAdmin && (
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        <td className="px-5 py-3 whitespace-nowrap text-gray-700">
                           {invoice.creatorName}
                         </td>
                       )}
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                      <td className="px-5 py-3 whitespace-nowrap text-right text-sm font-medium space-x-2">
                         {canSendReminder(invoice) && (
                           <button
                             onClick={() => handleSendReminder(invoice)}
-                            className="inline-flex items-center px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                            className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
                           >
                             Relancer
                           </button>
                         )}
                         {canMarkAsPaid(invoice) && (
                           <button
-                            onClick={() => handleMarkAsPaid(invoice._id)}
-                            className="inline-flex items-center px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                            onClick={() => void handleMarkAsPaid(invoice._id)}
+                            className="bg-gray-100 text-gray-700 px-4 py-2 rounded text-sm font-medium hover:bg-gray-200 border border-gray-300 transition-colors"
                           >
                             Marquer payée
                           </button>
@@ -268,19 +349,24 @@ export function Invoices() {
       <div className="block md:hidden space-y-3">
         {invoices && invoices.length > 0 ? (
           invoices.map((invoice) => {
-            const simplifiedStatus = getSimplifiedStatus(invoice);
-            return (
+              const statusDisplay = getStatusDisplay(invoice);
+              return (
               <div key={invoice._id} className="bg-white rounded-lg border p-4 space-y-3">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-medium text-gray-900">{invoice.clientName}</h3>
-                    <p className="text-sm text-gray-500">#{invoice.invoiceNumber}</p>
+                    <h3 className="font-medium text-gray-900">#{invoice.invoiceNumber}</h3>
+                    <p className="text-sm text-gray-500">{invoice.clientName}</p>
                   </div>
+                </div>
+                <div className="flex items-center justify-center gap-2">
                   <span
-                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${simplifiedStatus.color}`}
+                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusDisplay.colorClass}`}
                   >
-                    {simplifiedStatus.label}
+                    {statusDisplay.badgeLabel}
                   </span>
+                  {statusDisplay.complement && (
+                    <p className="text-xs text-gray-500">{statusDisplay.complement}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2 text-sm">
@@ -305,26 +391,30 @@ export function Invoices() {
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                  {canSendReminder(invoice) && (
-                    <button
-                      onClick={() => handleSendReminder(invoice)}
-                      className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-blue-700"
-                    >
-                      Relancer
-                    </button>
-                  )}
-                  {canMarkAsPaid(invoice) && (
-                    <button
-                      onClick={() => handleMarkAsPaid(invoice._id)}
-                      className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-green-700"
-                    >
-                      Marquer payée
-                    </button>
-                  )}
+                  <div className="flex-1">
+                    {canSendReminder(invoice) && (
+                      <button
+                        onClick={() => handleSendReminder(invoice)}
+                        className="w-full bg-blue-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-blue-700"
+                      >
+                        Relancer
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    {canMarkAsPaid(invoice) && (
+                      <button
+                        onClick={() => void handleMarkAsPaid(invoice._id)}
+                        className="w-full bg-gray-100 text-gray-700 px-3 py-2 rounded text-sm font-medium hover:bg-gray-200 border border-gray-300 transition-colors"
+                      >
+                        Marquer payée
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
-          })
+            })
         ) : (
           <div className="bg-white rounded-lg border p-8 text-center">
             <div className="mx-auto h-16 w-16 text-gray-400 mb-4">
