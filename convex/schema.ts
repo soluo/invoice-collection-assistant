@@ -105,10 +105,21 @@ const applicationTables = {
     ),
     emailSubject: v.string(),
     emailContent: v.string(),
+    sendStatus: v.optional(
+      v.union(v.literal("pending"), v.literal("sent"), v.literal("failed"))
+    ),
+    approvedBy: v.optional(v.id("users")),
+    approvedAt: v.optional(v.number()),
+    sentAt: v.optional(v.number()),
+    sendError: v.optional(v.string()),
+    lastSendAttempt: v.optional(v.number()),
+    generatedByCron: v.optional(v.boolean()),
   })
     .index("by_invoice", ["invoiceId"])
     .index("by_user", ["userId"])
-    .index("by_organization", ["organizationId"]),
+    .index("by_organization", ["organizationId"])
+    .index("by_sendStatus", ["sendStatus"])
+    .index("by_organization_and_status", ["organizationId", "sendStatus"]),
 };
 
 export default defineSchema({

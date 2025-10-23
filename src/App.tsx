@@ -4,7 +4,7 @@ import { SignInForm } from "./SignInForm";
 import { SignupForm } from "@pages/SignupForm";
 import { AcceptInvitation } from "@pages/AcceptInvitation";
 import { Toaster } from "sonner";
-import { LogOut, Settings, Users, Home, FileText } from "lucide-react";
+import { LogOut, Settings, Users, Home, FileText, Bell } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { BrowserRouter, Routes, Route, useNavigate, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { Dashboard } from "@pages/Dashboard";
@@ -14,6 +14,7 @@ import { InvoiceUpload } from "@pages/InvoiceUpload";
 import { TeamManagement } from "@pages/TeamManagement";
 import { OrganizationSettings } from "@pages/OrganizationSettings";
 import { Invoices } from "@pages/Invoices";
+import { Reminders } from "@pages/Reminders";
 import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
@@ -77,6 +78,14 @@ function Header() {
             >
               <FileText size={20} />
               <span className="hidden sm:inline">Factures</span>
+            </button>
+            <button
+              onClick={() => navigate("/reminders")}
+              className={getButtonClass("/reminders")}
+              title="Relances"
+            >
+              <Bell size={20} />
+              <span className="hidden sm:inline">Relances</span>
             </button>
           </Authenticated>
         </div>
@@ -209,6 +218,7 @@ function Content() {
           <>
             <Route path="/" element={<Dashboard />} />
             <Route path="/invoices" element={<Invoices />} />
+            <Route path="/reminders" element={<Reminders />} />
             <Route path="/ongoing" element={<OngoingInvoices />} />
             <Route path="/paid" element={<PaidInvoices />} />
             <Route path="/upload" element={<InvoiceUploadPage />} />

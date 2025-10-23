@@ -549,6 +549,8 @@ export const sendReminder = mutation({
         reminderStatus: args.newStatus,
         emailSubject: args.emailSubject,
         emailContent: args.emailContent,
+        sendStatus: "pending",
+        generatedByCron: false,
       });
     }
 
