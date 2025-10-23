@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
@@ -13,6 +13,7 @@ type ReminderRecord = {
     _id: string;
     invoiceNumber: string;
     clientName: string;
+    clientEmail: string | null;
     amountTTC: number;
     dueDate: string;
     status: string;
@@ -62,6 +63,15 @@ function formatAmount(amount: number | undefined) {
 
 export function Reminders() {
   const reminders = useQuery(api.reminders.listForOrganization) as ReminderRecord[] | undefined;
+  const organization = useQuery(api.organizations.getCurrentOrganization);
+  const previewOrganization = organization
+    ? {
+        name: organization.name,
+        senderEmail: organization.senderEmail,
+        emailAccountInfo: organization.emailAccountInfo ?? undefined,
+      }
+    : null;
+  const [previewReminder, setPreviewReminder] = useState<ReminderRecord | null>(null);
 
   const stats = useMemo(() => {
     if (!reminders) {
@@ -148,9 +158,12 @@ export function Reminders() {
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     État
-                  </th>
+                 </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Provenance
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -197,6 +210,15 @@ export function Reminders() {
                         </p>
                       )}
                     </td>
+                    <td className="px-4 py-3 text-sm text-gray-700">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewReminder(reminder)}
+                        className="px-3 py-1 text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                      >
+                        Prévisualiser
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -204,6 +226,14 @@ export function Reminders() {
           </div>
         )}
       </div>
+
+      {previewReminder && (
+        <ReminderPreviewModal
+          reminder={previewReminder}
+          organization={previewOrganization}
+          onClose={() => setPreviewReminder(null)}
+        />
+      )}
     </div>
   );
 }
@@ -229,6 +259,88 @@ function StatCard({ label, value, tone }: StatCardProps) {
     <div className={tone ? toneClass : defaultClass}>
       <p className="text-sm font-medium">{label}</p>
       <p className="text-2xl font-semibold mt-1">{value}</p>
+    </div>
+  );
+}
+
+type ReminderPreviewModalProps = {
+  reminder: ReminderRecord;
+  organization: {
+    senderEmail: string;
+    name: string;
+    emailAccountInfo?: { email: string; name: string };
+  } | null;
+  onClose: () => void;
+};
+
+function ReminderPreviewModal({ reminder, organization, onClose }: ReminderPreviewModalProps) {
+  const recipientName = reminder.invoice?.clientName ?? "Client inconnu";
+  const recipientEmail = reminder.invoice?.clientEmail ?? "Email indisponible";
+  const senderName =
+    organization?.emailAccountInfo?.name ??
+    organization?.name ??
+    "Organisation";
+  const senderEmail =
+    organization?.emailAccountInfo?.email ??
+    organization?.senderEmail ??
+    "Email expéditeur non configuré";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <div className="bg-white w-full max-w-2xl rounded-lg shadow-lg overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <h3 className="text-lg font-semibold text-gray-900">Prévisualisation du mail</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+            aria-label="Fermer"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div className="space-y-2 text-sm text-gray-700">
+            <p>
+              <span className="font-semibold text-gray-900">À :</span>{" "}
+              {recipientName} &lt;{recipientEmail}&gt;
+            </p>
+            <p>
+              <span className="font-semibold text-gray-900">De :</span>{" "}
+              {senderName} &lt;{senderEmail}&gt;
+            </p>
+            <p>
+              <span className="font-semibold text-gray-900">Objet :</span>{" "}
+              {reminder.emailSubject}
+            </p>
+          </div>
+
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+              {reminder.emailContent}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+          >
+            Fermer
+          </button>
+          <button
+            type="button"
+            disabled
+            className="px-4 py-2 text-sm font-semibold text-white bg-blue-500 rounded-md opacity-60 cursor-not-allowed"
+            title="Envoi automatique à venir"
+          >
+            Envoyer (bientôt)
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

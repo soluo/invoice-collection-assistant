@@ -121,6 +121,7 @@ export const listForOrganization = query({
                 _id: invoice._id,
                 invoiceNumber: invoice.invoiceNumber,
                 clientName: invoice.clientName,
+                clientEmail: invoice.clientEmail ?? null,
                 amountTTC: invoice.amountTTC,
                 dueDate: invoice.dueDate,
                 status: invoice.status,
