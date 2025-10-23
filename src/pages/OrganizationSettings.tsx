@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { Building2 } from "lucide-react";
+import { Building2, Mail, Check, X, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
 
 export function OrganizationSettings() {
   const organization = useQuery(api.organizations.getCurrentOrganization);
   const updateSettings = useMutation(api.organizations.updateOrganizationSettings);
+  const getOAuthUrl = useQuery(api.oauth.getOAuthUrl);
+  const disconnectEmail = useMutation(api.oauth.disconnectEmailProvider);
 
   const [formData, setFormData] = useState({
     organizationName: "",
@@ -22,6 +24,23 @@ export function OrganizationSettings() {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  // Gérer les messages OAuth (success/error) depuis les query params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthStatus = params.get("oauth");
+    const message = params.get("message");
+
+    if (oauthStatus === "success") {
+      toast.success("Compte Outlook connecté avec succès !");
+      // Nettoyer les query params
+      window.history.replaceState({}, "", window.location.pathname + "?tab=organization");
+    } else if (oauthStatus === "error") {
+      toast.error(`Erreur de connexion : ${message || "Une erreur est survenue"}`);
+      window.history.replaceState({}, "", window.location.pathname + "?tab=organization");
+    }
+  }, []);
 
   // Mettre à jour le formulaire quand les données arrivent
   useEffect(() => {
@@ -85,6 +104,35 @@ export function OrganizationSettings() {
     }
   };
 
+  const handleConnectOutlook = () => {
+    if (getOAuthUrl) {
+      // Redirection complète vers l'URL OAuth (pas de popup)
+      window.location.href = getOAuthUrl;
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!confirm("Êtes-vous sûr de vouloir déconnecter votre compte Outlook ?")) {
+      return;
+    }
+
+    setDisconnecting(true);
+    try {
+      await disconnectEmail();
+      toast.success("Compte Outlook déconnecté");
+    } catch (error: any) {
+      console.error("Erreur lors de la déconnexion:", error);
+      toast.error(error.message || "Erreur lors de la déconnexion");
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
+  // Vérifier si le token est expiré
+  const isTokenExpired = organization?.emailTokenExpiresAt
+    ? organization.emailTokenExpiresAt < Date.now()
+    : false;
+
   return (
     <div className="space-y-8 pt-6">
       <div>
@@ -142,6 +190,132 @@ export function OrganizationSettings() {
               Cette adresse sera utilisée comme expéditeur pour les relances automatiques
             </p>
           </div>
+        </div>
+
+        {/* Connexion Email OAuth */}
+        <div className="bg-white rounded-lg border p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                <Mail size={20} />
+                Connexion Email (Outlook)
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Connectez votre compte Outlook pour envoyer automatiquement des relances
+              </p>
+            </div>
+          </div>
+
+          {organization.emailProvider === "microsoft" && organization.emailAccountInfo ? (
+            // Compte connecté
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <Check className="text-green-600" size={20} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-green-900">
+                      Connecté en tant que {organization.emailAccountInfo.name}
+                    </p>
+                    <p className="text-sm text-green-700 mt-1">
+                      {organization.emailAccountInfo.email}
+                    </p>
+                    <p className="text-xs text-green-600 mt-2">
+                      Connecté le{" "}
+                      {organization.emailConnectedAt
+                        ? new Date(organization.emailConnectedAt).toLocaleDateString("fr-FR", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "Date inconnue"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Statut du token */}
+                <div className="mt-4 flex items-center gap-2">
+                  {isTokenExpired ? (
+                    <>
+                      <div className="flex items-center gap-2 text-orange-600">
+                        <X size={16} />
+                        <span className="text-sm font-medium">Token expiré</span>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        (Sera automatiquement renouvelé lors du prochain envoi)
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2 text-green-600">
+                        <Check size={16} />
+                        <span className="text-sm font-medium">Token actif</span>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        (Expire le{" "}
+                        {organization.emailTokenExpiresAt
+                          ? new Date(organization.emailTokenExpiresAt).toLocaleDateString("fr-FR")
+                          : "Date inconnue"}
+                        )
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Bouton déconnecter */}
+              <button
+                type="button"
+                onClick={handleDisconnect}
+                disabled={disconnecting}
+                className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <X size={16} />
+                {disconnecting ? "Déconnexion..." : "Déconnecter le compte"}
+              </button>
+            </div>
+          ) : (
+            // Pas de compte connecté
+            <div className="space-y-4">
+              {getOAuthUrl === null ? (
+                // Configuration OAuth manquante
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-sm font-medium text-yellow-800 mb-2">
+                    ⚠️ Configuration OAuth manquante
+                  </p>
+                  <p className="text-sm text-yellow-700 mb-3">
+                    Les variables d'environnement OAuth ne sont pas configurées dans Convex.
+                  </p>
+                  <p className="text-xs text-yellow-600">
+                    Consultez <code className="bg-yellow-100 px-1 py-0.5 rounded">OAUTH_SETUP.md</code> pour les instructions de configuration.
+                  </p>
+                </div>
+              ) : (
+                // Configuration OK mais pas connecté
+                <>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <p className="text-sm text-gray-700">
+                      Aucun compte email connecté. Vous devez connecter un compte Outlook pour pouvoir
+                      envoyer des relances automatiques.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleConnectOutlook}
+                    disabled={!getOAuthUrl}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <ExternalLink size={16} />
+                    Connecter Outlook
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Délais de relance */}

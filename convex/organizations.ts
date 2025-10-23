@@ -42,6 +42,8 @@ export const createOrganizationWithAdmin = mutation({
       secondReminderTemplate: `Bonjour,\n\nMalgré notre première relance, nous constatons que notre facture n°{numero_facture} d'un montant de {montant}€ TTC reste impayée (échue depuis {jours_retard} jours).\n\nNous vous remercions de procéder au règlement dans les plus brefs délais.\n\nCordialement,`,
       thirdReminderTemplate: `Bonjour,\n\nNous vous informons que notre facture n°{numero_facture} d'un montant de {montant}€ TTC demeure impayée malgré nos précédentes relances ({jours_retard} jours de retard).\n\nSans règlement sous 7 jours, nous serons contraints d'engager une procédure de recouvrement.\n\nCordialement,`,
       signature: `L'équipe ${args.organizationName}`,
+      // Paramètres d'envoi automatique (Phase 3)
+      autoSendReminders: false, // Par défaut : nécessite approbation manuelle
     });
 
     // Mettre à jour l'utilisateur avec le rôle admin et l'organisation

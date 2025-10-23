@@ -18,6 +18,23 @@ const applicationTables = {
     secondReminderTemplate: v.string(),
     thirdReminderTemplate: v.string(),
     signature: v.string(),
+    // Paramètres d'envoi automatique (Phase 3)
+    autoSendReminders: v.optional(v.boolean()), // Par défaut : false
+    // Connexion email OAuth (Phase 3)
+    emailProvider: v.optional(
+      v.union(v.literal("microsoft"), v.literal("google"))
+    ),
+    emailConnectedAt: v.optional(v.number()),
+    emailAccessToken: v.optional(v.string()),
+    emailRefreshToken: v.optional(v.string()),
+    emailTokenExpiresAt: v.optional(v.number()),
+    emailConnectedBy: v.optional(v.id("users")),
+    emailAccountInfo: v.optional(
+      v.object({
+        email: v.string(),
+        name: v.string(),
+      })
+    ),
   }),
 
   invitations: defineTable({
