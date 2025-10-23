@@ -44,6 +44,7 @@ export const getOAuthUrl = query({
     authUrl.searchParams.append("scope", scopes.join(" "));
     authUrl.searchParams.append("response_mode", "query");
     authUrl.searchParams.append("state", userId); // Utiliser userId comme state pour retrouver l'utilisateur
+    authUrl.searchParams.append("prompt", "select_account");
 
     return authUrl.toString();
   },
