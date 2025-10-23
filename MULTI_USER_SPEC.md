@@ -1,7 +1,7 @@
 # Spécification : Système Multi-Utilisateurs avec Organisations
 
 **Date de création :** 2025-10-20
-**Statut :** En planification
+**Statut :** En cours — Phases 1 & 2 livrées, Phase 3 en développement progressif
 
 ---
 
@@ -120,6 +120,11 @@ organizationId: Id<"organizations">,
 - Un utilisateur ne peut appartenir qu'à une seule organisation
 - Pas de migration des données existantes (on repart de zéro)
 
+### Normalisation des emails
+- ✅ Toutes les adresses email sont trimées et stockées en minuscules côté Convex Auth et invitations
+- ✅ Les formulaires (connexion, inscription, acceptation d'invitation) envoient systématiquement l'email normalisé
+- ✅ Connexion rétro-compatible : tentative en minuscule puis avec la casse d'origine pour supporter les comptes déjà créés
+
 ---
 
 ## 3. Permissions & Visibilité
@@ -154,6 +159,11 @@ organizationId: Id<"organizations">,
 ## 4. Interface Utilisateur
 
 ### Modifications des Écrans Existants
+
+#### Header global
+- ✅ Bouton "Se déconnecter" remplacé par un avatar circulaire avec initiales de l'utilisateur connecté
+- ✅ Clic sur l'avatar ouvre un menu affichant nom + email et le bouton "Se déconnecter"
+- ✅ Fermeture automatique du menu au clic extérieur, touche `Escape` ou changement de route
 
 #### Dashboard
 - **Admin :** Filtre en haut "Toutes les factures" | "Mes factures" | Liste des techniciens (⏳ À implémenter)
@@ -191,6 +201,7 @@ organizationId: Id<"organizations">,
 - Champs : Email, Mot de passe
 - Bouton "Se connecter"
 - Lien vers "Créer une organisation"
+- ✅ Gestion d'erreur inline : message "Identifiants incorrects" sans toast, réinitialisation du formulaire après tentative
 
 #### Page d'Acceptation d'Invitation
 - Affichage : "Vous êtes invité à rejoindre [Nom Organisation]"
@@ -286,13 +297,13 @@ organizationId: Id<"organizations">,
 
 **Workflow par défaut (envoi manuel) :**
 1. Cron quotidien → GÉNÈRE les relances (reminders en status "pending")
-2. Admin reçoit notification → PRÉVISUALISE les relances générées
-3. Admin APPROUVE ou REJETTE chaque relance (ou en masse)
-4. Relances approuvées → ENVOI via OAuth (manuel ou auto)
+2. Admin reçoit notification → consulte la liste des relances générées
+3. Admin décide d'envoyer immédiatement les relances pertinentes ou de les supprimer
+4. Historique conservé pour suivre les envois et les suppressions
 
 **Workflow avancé (envoi automatique activé) :**
-- Cron génère ET envoie directement (skip approbation)
-- Pour clients qui font confiance au système
+- Cron génère ET envoie directement pour les organisations ayant activé `autoSendReminders`
+- Toujours possibilité de désactiver l'envoi automatique si besoin
 
 #### Backend (Convex)
 
@@ -308,13 +319,13 @@ organizationId: Id<"organizations">,
   - `emailAccountInfo: v.optional(v.object({ email: v.string(), name: v.string() }))`
 
 - [ ] 3.1.2. Modifier table `reminders` - Ajouter :
-  - `sendStatus: v.union(v.literal("pending"), v.literal("approved"), v.literal("sending"), v.literal("sent"), v.literal("failed"), v.literal("rejected"))`
-  - `approvedBy: v.optional(v.id("users"))`
-  - `approvedAt: v.optional(v.number())`
+  - `sendStatus: v.union(v.literal("pending"), v.literal("sending"), v.literal("sent"), v.literal("failed"), v.literal("cancelled"))`
   - `sentAt: v.optional(v.number())`
   - `sendError: v.optional(v.string())`
   - `lastSendAttempt: v.optional(v.number())`
   - `generatedByCron: v.boolean()`
+  - `cancelledBy: v.optional(v.id("users"))`
+  - `cancelledAt: v.optional(v.number())`
 
 - [ ] 3.1.3. Ajouter indexes pour reminders :
   - `.index("by_sendStatus", ["sendStatus"])`
@@ -324,7 +335,7 @@ organizationId: Id<"organizations">,
 - [x] 3.2.1. Créer query `getOAuthUrl` : Génère l'URL d'autorisation Microsoft
 - [x] 3.2.2. Créer mutation `disconnectEmailProvider` : Supprime les tokens OAuth
 - [x] 3.2.3. Créer action Node.js `refreshAccessToken` (internal) : Renouvelle l'access token
-- [ ] 3.2.4. Créer action `verifyTokenValidity` : Vérifie et refresh le token si nécessaire
+- [x] 3.2.4. Créer action `refreshTokenIfNeeded` : Vérifie et rafraîchit le token si nécessaire
 - [x] 3.2.5. Créer HTTP route `GET /oauth/microsoft/callback` :
   - Échange code contre tokens
   - Récupère infos compte via Graph API
@@ -346,30 +357,25 @@ organizationId: Id<"organizations">,
   - Ajoute signature
   - Retourne : `{ subject: string, body: string }`
 
-**3.4. Approbation des relances (convex/reminders.ts)**
-- [ ] 3.4.1. Créer mutation `approveReminder` :
-  - Args : `reminderId`
-  - Vérifie permissions (admin ou créateur de la facture)
-  - Update reminder : `sendStatus: "approved"`, `approvedBy`, `approvedAt`
-  - Si `organization.autoSendReminders === true` : appelle immédiatement `sendReminder`
-
-- [ ] 3.4.2. Créer mutation `rejectReminder` :
-  - Args : `reminderId`
-  - Update reminder : `sendStatus: "rejected"`
-
-- [ ] 3.4.3. Créer mutation `approveBulkReminders` :
-  - Args : `reminderIds: Id<"reminders">[]`
-  - Boucle sur tous les IDs et appelle `approveReminder`
-
-- [ ] 3.4.4. Créer mutation `updateReminderContent` :
+**3.4. Gestion des relances en attente (convex/reminders.ts)**
+- [ ] 3.4.1. Créer mutation `updateReminderContent` :
   - Args : `reminderId`, `emailSubject`, `emailContent`
-  - Permet de modifier le contenu avant approbation
-  - Vérifie que `sendStatus === "pending"`
+  - Permet de modifier le contenu tant que `sendStatus === "pending"`
+  - Met à jour la date de dernière modification pour l'audit
+
+- [ ] 3.4.2. Créer mutation `deleteReminder` :
+  - Args : `reminderId`, `reason`
+  - Vérifie les permissions (admin ou créateur)
+  - Marque la relance comme `sendStatus: "cancelled"` et renseigne `cancelledBy`, `cancelledAt`
+
+- [ ] 3.4.3. Créer mutation `deleteReminders` (bulk) :
+  - Args : `reminderIds: Id<"reminders">[]`, `reason`
+  - Supprime en lot les relances sélectionnées (statut `cancelled`)
 
 **3.5. Envoi des relances (convex/email.ts - nouveau fichier)**
 - [ ] 3.5.1. Créer action Node.js `sendReminder` :
   - Args : `reminderId`
-  - Récupère reminder et vérifie `sendStatus === "approved"` ou `"failed"`
+  - Récupère reminder et vérifie `sendStatus === "pending"` ou `"failed"`
   - Récupère org et vérifie qu'un compte email est connecté
   - Vérifie validité du token (refresh si nécessaire)
   - Update reminder : `sendStatus: "sending"`
@@ -378,15 +384,15 @@ organizationId: Id<"organizations">,
   - Échec → Update : `sendStatus: "failed"`, `sendError`, `lastSendAttempt`
   - Met à jour le statut de la facture (first_reminder, second_reminder, etc.)
 
-- [ ] 3.5.2. Créer action `sendAllApprovedReminders` :
-  - Query tous les reminders avec `sendStatus: "approved"`
+- [ ] 3.5.2. Créer action `sendAllPendingReminders` :
+  - Query tous les reminders avec `sendStatus: "pending"`
   - Appelle `sendReminder` pour chacun
   - Retourne statistiques : `{ sent: 5, failed: 1 }`
 
 - [ ] 3.5.3. Créer action `retrySendReminder` :
   - Args : `reminderId`
   - Vérifie que `sendStatus === "failed"`
-  - Update : `sendStatus: "approved"`
+  - Update : `sendStatus: "pending"`
   - Appelle `sendReminder`
 
 **3.6. Cron automatique (convex/cron.ts - nouveau fichier)**
@@ -396,13 +402,13 @@ organizationId: Id<"organizations">,
   - Déterminer type de relance (1ère, 2ème, 3ème)
   - Vérifier qu'une relance de ce type n'existe pas déjà
   - GÉNÉRER la relance (pas d'envoi ici)
-  - Si `autoSendReminders` activé : approuver et envoyer immédiatement
+  - Si `autoSendReminders` activé : envoyer immédiatement les relances générées
   - Retourner statistiques : combien de reminders générés par org
 
 - [ ] 3.6.2. Créer helper `findOverdueInvoices` :
   - Factures avec status "overdue", "first_reminder", etc.
   - Respecte les délais configurés
-  - Exclut factures qui ont déjà une relance pending/approved/sent du type approprié
+  - Exclut factures qui ont déjà une relance pending/sending/sent du type approprié
 
 - [ ] 3.6.3. Créer helper `determineReminderType` :
   - Calcule jours de retard
@@ -415,14 +421,14 @@ organizationId: Id<"organizations">,
   - Liste reminders avec `sendStatus: "pending"`
   - Triés par date (plus récents en premier)
 
-- [ ] 3.7.2. Créer query `getApprovedReminders` :
+- [ ] 3.7.2. Créer query `getSendingReminders` :
   - Args : `organizationId`
-  - Liste reminders avec `sendStatus: "approved"`
-  - Prêts à être envoyés
+  - Liste reminders avec `sendStatus: "sending"`
+  - Permet d'afficher la progression des envois en cours
 
 - [ ] 3.7.3. Créer query `getReminderStats` :
   - Args : `organizationId`
-  - Retourne : `{ pending: number, approved: number, sent: number, failed: number }`
+  - Retourne : `{ pending: number, sending: number, sent: number, failed: number, cancelled: number }`
   - Stats pour afficher dans le Dashboard
 
 #### Frontend (React)
@@ -442,27 +448,26 @@ organizationId: Id<"organizations">,
 **3.9. Page Gestion des Relances (src/pages/Reminders.tsx - NOUVEAU)**
 - [ ] 3.9.1. Créer route `/reminders` dans App.tsx
 - [ ] 3.9.2. Créer composant RemindersPage avec 3 onglets :
-  - Onglet 1 : "En attente d'approbation" (pending)
-  - Onglet 2 : "Approuvées / En cours d'envoi" (approved + sending)
-  - Onglet 3 : "Historique" (sent + failed + rejected)
+  - Onglet 1 : "À envoyer" (pending)
+  - Onglet 2 : "Envoi en cours / envoyées" (sending + sent)
+  - Onglet 3 : "Échecs / supprimées" (failed + cancelled)
 
-- [ ] 3.9.3. Onglet 1 - En attente d'approbation :
+- [ ] 3.9.3. Onglet 1 - À envoyer :
   - Tableau : Facture | Client | Type | Montant | Créée le | Aperçu | Actions
   - Bouton "Voir l'email" → modal avec sujet/contenu
-  - Actions : "Approuver" | "Modifier" | "Rejeter"
-  - Bouton global : "Tout approuver" (confirmation requise)
+  - Actions : "Envoyer" | "Modifier" | "Supprimer"
+  - Bouton global : "Tout envoyer" → appelle `sendAllPendingReminders`
 
-- [ ] 3.9.4. Onglet 2 - Approuvées :
+- [ ] 3.9.4. Onglet 2 - Envoi en cours / envoyées :
   - Tableau similaire
-  - Statut : "Prête à envoyer" (approved) ou "Envoi en cours..." (sending)
-  - Actions : "Envoyer maintenant" (si approved)
-  - Bouton global : "Tout envoyer" → appelle `sendAllApprovedReminders`
+  - Statut : badge "Envoi en cours" (sending) ou "Envoyée" (sent)
+  - Actions : "Réessayer" disponible uniquement pour `failed` déplacés depuis onglet 3
+  - Bouton global : "Actualiser l'état" (rafraîchit la query)
 
-- [ ] 3.9.5. Onglet 3 - Historique :
-  - Tableau avec colonne Statut (badge vert/rouge/gris)
-  - Filtre par statut
-  - Si failed : affiche l'erreur + bouton "Réessayer"
-  - Pas d'actions sur sent/rejected
+- [ ] 3.9.5. Onglet 3 - Échecs / supprimées :
+  - Tableau avec colonne Statut (badge rouge pour failed, gris pour cancelled)
+  - Actions : "Réessayer" (remet en pending) pour `failed`, "Supprimer définitivement" si besoin
+  - Filtre par type d'échec/suppression
 
 **3.10. Badge Notifications (App.tsx)**
 - [ ] 3.10.1. Ajouter badge dans le header :
@@ -472,25 +477,25 @@ organizationId: Id<"organizations">,
 **3.11. Bannière Dashboard (src/components/RemindersBanner.tsx - nouveau)**
 - [ ] 3.11.1. Créer composant RemindersBanner
 - [ ] 3.11.2. Affiche en haut du Dashboard si :
-  - Des reminders "pending" existent (nouvelles relances générées)
-  - Des reminders "approved" existent (prêtes à envoyer)
-  - Des reminders "failed" existent (échecs d'envoi)
+  - Des reminders "pending" existent (relances à envoyer)
+  - Des reminders "sending" existent (envois en cours)
+  - Des reminders "failed" ou "cancelled" existent (suivi des anomalies)
   - Aucun compte email connecté
 
 - [ ] 3.11.3. Exemples de messages :
-  - "🔔 5 nouvelles relances générées aujourd'hui. [Examiner]"
-  - "✅ 3 relances approuvées prêtes à envoyer. [Envoyer maintenant]"
-  - "⚠️ 2 relances ont échoué à l'envoi. [Voir les erreurs]"
+  - "🔔 5 relances en attente d'envoi. [Envoyer maintenant]"
+  - "🚀 2 relances sont en cours d'envoi. [Suivre]"
+  - "⚠️ 2 relances ont échoué. [Voir les erreurs]"
   - "❌ Connectez votre compte Outlook pour envoyer des relances. [Configurer]"
 
 **3.12. Modal Prévisualisation (src/components/ReminderPreviewModal.tsx)**
 - [ ] 3.12.1. Créer composant ReminderPreviewModal
-- [ ] 3.12.2. Props : `{ reminder: Reminder, onApprove, onReject, onEdit }`
+- [ ] 3.12.2. Props : `{ reminder: Reminder, onSend, onDelete, onEdit }`
 - [ ] 3.12.3. Affichage :
   - En-tête : Facture #XXX - Client XXX
   - Type de relance : Badge "1ère relance" / "2ème relance" / "3ème relance"
   - Aperçu email : Sujet + Corps formaté
-  - Actions : "Modifier" | "Approuver" | "Rejeter" | "Annuler"
+  - Actions : "Modifier" | "Envoyer" | "Supprimer" | "Annuler"
 
 **3.13. Modal Édition (src/components/ReminderEditModal.tsx)**
 - [ ] 3.13.1. Créer composant ReminderEditModal
@@ -760,21 +765,21 @@ organizationId: Id<"organizations">,
 - **2025-10-23** : 📋 **Phase 3 MISE À JOUR - Plan Détaillé OAuth Microsoft**
   - **Révision complète de la Phase 3** : Système de génération & envoi de relances via OAuth
   - **Philosophie adoptée** : "Confiance avant Automatisation"
-    - Workflow par défaut : Cron génère → Admin approuve → Envoi manuel
+    - Workflow par défaut : Cron génère → Admin envoie ou supprime → Historique conservé
     - Workflow avancé : Envoi automatique activable pour clients ayant confiance
   - **Modifications du schéma** détaillées :
     - Table `organizations` : ajout champs OAuth (provider, tokens, expiration, account info) + flag `autoSendReminders`
-    - Table `reminders` : ajout workflow complet (`sendStatus`, approval tracking, error handling)
+    - Table `reminders` : ajout workflow complet (`sendStatus` pending/sending/sent/failed/cancelled + error handling)
     - Nouveaux indexes pour performances optimales
   - **Backend détaillé** (47 sous-tâches) :
     - OAuth flow Microsoft complet avec refresh automatique des tokens
     - Génération intelligente des relances avec templates et variables
-    - Système d'approbation/rejet avec édition possible avant envoi
+    - Possibilité d'éditer ou supprimer les relances avant envoi
     - Envoi via Microsoft Graph API avec retry sur échec
     - Cron quotidien avec détection automatique des factures overdue
-    - Queries dédiées pour l'UI (pending, approved, stats)
+    - Queries dédiées pour l'UI (pending, sending, stats)
   - **Frontend détaillé** (33 sous-tâches) :
-    - Page `/reminders` avec 3 onglets (Pending, Approved, Historique)
+    - Page `/reminders` avec 3 onglets (À envoyer, En cours/Envoyées, Échecs/Supprimées)
     - Modals de prévisualisation et édition des relances
     - Bannière Dashboard avec notifications contextuelles
     - Badge dans le header pour alertes pending
@@ -827,3 +832,12 @@ organizationId: Id<"organizations">,
 ### 🟢 Notes
 - Bug 7 (cleanup invitations expirées via cron) : reporté à Phase 3
 - Bug 9 (limit nombre invitations) : reporté ultérieurement
+
+### 🟡 Priorité Moyenne (2025-10-24)
+8. **Erreur "Non authentifié" lors de la déconnexion** ✅
+   - Problème : `dashboard.getDashboardStats` lançait une erreur lorsque `signOut` était déclenché pendant un fetch
+   - Solution : la query renvoie désormais `null` si l'utilisateur n'est plus authentifié et la page Dashboard ignore ce flux
+
+9. **Message d'erreur intempestif à la connexion** ✅
+   - Problème : les erreurs `InvalidAccountId` / `InvalidSecret` déclenchaient un toast et polluaient la console
+   - Solution : normalisation des erreurs côté `SignInForm` avec affichage inline "Identifiants incorrects" et stockage d'un message par défaut
