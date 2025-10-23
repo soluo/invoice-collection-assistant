@@ -18,6 +18,7 @@ import type * as pdfExtractionAI from "../pdfExtractionAI.js";
 import type * as permissions from "../permissions.js";
 import type * as reminders from "../reminders.js";
 import type * as router from "../router.js";
+import type * as utils from "../utils.js";
 
 import type {
   ApiFromModules,
@@ -44,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   permissions: typeof permissions;
   reminders: typeof reminders;
   router: typeof router;
+  utils: typeof utils;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 

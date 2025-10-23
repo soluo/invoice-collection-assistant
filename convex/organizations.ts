@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { normalizeEmail } from "./utils";
 
 /**
  * Mutation pour créer une organisation et son premier utilisateur admin
@@ -82,7 +83,8 @@ export const inviteUser = mutation({
 
     // Valider le format de l'email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(args.email)) {
+    const normalizedEmail = normalizeEmail(args.email);
+    if (!emailRegex.test(normalizedEmail)) {
       throw new Error("Format d'email invalide");
     }
 
@@ -96,10 +98,17 @@ export const inviteUser = mutation({
     }
 
     // Vérifier qu'un utilisateur avec cet email n'existe pas déjà dans l'organisation
-    const existingUserWithEmail = await ctx.db
+    let existingUserWithEmail = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
       .first();
+
+    if (!existingUserWithEmail && normalizedEmail !== args.email) {
+      existingUserWithEmail = await ctx.db
+        .query("users")
+        .withIndex("by_email", (q) => q.eq("email", args.email))
+        .first();
+    }
 
     if (
       existingUserWithEmail &&
@@ -109,9 +118,9 @@ export const inviteUser = mutation({
     }
 
     // Vérifier qu'il n'y a pas déjà une invitation en attente pour cet email
-    const existingInvitation = await ctx.db
+    let existingInvitation = await ctx.db
       .query("invitations")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
       .filter((q) =>
         q.and(
           q.eq(q.field("organizationId"), user.organizationId),
@@ -119,6 +128,19 @@ export const inviteUser = mutation({
         )
       )
       .first();
+
+    if (!existingInvitation && normalizedEmail !== args.email) {
+      existingInvitation = await ctx.db
+        .query("invitations")
+        .withIndex("by_email", (q) => q.eq("email", args.email))
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("organizationId"), user.organizationId),
+            q.eq(q.field("status"), "pending")
+          )
+        )
+        .first();
+    }
 
     if (existingInvitation) {
       throw new Error("Une invitation est déjà en attente pour cet email");
@@ -129,7 +151,7 @@ export const inviteUser = mutation({
 
     // Créer l'invitation (expire dans 7 jours)
     const invitationId = await ctx.db.insert("invitations", {
-      email: args.email,
+      email: normalizedEmail,
       organizationId: user.organizationId,
       role: args.role,
       token,
@@ -190,7 +212,7 @@ export const acceptInvitation = mutation({
 
     // Vérifier que l'email de l'utilisateur correspond à l'invitation
     const user = await ctx.db.get(userId);
-    if (user?.email !== invitation.email) {
+    if (!user?.email || normalizeEmail(user.email) !== normalizeEmail(invitation.email)) {
       throw new Error("L'email ne correspond pas à l'invitation");
     }
 

@@ -1,13 +1,15 @@
 import { convexAuth, getAuthUserId } from "@convex-dev/auth/server";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { query } from "./_generated/server";
+import { normalizeEmail } from "./utils";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     Password({
       profile(params) {
+        const email = normalizeEmail(params.email as string);
         const profileData: { email: string; name?: string } = {
-          email: params.email as string,
+          email,
         };
         if (params.name) {
           profileData.name = params.name as string;

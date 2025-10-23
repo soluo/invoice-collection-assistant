@@ -13,7 +13,8 @@ export function SignupForm() {
     setSubmitting(true);
 
     const formData = new FormData(e.target as HTMLFormElement);
-    const email = formData.get("email") as string;
+    const email = (formData.get("email") as string).trim();
+    const normalizedEmail = email.toLowerCase();
     const password = formData.get("password") as string;
     const userName = formData.get("userName") as string;
     const organizationName = formData.get("organizationName") as string;
@@ -27,7 +28,7 @@ export function SignupForm() {
 
       // 2. Créer le compte avec email/password via Convex Auth
       const signInFormData = new FormData();
-      signInFormData.set("email", email);
+      signInFormData.set("email", normalizedEmail);
       signInFormData.set("password", password);
       signInFormData.set("flow", "signUp");
       signInFormData.set("name", userName);

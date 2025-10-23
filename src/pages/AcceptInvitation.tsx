@@ -23,6 +23,7 @@ export function AcceptInvitation() {
 
     const formData = new FormData(e.target as HTMLFormElement);
     const email = invitationDetails.email; // Utiliser l'email de l'invitation, pas du formulaire
+    const normalizedEmail = email.trim().toLowerCase();
     const password = formData.get("password") as string;
     const userName = formData.get("userName") as string;
 
@@ -35,7 +36,7 @@ export function AcceptInvitation() {
 
       // 2. Créer le compte avec email/password via Convex Auth
       const signInFormData = new FormData();
-      signInFormData.set("email", email);
+      signInFormData.set("email", normalizedEmail);
       signInFormData.set("password", password);
       signInFormData.set("flow", "signUp");
       signInFormData.set("name", userName);
