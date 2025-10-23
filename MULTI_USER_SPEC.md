@@ -304,11 +304,11 @@ organizationId: Id<"organizations">,
 - [x] 5.7. Actions invitations : copier lien, regénérer, supprimer
 - [x] 5.8. Filtrage des onglets Settings selon le rôle (admins only pour Org/Team)
 
-### Phase 6 : Interface Utilisateur - Filtres & Adaptations ✅ EN COURS
+### Phase 6 : Interface Utilisateur - Filtres & Adaptations ⏳ EN COURS
 - [x] 6.1. Créer page `/invoices` avec filtres et vue table complète
 - [ ] 6.2. Adapter `Dashboard.tsx` pour supporter les filtres par technicien
 - [x] 6.3. Adapter toutes les vues pour afficher le créateur (InvoiceList, Dashboard, OngoingInvoices, PaidInvoices)
-- [ ] 6.4. Adapter `InvoiceUpload.tsx` (option "Assigner à" pour admins)
+- [x] 6.4. Adapter `InvoiceUpload.tsx` (option "Assigner à" pour admins)
 - [ ] 6.5. Adapter `ReminderSettings.tsx` (déplacer vers paramètres org)
 
 ### Phase 7 : Tests & Nettoyage
@@ -484,6 +484,35 @@ organizationId: Id<"organizations">,
     - Utilise queries backend existantes : `listWithFilter` (admin) et `list` (technicien)
     - Réutilise composants existants : `ReminderModal` pour les relances
   - **Prochaine priorité** : 6.2 (Filtrage Dashboard par technicien)
+
+- **2025-10-23** : ✅ **Phase 6 - Tâche 6.4 Complétée + Refactoring Majeur**
+  - **6.4 COMPLÉTÉE** - Dropdown "Assigner à" pour les admins :
+    - Backend : email client rendu **optionnel** dans le schema (`convex/schema.ts:48` → `v.optional(v.string())`)
+    - Mutation `create()` et `update()` : nouveau paramètre `assignToUserId` pour assigner une facture à un technicien
+    - `InvoiceUpload.tsx` : ajout du dropdown "Responsable de la facture" (lignes 328-346)
+      - Affichage uniquement pour les admins (`isAdmin && users.length > 0`)
+      - Sélection par défaut : utilisateur actuel
+      - Liste déroulante avec nom/email + badge rôle "(Admin)" ou "(Technicien)"
+    - `InvoiceEditModal.tsx` : même fonctionnalité pour modification de factures (lignes 157-175)
+    - Permet aux admins de créer/réassigner des factures à n'importe quel membre de l'équipe
+  - **REFACTORING** - Création de bibliothèques utilitaires et simplification du code :
+    - **Nouveaux fichiers utilitaires** créés dans `src/lib/` :
+      - `formatters.ts` : fonctions de formatage (montants, dates)
+      - `invoiceHelpers.ts` : helpers pour manipuler les factures
+      - `invoiceStatus.ts` : logique complète de gestion des statuts d'invoices
+        - Types : `InvoiceStatus`, `StatusDisplay`
+        - Helpers : pluralisation, formatage des compléments (échéances/retards)
+        - Calculs : jours de retard, tri par urgence
+        - Affichage : badges, couleurs, libellés
+    - **Renommage** : `InvoiceList.tsx` → `InvoicesList.tsx` (meilleure cohérence de nommage)
+    - **Simplification massive** des pages grâce à la réutilisation des utilitaires :
+      - `Dashboard.tsx` : logique déplacée vers helpers
+      - `Invoices.tsx` : formatage et statuts externalisés
+      - `OngoingInvoices.tsx` : code dédupliqué
+      - `PaidInvoices.tsx` : code dédupliqué
+    - **Impact** : -553 lignes nettes (1015 supprimées, 462 ajoutées)
+    - **Bénéfices** : code plus maintenable, logique métier centralisée, réutilisation accrue
+  - **Prochaine priorité** : 6.2 (Filtrage Dashboard par technicien) + 6.5 (Migration ReminderSettings)
 
 ## 11. Bugs Corrigés
 
