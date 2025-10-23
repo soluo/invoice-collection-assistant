@@ -278,11 +278,238 @@ organizationId: Id<"organizations">,
 - [x] 2.8. Rendre organizationId et createdBy obligatoires dans schema
 - [x] 2.9. Nettoyer les données existantes (redémarrage à zéro)
 
-### Phase 3 : Relances Automatiques
-- [ ] 3.1. Migrer la configuration des relances vers `organizations`
-- [ ] 3.2. Créer action `sendReminder` avec support de l'email expéditeur org
-- [ ] 3.3. Créer action cron `checkAndSendReminders` (quotidienne)
-- [ ] 3.4. Tester l'envoi d'emails avec l'adresse de l'organisation
+### Phase 3 : Génération & Envoi de Relances via OAuth
+
+**Philosophie :** Confiance avant Automatisation
+
+**Workflow par défaut (envoi manuel) :**
+1. Cron quotidien → GÉNÈRE les relances (reminders en status "pending")
+2. Admin reçoit notification → PRÉVISUALISE les relances générées
+3. Admin APPROUVE ou REJETTE chaque relance (ou en masse)
+4. Relances approuvées → ENVOI via OAuth (manuel ou auto)
+
+**Workflow avancé (envoi automatique activé) :**
+- Cron génère ET envoie directement (skip approbation)
+- Pour clients qui font confiance au système
+
+#### Backend (Convex)
+
+**3.1. Modifications du schéma (convex/schema.ts)**
+- [ ] 3.1.1. Modifier table `organizations` - Ajouter :
+  - `autoSendReminders: v.boolean()` (par défaut : false)
+  - `emailProvider: v.optional(v.union(v.literal("microsoft"), v.literal("google"), v.literal("infomaniak")))`
+  - `emailConnectedAt: v.optional(v.number())`
+  - `emailAccessToken: v.optional(v.string())`
+  - `emailRefreshToken: v.optional(v.string())`
+  - `emailTokenExpiresAt: v.optional(v.number())`
+  - `emailConnectedBy: v.optional(v.id("users"))`
+  - `emailAccountInfo: v.optional(v.object({ email: v.string(), name: v.string() }))`
+
+- [ ] 3.1.2. Modifier table `reminders` - Ajouter :
+  - `sendStatus: v.union(v.literal("pending"), v.literal("approved"), v.literal("sending"), v.literal("sent"), v.literal("failed"), v.literal("rejected"))`
+  - `approvedBy: v.optional(v.id("users"))`
+  - `approvedAt: v.optional(v.number())`
+  - `sentAt: v.optional(v.number())`
+  - `sendError: v.optional(v.string())`
+  - `lastSendAttempt: v.optional(v.number())`
+  - `generatedByCron: v.boolean()`
+
+- [ ] 3.1.3. Ajouter indexes pour reminders :
+  - `.index("by_sendStatus", ["sendStatus"])`
+  - `.index("by_organization_and_status", ["organizationId", "sendStatus"])`
+
+**3.2. OAuth Flow Microsoft (convex/oauth.ts - nouveau fichier)**
+- [ ] 3.2.1. Créer query `getOAuthUrl` : Génère l'URL d'autorisation Microsoft
+- [ ] 3.2.2. Créer mutation `disconnectEmailProvider` : Supprime les tokens OAuth
+- [ ] 3.2.3. Créer action Node.js `refreshAccessToken` (internal) : Renouvelle l'access token
+- [ ] 3.2.4. Créer action `verifyTokenValidity` : Vérifie et refresh le token si nécessaire
+- [ ] 3.2.5. Créer HTTP route `GET /oauth/microsoft/callback` :
+  - Échange code contre tokens
+  - Récupère infos compte via Graph API
+  - Met à jour organizations
+  - Redirige vers /settings?tab=organization&oauth=success
+
+**3.3. Génération des relances (convex/reminders.ts - enrichir)**
+- [ ] 3.3.1. Créer action `generateReminder` :
+  - Args : `invoiceId`, `reminderType`, `generatedByCron`
+  - Récupère invoice + org + template approprié
+  - Construit l'email avec `buildReminderEmailFromTemplate`
+  - Crée reminder avec `sendStatus: "pending"` (pas d'envoi)
+  - Retourne ID du reminder créé
+
+- [ ] 3.3.2. Créer helper `buildReminderEmailFromTemplate` :
+  - Args : `organizationId`, `invoiceId`, `reminderType`
+  - Récupère template + données facture
+  - Remplace variables : {numero_facture}, {nom_client}, {montant}, {date_facture}, {date_echeance}, {jours_retard}
+  - Ajoute signature
+  - Retourne : `{ subject: string, body: string }`
+
+**3.4. Approbation des relances (convex/reminders.ts)**
+- [ ] 3.4.1. Créer mutation `approveReminder` :
+  - Args : `reminderId`
+  - Vérifie permissions (admin ou créateur de la facture)
+  - Update reminder : `sendStatus: "approved"`, `approvedBy`, `approvedAt`
+  - Si `organization.autoSendReminders === true` : appelle immédiatement `sendReminder`
+
+- [ ] 3.4.2. Créer mutation `rejectReminder` :
+  - Args : `reminderId`
+  - Update reminder : `sendStatus: "rejected"`
+
+- [ ] 3.4.3. Créer mutation `approveBulkReminders` :
+  - Args : `reminderIds: Id<"reminders">[]`
+  - Boucle sur tous les IDs et appelle `approveReminder`
+
+- [ ] 3.4.4. Créer mutation `updateReminderContent` :
+  - Args : `reminderId`, `emailSubject`, `emailContent`
+  - Permet de modifier le contenu avant approbation
+  - Vérifie que `sendStatus === "pending"`
+
+**3.5. Envoi des relances (convex/email.ts - nouveau fichier)**
+- [ ] 3.5.1. Créer action Node.js `sendReminder` :
+  - Args : `reminderId`
+  - Récupère reminder et vérifie `sendStatus === "approved"` ou `"failed"`
+  - Récupère org et vérifie qu'un compte email est connecté
+  - Vérifie validité du token (refresh si nécessaire)
+  - Update reminder : `sendStatus: "sending"`
+  - Envoie via Microsoft Graph API : POST /me/sendMail
+  - Succès → Update : `sendStatus: "sent"`, `sentAt`
+  - Échec → Update : `sendStatus: "failed"`, `sendError`, `lastSendAttempt`
+  - Met à jour le statut de la facture (first_reminder, second_reminder, etc.)
+
+- [ ] 3.5.2. Créer action `sendAllApprovedReminders` :
+  - Query tous les reminders avec `sendStatus: "approved"`
+  - Appelle `sendReminder` pour chacun
+  - Retourne statistiques : `{ sent: 5, failed: 1 }`
+
+- [ ] 3.5.3. Créer action `retrySendReminder` :
+  - Args : `reminderId`
+  - Vérifie que `sendStatus === "failed"`
+  - Update : `sendStatus: "approved"`
+  - Appelle `sendReminder`
+
+**3.6. Cron automatique (convex/cron.ts - nouveau fichier)**
+- [ ] 3.6.1. Créer action Cron `generateDailyReminders` (quotidienne, 8h00) :
+  - Pour chaque organisation
+  - Trouver factures overdue qui nécessitent une relance
+  - Déterminer type de relance (1ère, 2ème, 3ème)
+  - Vérifier qu'une relance de ce type n'existe pas déjà
+  - GÉNÉRER la relance (pas d'envoi ici)
+  - Si `autoSendReminders` activé : approuver et envoyer immédiatement
+  - Retourner statistiques : combien de reminders générés par org
+
+- [ ] 3.6.2. Créer helper `findOverdueInvoices` :
+  - Factures avec status "overdue", "first_reminder", etc.
+  - Respecte les délais configurés
+  - Exclut factures qui ont déjà une relance pending/approved/sent du type approprié
+
+- [ ] 3.6.3. Créer helper `determineReminderType` :
+  - Calcule jours de retard
+  - Compare avec délais configurés
+  - Retourne le type approprié
+
+**3.7. Queries pour l'UI (convex/reminders.ts)**
+- [ ] 3.7.1. Créer query `getPendingReminders` :
+  - Args : `organizationId`
+  - Liste reminders avec `sendStatus: "pending"`
+  - Triés par date (plus récents en premier)
+
+- [ ] 3.7.2. Créer query `getApprovedReminders` :
+  - Args : `organizationId`
+  - Liste reminders avec `sendStatus: "approved"`
+  - Prêts à être envoyés
+
+- [ ] 3.7.3. Créer query `getReminderStats` :
+  - Args : `organizationId`
+  - Retourne : `{ pending: number, approved: number, sent: number, failed: number }`
+  - Stats pour afficher dans le Dashboard
+
+#### Frontend (React)
+
+**3.8. Section Connexion Email (OrganizationSettings.tsx)**
+- [ ] 3.8.1. Ajouter section "Envoi automatique des relances" :
+  - Checkbox `autoSendReminders`
+  - Texte explicatif sur le workflow manuel vs automatique
+
+- [ ] 3.8.2. Ajouter section "Connexion Email (Outlook)" :
+  - Bouton "Connecter Outlook" ou infos du compte connecté
+  - Statut du token
+  - Bouton "Déconnecter" si connecté
+
+**3.9. Page Gestion des Relances (src/pages/Reminders.tsx - NOUVEAU)**
+- [ ] 3.9.1. Créer route `/reminders` dans App.tsx
+- [ ] 3.9.2. Créer composant RemindersPage avec 3 onglets :
+  - Onglet 1 : "En attente d'approbation" (pending)
+  - Onglet 2 : "Approuvées / En cours d'envoi" (approved + sending)
+  - Onglet 3 : "Historique" (sent + failed + rejected)
+
+- [ ] 3.9.3. Onglet 1 - En attente d'approbation :
+  - Tableau : Facture | Client | Type | Montant | Créée le | Aperçu | Actions
+  - Bouton "Voir l'email" → modal avec sujet/contenu
+  - Actions : "Approuver" | "Modifier" | "Rejeter"
+  - Bouton global : "Tout approuver" (confirmation requise)
+
+- [ ] 3.9.4. Onglet 2 - Approuvées :
+  - Tableau similaire
+  - Statut : "Prête à envoyer" (approved) ou "Envoi en cours..." (sending)
+  - Actions : "Envoyer maintenant" (si approved)
+  - Bouton global : "Tout envoyer" → appelle `sendAllApprovedReminders`
+
+- [ ] 3.9.5. Onglet 3 - Historique :
+  - Tableau avec colonne Statut (badge vert/rouge/gris)
+  - Filtre par statut
+  - Si failed : affiche l'erreur + bouton "Réessayer"
+  - Pas d'actions sur sent/rejected
+
+**3.10. Badge Notifications (App.tsx)**
+- [ ] 3.10.1. Ajouter badge dans le header :
+  - Affiche le nombre de reminders "pending" (ex: "5" sur l'icône Bell)
+  - Cliquable → redirige vers /reminders
+
+**3.11. Bannière Dashboard (src/components/RemindersBanner.tsx - nouveau)**
+- [ ] 3.11.1. Créer composant RemindersBanner
+- [ ] 3.11.2. Affiche en haut du Dashboard si :
+  - Des reminders "pending" existent (nouvelles relances générées)
+  - Des reminders "approved" existent (prêtes à envoyer)
+  - Des reminders "failed" existent (échecs d'envoi)
+  - Aucun compte email connecté
+
+- [ ] 3.11.3. Exemples de messages :
+  - "🔔 5 nouvelles relances générées aujourd'hui. [Examiner]"
+  - "✅ 3 relances approuvées prêtes à envoyer. [Envoyer maintenant]"
+  - "⚠️ 2 relances ont échoué à l'envoi. [Voir les erreurs]"
+  - "❌ Connectez votre compte Outlook pour envoyer des relances. [Configurer]"
+
+**3.12. Modal Prévisualisation (src/components/ReminderPreviewModal.tsx)**
+- [ ] 3.12.1. Créer composant ReminderPreviewModal
+- [ ] 3.12.2. Props : `{ reminder: Reminder, onApprove, onReject, onEdit }`
+- [ ] 3.12.3. Affichage :
+  - En-tête : Facture #XXX - Client XXX
+  - Type de relance : Badge "1ère relance" / "2ème relance" / "3ème relance"
+  - Aperçu email : Sujet + Corps formaté
+  - Actions : "Modifier" | "Approuver" | "Rejeter" | "Annuler"
+
+**3.13. Modal Édition (src/components/ReminderEditModal.tsx)**
+- [ ] 3.13.1. Créer composant ReminderEditModal
+- [ ] 3.13.2. Props : `{ reminder: Reminder, onSave }`
+- [ ] 3.13.3. Formulaire :
+  - Champ "Objet" : input text (pré-rempli avec emailSubject)
+  - Champ "Message" : textarea (pré-rempli avec emailContent)
+  - Variables disponibles affichées en aide
+  - Bouton "Sauvegarder" → appelle mutation `updateReminderContent`
+
+#### Configuration Azure AD
+
+**3.14. Setup Azure AD (Prérequis)**
+- [ ] 3.14.1. Créer une application Azure AD
+- [ ] 3.14.2. Configurer les permissions Microsoft Graph :
+  - `Mail.Send` (déléguée)
+  - `User.Read` (déléguée)
+- [ ] 3.14.3. Configurer l'URI de redirection : `https://[deployment].convex.site/oauth/microsoft/callback`
+- [ ] 3.14.4. Récupérer Client ID et Client Secret
+- [ ] 3.14.5. Ajouter dans Convex env vars :
+  - `MICROSOFT_CLIENT_ID`
+  - `MICROSOFT_CLIENT_SECRET`
+  - `MICROSOFT_REDIRECT_URI`
 
 ### Phase 4 : Interface Utilisateur - Auth ✅ COMPLÉTÉE
 - [x] 4.1. Créer composant `SignupForm.tsx` (avec nom de société)
@@ -349,15 +576,27 @@ organizationId: Id<"organizations">,
 
 ## 8. Estimation
 
-**Temps de développement estimé :** 2-3 jours
+**Temps de développement estimé :** 5-7 jours
 
 **Répartition :**
-- Phase 1 (Backend) : 4-6 heures
-- Phase 2 (Permissions) : 3-4 heures
-- Phase 3 (Relances) : 2-3 heures
-- Phase 4 (Auth UI) : 3-4 heures
-- Phase 5 (Gestion équipe UI) : 3-4 heures
-- Phase 6 (Filtres & Adaptations UI) : 4-5 heures
+- Phase 1 (Backend - Schémas & Auth) : 4-6 heures ✅ COMPLÉTÉE
+- Phase 2 (Permissions & Queries) : 3-4 heures ✅ COMPLÉTÉE
+- Phase 3 (Génération & Envoi Relances via OAuth) : 22-30 heures
+  - Schema modifications (30min)
+  - Setup Azure AD (1h)
+  - Backend - Génération (2h)
+  - Backend - Approbation (1-2h)
+  - Backend - Envoi via Graph API (2-3h)
+  - Backend - OAuth flow (3-4h)
+  - Backend - Cron (2-3h)
+  - Frontend - Settings (1-2h)
+  - Frontend - Page Reminders (4-5h)
+  - Frontend - Modals (2-3h)
+  - Frontend - Bannière (1h)
+  - Tests & Debug (3-4h)
+- Phase 4 (Auth UI) : 3-4 heures ✅ COMPLÉTÉE
+- Phase 5 (Gestion équipe UI) : 3-4 heures ✅ COMPLÉTÉE
+- Phase 6 (Filtres & Adaptations UI) : 4-5 heures ⏳ EN COURS (2/5 complétées)
 - Phase 7 (Tests & Nettoyage) : 2-3 heures
 
 ---
@@ -513,6 +752,39 @@ organizationId: Id<"organizations">,
     - **Impact** : -553 lignes nettes (1015 supprimées, 462 ajoutées)
     - **Bénéfices** : code plus maintenable, logique métier centralisée, réutilisation accrue
   - **Prochaine priorité** : 6.2 (Filtrage Dashboard par technicien) + 6.5 (Migration ReminderSettings)
+
+- **2025-10-23** : 📋 **Phase 3 MISE À JOUR - Plan Détaillé OAuth Microsoft**
+  - **Révision complète de la Phase 3** : Système de génération & envoi de relances via OAuth
+  - **Philosophie adoptée** : "Confiance avant Automatisation"
+    - Workflow par défaut : Cron génère → Admin approuve → Envoi manuel
+    - Workflow avancé : Envoi automatique activable pour clients ayant confiance
+  - **Modifications du schéma** détaillées :
+    - Table `organizations` : ajout champs OAuth (provider, tokens, expiration, account info) + flag `autoSendReminders`
+    - Table `reminders` : ajout workflow complet (`sendStatus`, approval tracking, error handling)
+    - Nouveaux indexes pour performances optimales
+  - **Backend détaillé** (47 sous-tâches) :
+    - OAuth flow Microsoft complet avec refresh automatique des tokens
+    - Génération intelligente des relances avec templates et variables
+    - Système d'approbation/rejet avec édition possible avant envoi
+    - Envoi via Microsoft Graph API avec retry sur échec
+    - Cron quotidien avec détection automatique des factures overdue
+    - Queries dédiées pour l'UI (pending, approved, stats)
+  - **Frontend détaillé** (33 sous-tâches) :
+    - Page `/reminders` avec 3 onglets (Pending, Approved, Historique)
+    - Modals de prévisualisation et édition des relances
+    - Bannière Dashboard avec notifications contextuelles
+    - Badge dans le header pour alertes pending
+    - Section OAuth dans Settings (connexion/déconnexion Outlook)
+  - **Configuration Azure AD** documentée (5 étapes) :
+    - Setup application Azure AD
+    - Permissions Microsoft Graph (Mail.Send, User.Read)
+    - Configuration URI de redirection Convex
+    - Variables d'environnement requises
+  - **Estimation temps mise à jour** : 22-30 heures (vs 2-3h initialement)
+  - **Total projet révisé** : 5-7 jours (vs 2-3j initialement)
+  - **Ordre d'implémentation** recommandé : 14 étapes séquentielles pour garantir succès
+  - **Avantages** : Confiance progressive, contrôle total, transparence, flexibilité, audit trail, graceful degradation
+  - **Prochaine étape** : Commencer Phase 3 (ou terminer Phase 6 restante)
 
 ## 11. Bugs Corrigés
 
