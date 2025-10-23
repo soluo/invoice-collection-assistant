@@ -21,6 +21,7 @@ export function OrganizationSettings() {
     secondReminderTemplate: "",
     thirdReminderTemplate: "",
     signature: "",
+    autoSendReminders: false,
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -56,6 +57,7 @@ export function OrganizationSettings() {
         secondReminderTemplate: organization.secondReminderTemplate,
         thirdReminderTemplate: organization.thirdReminderTemplate,
         signature: organization.signature,
+        autoSendReminders: organization.autoSendReminders ?? false,
       });
     }
   }, [organization]);
@@ -94,6 +96,7 @@ export function OrganizationSettings() {
         secondReminderTemplate: formData.secondReminderTemplate,
         thirdReminderTemplate: formData.thirdReminderTemplate,
         signature: formData.signature,
+        autoSendReminders: formData.autoSendReminders,
       });
       toast.success("Paramètres de l'organisation sauvegardés");
     } catch (error: any) {
@@ -190,6 +193,35 @@ export function OrganizationSettings() {
               Cette adresse sera utilisée comme expéditeur pour les relances automatiques
             </p>
           </div>
+        </div>
+
+        {/* Envoi automatique */}
+        <div className="bg-white rounded-lg border p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Envoi automatique des relances
+          </h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Choisissez si les relances générées doivent être envoyées automatiquement ou nécessiter une approbation manuelle.
+          </p>
+          <label className="flex items-start gap-3">
+            <input
+              id="autoSendReminders"
+              type="checkbox"
+              checked={formData.autoSendReminders}
+              onChange={(e) =>
+                setFormData({ ...formData, autoSendReminders: e.target.checked })
+              }
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <div>
+              <span className="text-sm font-medium text-gray-900">
+                Envoyer automatiquement les relances générées
+              </span>
+              <p className="text-xs text-gray-600 mt-1">
+                Désactivez cette option pour valider manuellement chaque relance avant envoi (recommandé lors de la phase de test).
+              </p>
+            </div>
+          </label>
         </div>
 
         {/* Connexion Email OAuth */}

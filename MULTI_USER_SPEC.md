@@ -177,6 +177,8 @@ organizationId: Id<"organizations">,
   - Email expéditeur de l'organisation
   - Section "Gestion de l'équipe"
   - Bouton "Inviter un utilisateur"
+  - Toggle "Envoi automatique des relances" (avec autoSendReminders)
+  - Connexion OAuth Outlook + statut token (OrganizationSettings.tsx)
 
 ### Nouveaux Écrans
 
@@ -295,7 +297,7 @@ organizationId: Id<"organizations">,
 #### Backend (Convex)
 
 **3.1. Modifications du schéma (convex/schema.ts)**
-- [ ] 3.1.1. Modifier table `organizations` - Ajouter :
+- [x] 3.1.1. Modifier table `organizations` - Ajouter :
   - `autoSendReminders: v.boolean()` (par défaut : false)
   - `emailProvider: v.optional(v.union(v.literal("microsoft"), v.literal("google"), v.literal("infomaniak")))`
   - `emailConnectedAt: v.optional(v.number())`
@@ -319,11 +321,11 @@ organizationId: Id<"organizations">,
   - `.index("by_organization_and_status", ["organizationId", "sendStatus"])`
 
 **3.2. OAuth Flow Microsoft (convex/oauth.ts - nouveau fichier)**
-- [ ] 3.2.1. Créer query `getOAuthUrl` : Génère l'URL d'autorisation Microsoft
-- [ ] 3.2.2. Créer mutation `disconnectEmailProvider` : Supprime les tokens OAuth
-- [ ] 3.2.3. Créer action Node.js `refreshAccessToken` (internal) : Renouvelle l'access token
+- [x] 3.2.1. Créer query `getOAuthUrl` : Génère l'URL d'autorisation Microsoft
+- [x] 3.2.2. Créer mutation `disconnectEmailProvider` : Supprime les tokens OAuth
+- [x] 3.2.3. Créer action Node.js `refreshAccessToken` (internal) : Renouvelle l'access token
 - [ ] 3.2.4. Créer action `verifyTokenValidity` : Vérifie et refresh le token si nécessaire
-- [ ] 3.2.5. Créer HTTP route `GET /oauth/microsoft/callback` :
+- [x] 3.2.5. Créer HTTP route `GET /oauth/microsoft/callback` :
   - Échange code contre tokens
   - Récupère infos compte via Graph API
   - Met à jour organizations
@@ -426,14 +428,16 @@ organizationId: Id<"organizations">,
 #### Frontend (React)
 
 **3.8. Section Connexion Email (OrganizationSettings.tsx)**
-- [ ] 3.8.1. Ajouter section "Envoi automatique des relances" :
-  - Checkbox `autoSendReminders`
+- [x] 3.8.1. Ajouter section "Envoi automatique des relances" :
+  - Checkbox `autoSendReminders` liée à Convex (`updateOrganizationSettings`)
   - Texte explicatif sur le workflow manuel vs automatique
+  - Valeur initialisée depuis `getCurrentOrganization.autoSendReminders`
 
-- [ ] 3.8.2. Ajouter section "Connexion Email (Outlook)" :
-  - Bouton "Connecter Outlook" ou infos du compte connecté
-  - Statut du token
-  - Bouton "Déconnecter" si connecté
+- [x] 3.8.2. Ajouter section "Connexion Email (Outlook)" :
+  - Bouton "Connecter Outlook" (redirige vers `getOAuthUrl`)
+  - Affichage compte connecté (nom + email) + date de connexion + statut token actif/expiré
+  - Alerte configuration manquante si URL indisponible
+  - Bouton "Déconnecter" si connecté (mutation `disconnectEmailProvider`)
 
 **3.9. Page Gestion des Relances (src/pages/Reminders.tsx - NOUVEAU)**
 - [ ] 3.9.1. Créer route `/reminders` dans App.tsx

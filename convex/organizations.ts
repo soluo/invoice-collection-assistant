@@ -341,6 +341,22 @@ export const getCurrentOrganization = query({
       secondReminderTemplate: v.string(),
       thirdReminderTemplate: v.string(),
       signature: v.string(),
+      autoSendReminders: v.optional(v.boolean()),
+      emailProvider: v.optional(
+        v.union(
+          v.literal("microsoft"),
+          v.literal("google"),
+          v.literal("infomaniak")
+        )
+      ),
+      emailConnectedAt: v.optional(v.number()),
+      emailTokenExpiresAt: v.optional(v.number()),
+      emailAccountInfo: v.optional(
+        v.object({
+          email: v.string(),
+          name: v.string(),
+        })
+      ),
     }),
     v.null()
   ),
@@ -372,6 +388,11 @@ export const getCurrentOrganization = query({
       secondReminderTemplate: organization.secondReminderTemplate,
       thirdReminderTemplate: organization.thirdReminderTemplate,
       signature: organization.signature,
+      autoSendReminders: organization.autoSendReminders,
+      emailProvider: organization.emailProvider,
+      emailConnectedAt: organization.emailConnectedAt,
+      emailTokenExpiresAt: organization.emailTokenExpiresAt,
+      emailAccountInfo: organization.emailAccountInfo,
     };
   },
 });
@@ -391,6 +412,7 @@ export const updateOrganizationSettings = mutation({
     secondReminderTemplate: v.optional(v.string()),
     thirdReminderTemplate: v.optional(v.string()),
     signature: v.optional(v.string()),
+    autoSendReminders: v.optional(v.boolean()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -427,6 +449,8 @@ export const updateOrganizationSettings = mutation({
     if (args.thirdReminderTemplate !== undefined)
       updates.thirdReminderTemplate = args.thirdReminderTemplate;
     if (args.signature !== undefined) updates.signature = args.signature;
+    if (args.autoSendReminders !== undefined)
+      updates.autoSendReminders = args.autoSendReminders;
 
     await ctx.db.patch(user.organizationId, updates);
 

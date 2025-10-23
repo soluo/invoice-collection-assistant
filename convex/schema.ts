@@ -22,7 +22,11 @@ const applicationTables = {
     autoSendReminders: v.optional(v.boolean()), // Par défaut : false
     // Connexion email OAuth (Phase 3)
     emailProvider: v.optional(
-      v.union(v.literal("microsoft"), v.literal("google"))
+      v.union(
+        v.literal("microsoft"),
+        v.literal("google"),
+        v.literal("infomaniak")
+      )
     ),
     emailConnectedAt: v.optional(v.number()),
     emailAccessToken: v.optional(v.string()),
