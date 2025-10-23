@@ -131,6 +131,10 @@ The `invoices.list` query automatically calculates `daysOverdue` and sorts by pr
 
 ## Important Convex Guidelines
 
+**Documentation References:**
+- `convex_rules.txt` - Règles officielles Convex (syntaxe, schémas, validateurs, etc.)
+- `CONVEX_GUIDELINES.md` - **Procédure de validation obligatoire : TOUJOURS lancer `pnpm dev:backend` après modification des fichiers Convex**
+
 This project follows the Convex function syntax defined in `convex_rules.txt` at the project root. Key conventions:
 
 **Function Syntax:**
