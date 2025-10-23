@@ -1,6 +1,7 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { getUserWithOrg, isAdmin } from "./permissions";
+import type { UserWithOrg } from "./permissions";
 import { Doc } from "./_generated/dataModel";
 
 /**
@@ -30,7 +31,15 @@ export const getDashboardStats = query({
     filterByUserId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
-    const user = await getUserWithOrg(ctx);
+    let user: UserWithOrg;
+    try {
+      user = await getUserWithOrg(ctx);
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === "Non authentifié") {
+        return null;
+      }
+      throw error;
+    }
 
     // Si un filtre est fourni, vérifier que l'utilisateur est admin
     if (args.filterByUserId && !isAdmin(user)) {

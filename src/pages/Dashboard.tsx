@@ -19,6 +19,10 @@ export function Dashboard() {
     );
   }
 
+  if (stats === null) {
+    return null;
+  }
+
   return (
     <div className="space-y-8">
       {/* Bouton Ajouter une facture */}

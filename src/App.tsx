@@ -15,7 +15,8 @@ import { TeamManagement } from "@pages/TeamManagement";
 import { OrganizationSettings } from "@pages/OrganizationSettings";
 import { Invoices } from "@pages/Invoices";
 import { Reminders } from "@pages/Reminders";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import type { Doc } from "../convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 
@@ -37,10 +38,43 @@ function Header() {
   const { signOut } = useAuthActions();
   const navigate = useNavigate();
   const location = useLocation();
+  const loggedInUser = useQuery(api.auth.loggedInUser);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const handleSignOut = () => {
+    setIsMenuOpen(false);
     signOut();
   };
+
+  useEffect(() => {
+    if (!isMenuOpen) {
+      return;
+    }
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
+
+  const initials = getUserInitials(loggedInUser);
+  const displayName = loggedInUser?.name || loggedInUser?.email || "Utilisateur";
 
   const isActive = (path: string) => {
     if (path === "/") {
@@ -107,19 +141,60 @@ function Header() {
               <Users size={20} />
               <span className="hidden sm:inline">Équipe</span>
             </button>
-            <button
-              onClick={handleSignOut}
-              className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Se déconnecter"
-            >
-              <LogOut size={20} />
-              <span className="hidden max-sm:hidden sm:inline">Se déconnecter</span>
-            </button>
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                onClick={() => setIsMenuOpen((prev) => !prev)}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                title="Menu utilisateur"
+                aria-haspopup="true"
+                aria-expanded={isMenuOpen}
+              >
+                {initials}
+              </button>
+              {isMenuOpen && (
+                <div className="absolute right-0 z-20 mt-3 w-60 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+                  <div className="px-4 py-3">
+                    <p className="text-sm font-medium text-gray-900">{displayName}</p>
+                    {loggedInUser?.email && (
+                      <p className="mt-1 text-sm text-gray-500">{loggedInUser.email}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-3 text-left text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                  >
+                    <LogOut size={18} />
+                    Se déconnecter
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </Authenticated>
       </div>
     </header>
   );
+}
+
+type MaybeUser = Doc<"users"> | null | undefined;
+
+function getUserInitials(user: MaybeUser) {
+  const name = user?.name?.trim();
+  if (name) {
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  const email = user?.email;
+  if (email) {
+    const localPart = email.split("@")[0];
+    return localPart.slice(0, 2).toUpperCase();
+  }
+  return "?";
 }
 
 function Content() {
