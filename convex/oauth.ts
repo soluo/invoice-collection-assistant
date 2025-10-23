@@ -215,6 +215,7 @@ export const getOrganization = internalQuery({
   args: { organizationId: v.id("organizations") },
   returns: v.union(
     v.object({
+      emailAccessToken: v.optional(v.string()),
       emailRefreshToken: v.optional(v.string()),
       emailTokenExpiresAt: v.optional(v.number()),
     }),
@@ -224,6 +225,7 @@ export const getOrganization = internalQuery({
     const org = await ctx.db.get(args.organizationId);
     if (!org) return null;
     return {
+      emailAccessToken: org.emailAccessToken,
       emailRefreshToken: org.emailRefreshToken,
       emailTokenExpiresAt: org.emailTokenExpiresAt,
     };

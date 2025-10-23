@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { Id } from "../../convex/_generated/dataModel";
+import { toast } from "sonner";
 
 type ReminderRecord = {
   _id: string;
@@ -9,6 +11,8 @@ type ReminderRecord = {
   sendStatus: "pending" | "sent" | "failed";
   emailSubject: string;
   emailContent: string;
+  sentAt: number | null;
+  sendError: string | null;
   generatedByCron: boolean;
   invoice: {
     _id: string;
@@ -59,6 +63,16 @@ function formatAmount(amount: number | undefined) {
   return amount.toLocaleString("fr-FR", {
     style: "currency",
     currency: "EUR",
+  });
+}
+
+function formatTimestamp(timestamp: number) {
+  return new Date(timestamp).toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -194,7 +208,14 @@ export function Reminders() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-700">
-                      {formatDate(reminder.reminderDate)}
+                      <div className="space-y-1">
+                        <p>{formatDate(reminder.reminderDate)}</p>
+                        {reminder.sentAt && (
+                          <p className="text-xs text-green-600">
+                            Envoyée le {formatTimestamp(reminder.sentAt)}
+                          </p>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <span
@@ -208,6 +229,12 @@ export function Reminders() {
                       {reminder.creator && (
                         <p className="text-xs text-gray-500 mt-1">
                           Par {reminder.creator.name}
+                        </p>
+                      )}
+                      {reminder.sendStatus === "failed" && reminder.sendError && (
+                        <p className="text-xs text-red-600 mt-1">
+                          Dernier échec : {reminder.sendError.slice(0, 120)}
+                          {reminder.sendError.length > 120 ? "…" : ""}
                         </p>
                       )}
                     </td>
@@ -275,6 +302,12 @@ type ReminderPreviewModalProps = {
 };
 
 function ReminderPreviewModal({ reminder, organization, onClose }: ReminderPreviewModalProps) {
+  const sendReminder = useAction(api.reminders.sendReminderEmail);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const alreadySent = reminder.sendStatus === "sent";
+  const canSend = Boolean(reminder.invoice?.clientEmail) && !alreadySent;
+
   const recipientName = reminder.invoice?.clientName ?? "Client inconnu";
   const recipientEmail = reminder.invoice?.clientEmail ?? "Email indisponible";
   const senderName =
@@ -322,6 +355,24 @@ function ReminderPreviewModal({ reminder, organization, onClose }: ReminderPrevi
               {reminder.emailContent}
             </div>
           </div>
+
+          {alreadySent && (
+            <div className="text-sm text-green-600">
+              Cette relance a déjà été envoyée.
+            </div>
+          )}
+
+          {!reminder.invoice?.clientEmail && (
+            <div className="text-sm text-red-600">
+              Adresse email du client manquante : impossible d'envoyer la relance.
+            </div>
+          )}
+
+          {sendError && (
+            <div className="text-sm text-red-600">
+              {sendError}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
@@ -334,11 +385,38 @@ function ReminderPreviewModal({ reminder, organization, onClose }: ReminderPrevi
           </button>
           <button
             type="button"
-            disabled
-            className="px-4 py-2 text-sm font-semibold text-white bg-blue-500 rounded-md opacity-60 cursor-not-allowed"
-            title="Envoi automatique à venir"
+            disabled={sending || !canSend}
+            onClick={async () => {
+              if (!canSend) {
+                setSendError(
+                  alreadySent
+                    ? "Cette relance a déjà été envoyée."
+                    : "Adresse email du client manquante."
+                );
+                return;
+              }
+              try {
+                setSendError(null);
+                setSending(true);
+                await sendReminder({ reminderId: reminder._id as Id<"reminders"> });
+                toast.success("Relance envoyée via Outlook");
+                onClose();
+              } catch (error: any) {
+                console.error("Erreur envoi relance:", error);
+                const message = error?.message || "Échec de l'envoi de la relance";
+                setSendError(message);
+                toast.error(message);
+              } finally {
+                setSending(false);
+              }
+            }}
+            className={`px-4 py-2 text-sm font-semibold text-white rounded-md ${
+              sending || !canSend
+                ? "bg-blue-400 opacity-60 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
-            Envoyer (bientôt)
+            {sending ? "Envoi..." : "Envoyer"}
           </button>
         </div>
       </div>
