@@ -40,7 +40,7 @@ export function StatsNavigation() {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
       {/* Montant à recouvrir - Navigation vers Dashboard */}
       <button
-        onClick={() => navigate("/")}
+        onClick={() => void navigate("/")}
         className={`bg-white rounded-lg border p-6 hover:shadow-md transition-shadow text-left group ${
           isActive("/") ? "ring-2 ring-red-500 border-red-200" : ""
         }`}
@@ -56,7 +56,7 @@ export function StatsNavigation() {
           <div className="ml-4 flex-1">
             <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">À recouvrir</h3>
             <p className="text-2xl font-bold text-red-600">{formatCurrency(stats.totaux.montantARecouvrir)}</p>
-            <p className="text-sm text-gray-500">{stats.nombreFacturesEnRetard} facture{stats.nombreFacturesEnRetard > 1 ? 's' : ''}</p>
+            <p className="text-sm text-gray-500">En retard</p>
           </div>
         </div>
       </button>
