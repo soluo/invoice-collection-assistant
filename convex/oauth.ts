@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalAction, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 
@@ -87,27 +87,83 @@ export const disconnectEmailProvider = mutation({
 });
 
 /**
- * Action interne pour rafraîchir l'access token
+ * Query interne pour récupérer les informations utilisateur nécessaires au refresh
  */
-export const refreshAccessToken = internalAction({
+export const getUserForOAuth = internalQuery({
   args: {
-    organizationId: v.id("organizations"),
+    userId: v.id("users"),
   },
-  returns: v.object({
-    accessToken: v.string(),
-    expiresAt: v.number(),
-  }),
-  handler: async (ctx, args): Promise<{ accessToken: string; expiresAt: number }> => {
-    // Récupérer l'organisation
-    const org: { emailRefreshToken?: string } | null = await ctx.runQuery(
-      internal.oauth.getOrganization,
-      {
-        organizationId: args.organizationId,
-      }
-    );
+  returns: v.union(
+    v.object({
+      _id: v.id("users"),
+      role: v.optional(v.union(v.literal("admin"), v.literal("technicien"))),
+      organizationId: v.optional(v.id("organizations")),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return null;
+    }
+    return {
+      _id: user._id,
+      role: user.role,
+      organizationId: user.organizationId,
+    };
+  },
+});
 
-    if (!org?.emailRefreshToken) {
-      throw new Error("Aucun refresh token disponible");
+/**
+ * Helper queries et mutations internes
+ */
+
+/**
+ * Action publique : rafraîchir l'access token si proche de l'expiration
+ */
+export const refreshTokenIfNeeded = action({
+  args: {},
+  returns: v.object({
+    refreshed: v.boolean(),
+    expiresAt: v.optional(v.number()),
+  }),
+  handler: async (ctx): Promise<{ refreshed: boolean; expiresAt?: number }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+
+    const userInfo = await ctx.runQuery(internal.oauth.getUserForOAuth, {
+      userId,
+    });
+
+    if (!userInfo?.organizationId) {
+      throw new Error("Utilisateur sans organisation");
+    }
+    if (userInfo.role !== "admin") {
+      throw new Error("Seuls les admins peuvent gérer la connexion email");
+    }
+
+    const organization = await ctx.runQuery(internal.oauth.getOrganization, {
+      organizationId: userInfo.organizationId,
+    });
+
+    if (!organization?.emailRefreshToken) {
+      throw new Error("Aucun compte email connecté");
+    }
+
+    const now = Date.now();
+    const threshold = 10 * 60 * 1000; // 10 minutes
+    const expiresAt = organization.emailTokenExpiresAt ?? undefined;
+    const shouldRefresh =
+      !organization.emailTokenExpiresAt ||
+      organization.emailTokenExpiresAt - now <= threshold;
+
+    if (!shouldRefresh) {
+      return {
+        refreshed: false,
+        expiresAt,
+      };
     }
 
     const clientId = process.env.MICROSOFT_CLIENT_ID;
@@ -118,7 +174,6 @@ export const refreshAccessToken = internalAction({
       throw new Error("Configuration OAuth incomplète");
     }
 
-    // Appeler l'API Microsoft pour rafraîchir le token
     const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
 
     const response: Response = await fetch(tokenUrl, {
@@ -129,7 +184,7 @@ export const refreshAccessToken = internalAction({
       body: new URLSearchParams({
         client_id: clientId,
         client_secret: clientSecret,
-        refresh_token: org.emailRefreshToken,
+        refresh_token: organization.emailRefreshToken,
         grant_type: "refresh_token",
       }),
     });
@@ -140,27 +195,20 @@ export const refreshAccessToken = internalAction({
     }
 
     const data: any = await response.json();
+    const newExpiresAt = Date.now() + data.expires_in * 1000;
 
-    // Calculer l'expiration (expires_in est en secondes)
-    const expiresAt = Date.now() + data.expires_in * 1000;
-
-    // Mettre à jour l'organisation avec le nouveau token
     await ctx.runMutation(internal.oauth.updateAccessToken, {
-      organizationId: args.organizationId,
+      organizationId: userInfo.organizationId,
       accessToken: data.access_token,
-      expiresAt,
+      expiresAt: newExpiresAt,
     });
 
     return {
-      accessToken: data.access_token,
-      expiresAt,
+      refreshed: true,
+      expiresAt: newExpiresAt,
     };
   },
 });
-
-/**
- * Helper queries et mutations internes
- */
 
 // Query interne pour récupérer une organisation avec ses tokens
 export const getOrganization = internalQuery({
@@ -168,6 +216,7 @@ export const getOrganization = internalQuery({
   returns: v.union(
     v.object({
       emailRefreshToken: v.optional(v.string()),
+      emailTokenExpiresAt: v.optional(v.number()),
     }),
     v.null()
   ),
@@ -176,6 +225,7 @@ export const getOrganization = internalQuery({
     if (!org) return null;
     return {
       emailRefreshToken: org.emailRefreshToken,
+      emailTokenExpiresAt: org.emailTokenExpiresAt,
     };
   },
 });

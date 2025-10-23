@@ -1,14 +1,17 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { Building2, Mail, Check, X, ExternalLink } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation, useAction } from "convex/react";
+import { Building2, Mail, Check, X, ExternalLink, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
+
+const TOKEN_REFRESH_THRESHOLD_MS = 10 * 60 * 1000;
 
 export function OrganizationSettings() {
   const organization = useQuery(api.organizations.getCurrentOrganization);
   const updateSettings = useMutation(api.organizations.updateOrganizationSettings);
   const getOAuthUrl = useQuery(api.oauth.getOAuthUrl);
   const disconnectEmail = useMutation(api.oauth.disconnectEmailProvider);
+  const refreshTokenIfNeeded = useAction(api.oauth.refreshTokenIfNeeded);
 
   const [formData, setFormData] = useState({
     organizationName: "",
@@ -26,6 +29,8 @@ export function OrganizationSettings() {
 
   const [submitting, setSubmitting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [refreshingToken, setRefreshingToken] = useState(false);
+  const hasAttemptedAutoRefresh = useRef(false);
 
   // Gérer les messages OAuth (success/error) depuis les query params
   useEffect(() => {
@@ -61,6 +66,58 @@ export function OrganizationSettings() {
       });
     }
   }, [organization]);
+
+  useEffect(() => {
+    if (!organization) {
+      hasAttemptedAutoRefresh.current = false;
+      return;
+    }
+
+    if (
+      organization.emailProvider !== "microsoft" ||
+      !organization.emailAccountInfo
+    ) {
+      hasAttemptedAutoRefresh.current = false;
+      return;
+    }
+
+    const expiresAt = organization.emailTokenExpiresAt;
+    const now = Date.now();
+    const shouldRefresh =
+      !expiresAt || expiresAt - now <= TOKEN_REFRESH_THRESHOLD_MS;
+
+    if (!shouldRefresh) {
+      hasAttemptedAutoRefresh.current = false;
+      return;
+    }
+
+    if (hasAttemptedAutoRefresh.current) {
+      return;
+    }
+
+    hasAttemptedAutoRefresh.current = true;
+
+    const renewToken = async () => {
+      try {
+        setRefreshingToken(true);
+        const result = await refreshTokenIfNeeded({});
+        if (result?.refreshed) {
+          toast.success("Token Outlook renouvelé automatiquement");
+        }
+      } catch (error: any) {
+        console.error("Erreur lors du renouvellement du token:", error);
+        toast.error(
+          error.message ||
+            "Impossible de renouveler automatiquement le token Outlook"
+        );
+        hasAttemptedAutoRefresh.current = false;
+      } finally {
+        setRefreshingToken(false);
+      }
+    };
+
+    void renewToken();
+  }, [organization, refreshTokenIfNeeded]);
 
   if (organization === undefined) {
     return (
@@ -131,10 +188,33 @@ export function OrganizationSettings() {
     }
   };
 
-  // Vérifier si le token est expiré
-  const isTokenExpired = organization?.emailTokenExpiresAt
-    ? organization.emailTokenExpiresAt < Date.now()
-    : false;
+  const tokenExpirationTimestamp = organization?.emailTokenExpiresAt ?? null;
+  const timeUntilExpiration =
+    tokenExpirationTimestamp !== null ? tokenExpirationTimestamp - Date.now() : null;
+  const isTokenExpired =
+    timeUntilExpiration !== null ? timeUntilExpiration <= 0 : false;
+  const isTokenExpiringSoon =
+    timeUntilExpiration !== null &&
+    timeUntilExpiration > 0 &&
+    timeUntilExpiration <= TOKEN_REFRESH_THRESHOLD_MS;
+  const expirationLabel =
+    tokenExpirationTimestamp !== null
+      ? new Date(tokenExpirationTimestamp).toLocaleString("fr-FR", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "Date inconnue";
+  const minutesUntilExpiration =
+    timeUntilExpiration !== null
+      ? Math.max(0, Math.floor(timeUntilExpiration / (60 * 1000)))
+      : null;
+  const minutesUntilExpirationLabel =
+    minutesUntilExpiration !== null
+      ? `Expire dans environ ${minutesUntilExpiration} min`
+      : "Expiration imminente";
 
   return (
     <div className="space-y-8 pt-6">
@@ -270,14 +350,31 @@ export function OrganizationSettings() {
 
                 {/* Statut du token */}
                 <div className="mt-4 flex items-center gap-2">
-                  {isTokenExpired ? (
+                  {refreshingToken ? (
+                    <>
+                      <span className="h-3 w-3 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+                      <span className="text-sm font-medium text-blue-600">
+                        Renouvellement du token en cours...
+                      </span>
+                    </>
+                  ) : isTokenExpired ? (
                     <>
                       <div className="flex items-center gap-2 text-orange-600">
                         <X size={16} />
                         <span className="text-sm font-medium">Token expiré</span>
                       </div>
                       <span className="text-xs text-gray-500">
-                        (Sera automatiquement renouvelé lors du prochain envoi)
+                        (Une nouvelle tentative sera effectuée automatiquement lors du prochain envoi)
+                      </span>
+                    </>
+                  ) : isTokenExpiringSoon ? (
+                    <>
+                      <div className="flex items-center gap-2 text-amber-600">
+                        <Clock size={16} />
+                        <span className="text-sm font-medium">Token expirant bientôt</span>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        ({minutesUntilExpirationLabel}, renouvellement automatique en préparation)
                       </span>
                     </>
                   ) : (
@@ -287,11 +384,7 @@ export function OrganizationSettings() {
                         <span className="text-sm font-medium">Token actif</span>
                       </div>
                       <span className="text-xs text-gray-500">
-                        (Expire le{" "}
-                        {organization.emailTokenExpiresAt
-                          ? new Date(organization.emailTokenExpiresAt).toLocaleDateString("fr-FR")
-                          : "Date inconnue"}
-                        )
+                        (Expire le {expirationLabel})
                       </span>
                     </>
                   )}
@@ -302,7 +395,7 @@ export function OrganizationSettings() {
               <button
                 type="button"
                 onClick={handleDisconnect}
-                disabled={disconnecting}
+                disabled={disconnecting || refreshingToken}
                 className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <X size={16} />

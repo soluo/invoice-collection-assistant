@@ -8,6 +8,7 @@ type ReminderRecord = {
   reminderStatus: "first_reminder" | "second_reminder" | "third_reminder";
   sendStatus: "pending" | "sent" | "failed";
   emailSubject: string;
+  emailContent: string;
   generatedByCron: boolean;
   invoice: {
     _id: string;
