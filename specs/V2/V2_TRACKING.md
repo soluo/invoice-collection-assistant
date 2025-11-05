@@ -398,27 +398,27 @@ Sois concis, contente toi de cocher les cases et d'ajouter un récap à la parti
 #### Tâches :
 - [ ] **2.6.1** Améliorer zone drag-drop
   - Design V2 : border-dashed indigo-300, hauteur 256px
-  - Icône upload (Phosphor)
+  - Icône upload (équivalent Lucide)
   - Texte "Glissez votre PDF ou cliquez pour sélectionner"
 
 - [ ] **2.6.2** Spinner pendant analyse
-  - Overlay avec spinner + texte "Analyse en cours..."
-  - Durée : ~2s (simulation)
+  - Overlay avec spinner + texte "Analyse de la facture en cours..."
 
 - [ ] **2.6.3** Formulaire pré-rempli - Section 1 : Détails facture
   - N° Facture
-  - Client (dropdown ou autocomplete)
+  - Client (autocomplete en fonction des noms déjà saisis en base)
   - Montant TTC
-  - Échéance
+  - Date d'émission
+  - Date d'échéance (par défaut à J+14 de la date d'émission)
 
 - [ ] **2.6.4** Formulaire pré-rempli - Section 2 : Contact (recommandé)
   - Email
   - Téléphone
   - Note : "(Recommandé pour automatiser les relances)"
 
-- [ ] **2.6.5** Animation de pré-remplissage
-  - Transition smooth des inputs vides → remplis
-  - Highlight champs pré-remplis (border-indigo-500 temporaire)
+- [ ] **2.6.5** UX
+  - En desktop on affiche par défaut la zone de drag&drop, et on propose la saisie manuelle (voir maquette)
+  - En mobile on affiche par défaut le formulaire de saisie, pas de zone drag & drop
 
 #### Backend requis :
 - [ ] Enrichir extraction AI pour inclure email/téléphone contact
