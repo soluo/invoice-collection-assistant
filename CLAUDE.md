@@ -61,7 +61,10 @@ Built with **React 19 + TypeScript + Vite** in `/src/`:
 
 **Routing & Layout:**
 - `src/App.tsx`: Main app layout, authentication handling, and React Router setup
-- Routes: `/` (dashboard), `/ongoing`, `/paid`, `/upload`, `/settings`
+- `src/components/layout/AppLayout.tsx`: Main layout wrapper with sidebar and topbar
+- `src/components/layout/Sidebar.tsx`: Left sidebar navigation (responsive, mobile overlay)
+- `src/components/layout/Topbar.tsx`: Top bar with user menu and mobile hamburger
+- Routes: `/` (dashboard), `/invoices`, `/clients`, `/upload`, `/settings`, `/team`, etc.
 
 **Key Components:**
 - `src/components/Dashboard.tsx`: Main dashboard with overdue/upcoming invoice stats
@@ -188,3 +191,25 @@ This project follows the Convex function syntax defined in `convex_rules.txt` at
 - Toast notifications via `sonner`
 - Icons from `lucide-react`
 - **Styling uses Tailwind CSS v4** with CSS-based configuration (no config file)
+
+## Navigation Best Practices
+
+**Use NavLink for Navigation Links:**
+- **Always prefer `<NavLink>` over `<button onClick>` for navigation** to provide better UX and accessibility
+- NavLink provides: URL preview on hover, right-click context menu, better semantics, and automatic active state
+- Use the `end` prop on the root path to prevent it from matching all routes:
+  ```tsx
+  <NavLink to="/" end>Dashboard</NavLink>
+  ```
+- NavLink automatically provides `isActive` in its className function:
+  ```tsx
+  <NavLink
+    to="/invoices"
+    className={({ isActive }) => cn(
+      "base-classes",
+      isActive ? "active-classes" : "inactive-classes"
+    )}
+  >
+    Invoices
+  </NavLink>
+  ```

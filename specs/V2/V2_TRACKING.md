@@ -1,7 +1,8 @@
 # Suivi Développement V2 - ZenRelance
 
 **Date de création :** 2025-11-05
-**Statut global :** 🔴 Non commencé
+**Dernière mise à jour :** 2025-11-05
+**Statut global :** 🟡 En cours (Phase 1.1-1.2 complétée)
 **Version cible :** 2.0.0
 
 ---
@@ -9,18 +10,20 @@
 ## 📊 Vue d'ensemble
 
 ### Objectifs V2
-- **Refonte visuelle** : Design system unifié (Indigo theme + Phosphor Icons + shadcn/ui)
+- **Refonte visuelle** : Design system unifié (Indigo theme + lucide-react icons + shadcn/ui)
 - **4 nouveaux écrans majeurs** : Détail facture, Clients à appeler, Rapprochement bancaire, Agenda
 - **Intégrations IA** : Gemini pour analyse dashboard + génération templates de relances
 - **UX améliorée** : Panels latéraux, modales, timelines, historiques détaillés
 - **100% responsive** : Mobile-first avec breakpoints Tailwind
+
+**Note :** Les icônes utilisent `lucide-react` (déjà installé) au lieu de Phosphor Icons spécifié dans les maquettes. Les deux bibliothèques sont très similaires visuellement.
 
 ### Ressources
 - **Maquettes** : `specs/V2/mockups/*.html` (9 fichiers)
 - **Rapport d'analyse** : Voir section 12 de `MULTI_USER_SPEC.md`
 
 ### Progression globale
-- Phase 1 (Design System) : 0/15 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜
+- Phase 1 (Design System) : 7/15 ✅✅✅✅✅✅✅⬜⬜⬜⬜⬜⬜⬜⬜
 - Phase 2 (Écrans) : 0/45 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜
 - Phase 3 (Intégrations) : 0/12 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜
 
@@ -28,65 +31,67 @@
 
 ## PHASE 1 : Design System & Layout 🎨
 
-**Statut** : 🔴 Non commencé
-**Prérequis** : Accès MCP shadcn/ui
+**Statut** : 🟡 En cours (1.1-1.2 complétées)
+**Prérequis** : Accès MCP shadcn/ui ✅
 
 ### 1.1 Installation & Configuration
 
-- [ ] **1.1.1** Installer shadcn/ui via MCP
-  - Commande : `npx shadcn@latest init`
-  - Configuration : TypeScript, Tailwind, src/ directory
+- [x] **1.1.1** ✅ Installer shadcn/ui via MCP
+  - ✅ Components.json configuré pour Tailwind v4 (sans tailwind.config.js)
+  - ✅ Configuration : TypeScript, Tailwind, src/ directory, baseColor: slate
 
-- [ ] **1.1.2** Installer Phosphor Icons
-  ```bash
-  pnpm add @phosphor-icons/react
-  ```
+- [x] **1.1.2** ✅ Icons
+  - ✅ **Utilisation de `lucide-react`** (déjà installé) au lieu de Phosphor Icons
+  - Note : lucide-react est visuellement similaire et déjà présent dans le projet
 
-- [ ] **1.1.3** Configurer le thème Indigo dans `src/index.css`
-  - Mettre à jour les variables CSS `@theme` (--color-primary → indigo-600)
-  - Vérifier cohérence avec Tailwind v4
+- [x] **1.1.3** ✅ Configurer le thème Indigo dans `src/index.css`
+  - ✅ `--color-primary`: `#6366f1` (indigo-600)
+  - ✅ `--color-primary-hover`: `#4f46e5` (indigo-700)
+  - ✅ Cohérence avec Tailwind v4 vérifiée
 
-- [ ] **1.1.4** Installer Chart.js
+- [ ] **1.1.4** Installer Chart.js (reporté)
+  - Note : Installation repoussée jusqu'à implémentation des graphiques (Phase 2.1)
   ```bash
   pnpm add chart.js react-chartjs-2
   ```
 
 ### 1.2 Layout Global
 
-- [ ] **1.2.1** Créer le nouveau Sidebar
-  - Fichier : `src/components/layout/Sidebar.tsx`
-  - Référence : Tous les mockups (sidebar commune)
-  - Features :
-    - Logo "ZenRelance" (indigo-600)
-    - 8 nav items + Réglages/Mon Compte (bottom)
-    - Icons Phosphor
-    - Active state : indigo-600 bg + white text
-    - Mobile : Fixed overlay avec backdrop (z-30/40)
-    - Toggle : `translate-x-0` vs `-translate-x-full`
+- [x] **1.2.1** ✅ Créer le nouveau Sidebar
+  - ✅ Fichier : `src/components/layout/Sidebar.tsx`
+  - ✅ Logo "ZenRelance" (indigo-600)
+  - ✅ 7 nav items principaux + 2 items bottom (Réglages, Mon Compte)
+  - ✅ Icons lucide-react (Home, FileText, Users, Phone, Upload, CreditCard, Calendar, Settings, User)
+  - ✅ **Navigation avec `<NavLink>` pour meilleure UX** (URL preview, clic droit, accessibilité)
+  - ✅ Active state : indigo-600 bg + white text
+  - ✅ Mobile : Fixed overlay avec backdrop (z-30/40)
+  - ✅ Toggle : `translate-x-0` vs `-translate-x-full`
 
-- [ ] **1.2.2** Créer le Topbar
-  - Fichier : `src/components/layout/Topbar.tsx`
-  - Référence : Tous les mockups
-  - Features :
-    - Hamburger menu (mobile uniquement)
-    - User greeting + Avatar initiales
-    - White bg + border-b
+- [x] **1.2.2** ✅ Créer le Topbar
+  - ✅ Fichier : `src/components/layout/Topbar.tsx`
+  - ✅ Hamburger menu (mobile uniquement)
+  - ✅ User greeting dynamique (Bonjour/Bonsoir selon l'heure)
+  - ✅ Avatar avec initiales (shadcn/ui Avatar component)
+  - ✅ Dropdown menu utilisateur (nom, email, déconnexion)
+  - ✅ White bg + border-b
 
-- [ ] **1.2.3** Créer le Layout principal
-  - Fichier : `src/components/layout/AppLayout.tsx`
-  - Structure : Sidebar (fixe desktop, overlay mobile) + Main content
-  - Responsive : Breakpoint md: (768px)
+- [x] **1.2.3** ✅ Créer le Layout principal
+  - ✅ Fichier : `src/components/layout/AppLayout.tsx`
+  - ✅ Structure : Sidebar (fixe desktop, overlay mobile) + Topbar + Main content
+  - ✅ Responsive : Breakpoint md: (768px)
+  - ✅ Gestion état sidebar mobile
 
-- [ ] **1.2.4** Mettre à jour `App.tsx`
-  - Intégrer le nouveau layout
-  - Tester navigation mobile vs desktop
-  - Vérifier transitions sidebar
+- [x] **1.2.4** ✅ Mettre à jour `App.tsx`
+  - ✅ Ancien Header supprimé, remplacé par AppLayout
+  - ✅ Toutes les routes authentifiées wrapped dans `<AppLayout>`
+  - ✅ Navigation mobile/desktop testée et fonctionnelle
+  - ✅ Transitions sidebar fluides (duration-300 ease-in-out)
 
 ### 1.3 Composants shadcn à intégrer
 
-- [ ] **1.3.1** Button
-  - Variants : default (indigo-600), secondary (border), ghost, destructive
-  - Sizes : sm, default, lg
+- [x] **1.3.1** ✅ Button (installé via MCP)
+  - ✅ Fichier : `src/components/ui/button.tsx`
+  - Note : Variants disponibles (default, secondary, ghost, destructive) mais style à ajuster pour indigo-600
 
 - [ ] **1.3.2** Card
   - Base : border + rounded-xl + shadow-sm
@@ -655,9 +660,10 @@
 # - react, react-dom, react-router-dom
 # - tailwindcss v4
 # - sonner (toasts)
+# - lucide-react (icons) ✅
 
 # À installer
-pnpm add @phosphor-icons/react          # Icons
+# pnpm add @phosphor-icons/react          # Icons - NON NÉCESSAIRE (on utilise lucide-react)
 pnpm add chart.js react-chartjs-2       # Charts
 pnpm add @google/generative-ai          # Gemini AI
 pnpm add date-fns                        # Date utilities
@@ -665,7 +671,8 @@ pnpm add date-fns                        # Date utilities
 
 ### shadcn/ui Components
 Via MCP :
-- Button
+- Button ✅
+- Avatar ✅
 - Card
 - Badge
 - Dialog
@@ -676,7 +683,6 @@ Via MCP :
 - Sheet (Slide-over)
 - DatePicker (Calendar + Popover)
 - Pagination
-- Avatar
 
 ---
 
@@ -730,10 +736,35 @@ Via MCP :
 
 ## 🎯 Prochaines Étapes
 
-1. **Valider l'accès MCP shadcn/ui**
-2. **Démarrer Phase 1.1** : Installation dépendances
-3. **Créer le nouveau layout** (Phase 1.2)
-4. **Implémenter écrans un par un** (commencer par Dashboard 2.1)
+1. ✅ ~~Valider l'accès MCP shadcn/ui~~
+2. ✅ ~~Démarrer Phase 1.1 : Installation dépendances~~
+3. ✅ ~~Créer le nouveau layout (Phase 1.2)~~
+4. **Phase 1.3** : Installer les composants shadcn restants (Card, Badge, Dialog, Tabs, Input, etc.)
+5. **Phase 2.1** : Commencer refonte Dashboard avec KPIs et graphiques
+
+---
+
+## 📝 Changelog
+
+### 2025-11-05 - Phase 1.1 & 1.2 complétées ✅
+
+**Installation & Configuration (1.1)**
+- ✅ Configuré shadcn/ui via MCP (components.json sans tailwind.config.js pour Tailwind v4)
+- ✅ Thème Indigo configuré (`--color-primary: indigo-600`)
+- ✅ Décision : Utilisation de lucide-react au lieu de Phosphor Icons
+- ✅ Composants installés : Button, Avatar
+
+**Layout Global (1.2)**
+- ✅ Créé `src/components/layout/Sidebar.tsx` avec 7 nav items + 2 bottom items
+- ✅ Créé `src/components/layout/Topbar.tsx` avec hamburger, greeting dynamique, user menu
+- ✅ Créé `src/components/layout/AppLayout.tsx` (wrapper Sidebar + Topbar)
+- ✅ Refonte `src/App.tsx` : ancien Header supprimé, toutes routes wrapped dans AppLayout
+- ✅ **Navigation améliorée** : Utilisation de `<NavLink>` au lieu de boutons (URL preview, accessibilité)
+- ✅ Responsive mobile/desktop fonctionnel
+
+**Documentation**
+- ✅ Mise à jour `CLAUDE.md` : ajout section "Navigation Best Practices" (préférer NavLink)
+- ✅ Mise à jour `V2_TRACKING.md` : progression et décisions documentées
 
 ---
 
