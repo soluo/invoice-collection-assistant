@@ -1,12 +1,11 @@
-import { Authenticated, Unauthenticated, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { SignInForm } from "./SignInForm";
 import { SignupForm } from "@pages/SignupForm";
 import { AcceptInvitation } from "@pages/AcceptInvitation";
 import { Toaster } from "sonner";
-import { LogOut, Settings, Users, Home, FileText, Bell } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { BrowserRouter, Routes, Route, useNavigate, Navigate, useLocation, useSearchParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, Navigate, useSearchParams } from "react-router-dom";
 import { Dashboard } from "@pages/Dashboard";
 import { OngoingInvoices } from "@pages/OngoingInvoices";
 import { PaidInvoices } from "@pages/PaidInvoices";
@@ -15,186 +14,18 @@ import { TeamManagement } from "@pages/TeamManagement";
 import { OrganizationSettings } from "@pages/OrganizationSettings";
 import { Invoices } from "@pages/Invoices";
 import { Reminders } from "@pages/Reminders";
-import { useState, useEffect, useRef } from "react";
-import type { Doc } from "../convex/_generated/dataModel";
+import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen flex flex-col bg-gray-50">
-        <Header />
-        <main className="flex-1 p-4">
-          <Content />
-        </main>
-        <Toaster />
-      </div>
+      <Content />
+      <Toaster />
     </BrowserRouter>
   );
-}
-
-function Header() {
-  const { signOut } = useAuthActions();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const loggedInUser = useQuery(api.auth.loggedInUser);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  const handleSignOut = () => {
-    setIsMenuOpen(false);
-    signOut();
-  };
-
-  useEffect(() => {
-    if (!isMenuOpen) {
-      return;
-    }
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsMenuOpen(false);
-      }
-    };
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [isMenuOpen]);
-
-  useEffect(() => {
-    setIsMenuOpen(false);
-  }, [location.pathname]);
-
-  const initials = getUserInitials(loggedInUser);
-  const displayName = loggedInUser?.name || loggedInUser?.email || "Utilisateur";
-
-  const isActive = (path: string) => {
-    if (path === "/") {
-      return location.pathname === "/";
-    }
-    return location.pathname.startsWith(path);
-  };
-
-  const getButtonClass = (path: string) => {
-    const baseClass = "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors";
-    if (isActive(path)) {
-      return `${baseClass} bg-blue-100 text-blue-700 font-medium`;
-    }
-    return `${baseClass} text-gray-600 hover:text-gray-900 hover:bg-gray-100`;
-  };
-
-  return (
-    <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b shadow-sm px-4">
-      <div className="max-w-7xl mx-auto h-16 flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-semibold text-gray-900">Gestion Factures</h2>
-          <Authenticated>
-            <button
-              onClick={() => navigate("/")}
-              className={getButtonClass("/")}
-              title="Tableau de bord"
-            >
-              <Home size={20} />
-              <span className="hidden sm:inline">Tableau de bord</span>
-            </button>
-            <button
-              onClick={() => navigate("/invoices")}
-              className={getButtonClass("/invoices")}
-              title="Factures"
-            >
-              <FileText size={20} />
-              <span className="hidden sm:inline">Factures</span>
-            </button>
-            <button
-              onClick={() => navigate("/reminders")}
-              className={getButtonClass("/reminders")}
-              title="Relances"
-            >
-              <Bell size={20} />
-              <span className="hidden sm:inline">Relances</span>
-            </button>
-          </Authenticated>
-        </div>
-        <Authenticated>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate("/settings")}
-              className={getButtonClass("/settings")}
-              title="Réglages"
-            >
-              <Settings size={20} />
-              <span className="hidden sm:inline">Réglages</span>
-            </button>
-            <button
-              onClick={() => navigate("/team")}
-              className={getButtonClass("/team")}
-              title="Équipe"
-            >
-              <Users size={20} />
-              <span className="hidden sm:inline">Équipe</span>
-            </button>
-            <div className="relative" ref={menuRef}>
-              <button
-                type="button"
-                onClick={() => setIsMenuOpen((prev) => !prev)}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                title="Menu utilisateur"
-                aria-haspopup="true"
-                aria-expanded={isMenuOpen}
-              >
-                {initials}
-              </button>
-              {isMenuOpen && (
-                <div className="absolute right-0 z-20 mt-3 w-60 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
-                  <div className="px-4 py-3">
-                    <p className="text-sm font-medium text-gray-900">{displayName}</p>
-                    {loggedInUser?.email && (
-                      <p className="mt-1 text-sm text-gray-500">{loggedInUser.email}</p>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
-                    className="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-3 text-left text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
-                  >
-                    <LogOut size={18} />
-                    Se déconnecter
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </Authenticated>
-      </div>
-    </header>
-  );
-}
-
-type MaybeUser = Doc<"users"> | null | undefined;
-
-function getUserInitials(user: MaybeUser) {
-  const name = user?.name?.trim();
-  if (name) {
-    const parts = name.split(/\s+/).filter(Boolean);
-    if (parts.length === 1) {
-      return parts[0].slice(0, 2).toUpperCase();
-    }
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-  const email = user?.email;
-  if (email) {
-    const localPart = email.split("@")[0];
-    return localPart.slice(0, 2).toUpperCase();
-  }
-  return "?";
 }
 
 function Content() {
@@ -226,7 +57,7 @@ function Content() {
           setIsCreatingOrg(false);
           // Déconnecter l'utilisateur pour permettre une nouvelle tentative
           sessionStorage.removeItem("pendingOrgData");
-          setTimeout(() => signOut(), 2000);
+          setTimeout(() => void signOut(), 2000);
         }
       };
       void createOrg();
@@ -258,7 +89,7 @@ function Content() {
           setIsCreatingOrg(false);
           // Déconnecter l'utilisateur pour permettre une nouvelle tentative
           sessionStorage.removeItem("pendingInvitationData");
-          setTimeout(() => signOut(), 2000);
+          setTimeout(() => void signOut(), 2000);
         }
       };
       void acceptInv();
@@ -287,34 +118,32 @@ function Content() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <Routes>
-        {loggedInUser ? (
-          <>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/invoices" element={<Invoices />} />
-            <Route path="/reminders" element={<Reminders />} />
-            <Route path="/ongoing" element={<OngoingInvoices />} />
-            <Route path="/paid" element={<PaidInvoices />} />
-            <Route path="/upload" element={<InvoiceUploadPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/team" element={<TeamManagement />} />
-            {/* Les routes d'auth ne sont plus accessibles une fois connecté */}
-            <Route path="/login" element={<Navigate to="/" />} />
-            <Route path="/signup" element={<Navigate to="/" />} />
-            <Route path="/accept-invitation/:token" element={<Navigate to="/" />} />
-            <Route path="*" element={<Navigate to="/" />} />
-          </>
-        ) : (
-          <>
-            <Route path="/login" element={<SignInPage />} />
-            <Route path="/signup" element={<SignupForm />} />
-            <Route path="/accept-invitation/:token" element={<AcceptInvitation />} />
-            <Route path="*" element={<Navigate to="/login" />} />
-          </>
-        )}
-      </Routes>
-    </div>
+    <Routes>
+      {loggedInUser ? (
+        <>
+          <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
+          <Route path="/invoices" element={<AppLayout><Invoices /></AppLayout>} />
+          <Route path="/reminders" element={<AppLayout><Reminders /></AppLayout>} />
+          <Route path="/ongoing" element={<AppLayout><OngoingInvoices /></AppLayout>} />
+          <Route path="/paid" element={<AppLayout><PaidInvoices /></AppLayout>} />
+          <Route path="/upload" element={<AppLayout><InvoiceUploadPage /></AppLayout>} />
+          <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
+          <Route path="/team" element={<AppLayout><TeamManagement /></AppLayout>} />
+          {/* Les routes d'auth ne sont plus accessibles une fois connecté */}
+          <Route path="/login" element={<Navigate to="/" />} />
+          <Route path="/signup" element={<Navigate to="/" />} />
+          <Route path="/accept-invitation/:token" element={<Navigate to="/" />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </>
+      ) : (
+        <>
+          <Route path="/login" element={<SignInPage />} />
+          <Route path="/signup" element={<SignupForm />} />
+          <Route path="/accept-invitation/:token" element={<AcceptInvitation />} />
+          <Route path="*" element={<Navigate to="/login" />} />
+        </>
+      )}
+    </Routes>
   );
 }
 

@@ -13,6 +13,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.63.1",
     "@convex-dev/auth": "^0.0.80",
+    "@radix-ui/react-avatar": "^1.1.11",
+    "@radix-ui/react-slot": "^1.2.4",
     "@types/pdf-parse": "^1.1.5",
     "@types/react-router-dom": "^5.3.3",
     "clsx": "^2.1.1",
