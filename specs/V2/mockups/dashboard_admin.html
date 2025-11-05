@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/phosphor-icons/1.4.2/css/phosphor.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar { transition: transform 0.3s ease-in-out; }
+        .sidebar-open { transform: translateX(0); }
+        .sidebar-closed { transform: translateX(-100%); }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar sidebar-closed md:sidebar-open fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-lg md:relative md:translate-x-0">
+            <div class="flex flex-col h-full">
+                <!-- Logo -->
+                <div class="flex items-center justify-center h-16 border-b">
+                    <h1 class="text-2xl font-bold text-indigo-600">ZenRelance</h1>
+                </div>
+                <!-- Navigation -->
+                <nav class="flex-1 px-4 py-6 space-y-2">
+                    <a href="dashboard_admin.html" class="flex items-center px-4 py-3 text-white bg-indigo-600 rounded-lg">
+                        <i class="ph-bold ph-house text-lg"></i>
+                        <span class="ml-3 font-medium">Tableau de bord</span>
+                    </a>
+                    <a href="rapprochement.html" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="ph-bold ph-arrows-counter-clockwise text-lg"></i>
+                        <span class="ml-3 font-medium">Rapprochement</span>
+                    </a>
+                    <a href="factures.html" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="ph-bold ph-receipt text-lg"></i>
+                        <span class="ml-3 font-medium">Factures</span>
+                    </a>
+                    <a href="clients.html" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="ph-bold ph-users text-lg"></i>
+                        <span class="ml-3 font-medium">Clients</span>
+                    </a>
+                    <a href="agenda.html" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="ph-bold ph-calendar text-lg"></i>
+                        <span class="ml-3 font-medium">Agenda</span>
+                    </a>
+                    <a href="import_facture.html" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="ph-bold ph-upload-simple text-lg"></i>
+                        <span class="ml-3 font-medium">Importer</span>
+                    </a>
+                </nav>
+                <!-- Footer -->
+                <div class="px-4 py-6 border-t">
+                    <a href="reglages.html" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="ph-bold ph-gear text-lg"></i>
+                        <span class="ml-3 font-medium">Réglages</span>
+                    </a>
+                    <a href="#" class="flex items-center px-4 py-3 mt-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="ph-bold ph-user-circle text-lg"></i>
+                        <span class="ml-3 font-medium">Mon Compte</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backdrop Overlay -->
+        <div id="sidebar-backdrop" class="hidden md:hidden fixed inset-0 z-20 bg-black bg-opacity-50"></div>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top bar -->
+            <header class="flex items-center justify-between h-16 px-6 bg-white border-b md:justify-end">
+                <!-- Mobile menu button -->
+                <button id="menu-button" class="md:hidden text-gray-600 focus:outline-none">
+                    <!-- Remplacement de l'icône de police par un SVG -->
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                    </svg>
+                </button>
+                <!-- User menu -->
+                <div class="flex items-center">
+                    <span class="mr-3 font-medium text-gray-700">Bonjour, Admin</span>
+                    <img class="w-10 h-10 rounded-full" src="https://placehold.co/100x100/E2E8F0/4A5568?text=A" alt="Avatar Admin">
+                </div>
+            </header>
+
+            <!-- Page content -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6 md:p-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-6">Tableau de Bord Administrateur</h1>
+
+                <!-- KPIs -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <!-- Main KPI -->
+                    <div class="md:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <h2 class="text-sm font-medium text-gray-500 mb-1">Total en attente de paiement</h2>
+                        <p class="text-4xl font-bold text-gray-900">42 850 €</p>
+                        <p class="text-sm font-medium text-gray-500 mt-2">
+                            dont <span class="font-bold text-red-600">11 200 €</span> en retard
+                        </p>
+                    </div>
+                    <!-- Secondary KPIs -->
+                    <div class="md:col-span-2 grid grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 class="text-sm font-medium text-gray-500 mb-2">Encaissé (30 derniers jours)</h2>
+                            <p class="text-3xl font-bold text-green-600">18 100 €</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 class="text-sm font-medium text-gray-500 mb-2">Délai de paiement moyen</h2>
+                            <p class="text-3xl font-bold text-gray-900">22 jours</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Flux de trésorerie (6 derniers mois)</h2>
+                    <div class="h-64 md:h-80">
+                        <canvas id="cashflowChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Priorities -->
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-900">Priorités</h2>
+                        <button id="gemini-analyze-btn" class="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+                            <span id="gemini-analyze-icon">✨</span>
+                            <span id="gemini-analyze-text" class="ml-2">Analyser la situation</span>
+                        </button>
+                    </div>
+
+                    <!-- Gemini Analysis Box -->
+                    <div id="gemini-analysis-box" class="hidden bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-lg mb-6">
+                        <h3 class="font-bold text-indigo-800">Analyse rapide de Gemini</h3>
+                        <p id="gemini-analysis-content" class="text-indigo-700 mt-2"></p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Actions Requises -->
+                        <div class="md:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Actions Requises</h3>
+                            <ul class="space-y-3">
+                                <li class="flex justify-between items-center">
+                                    <a href="rapprochement.html" class="text-indigo-600 hover:underline">12 Paiements à rapprocher</a>
+                                    <span class="text-sm font-medium text-gray-500">Aujourd'hui</span>
+                                </li>
+                                <li class="flex justify-between items-center">
+                                    <a href="plan_appels.html" class="text-indigo-600 hover:underline">8 Clients à appeler</a>
+                                    <span class="px-2 py-0.5 text-xs font-semibold text-red-800 bg-red-100 rounded-full">Urgent</span>
+                                </li>
+                                <li class="flex justify-between items-center">
+                                    <a href="factures.html" class="text-indigo-600 hover:underline">3 Litiges en attente</a>
+                                    <span class="text-sm font-medium text-gray-500">Depuis 2j</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Plus Gros Retards -->
+                        <div class="md:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Plus Gros Retards</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="text-sm font-medium text-gray-500 border-b border-gray-200">
+                                            <th class="py-2">Client / Donneur d'ordre</th>
+                                            <th class="py-2">Montant</th>
+                                            <th class="py-2">Retard</th>
+                                            <th class="py-2">Technicien</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200">
+                                        <tr class="text-sm text-gray-900">
+                                            <td class="py-3 font-medium">Agence du Port</td>
+                                            <td class="py-3">4 500 €</td>
+                                            <td class="py-3 font-medium text-red-600">42 jours</td>
+                                            <td class="py-3 text-gray-600">Marc D.</td>
+                                        </tr>
+                                        <tr class="text-sm text-gray-900">
+                                            <td class="py-3 font-medium">Notaire Le Goff</td>
+                                            <td class="py-3">3 100 €</td>
+                                            <td class="py-3 font-medium text-red-600">35 jours</td>
+                                            <td class="py-3 text-gray-600">Laura P.</td>
+                                        </tr>
+                                        <tr class="text-sm text-gray-900">
+                                            <td class="py-3 font-medium">M. Dubois (Particulier)</td>
+                                            <td class="py-3">1 800 €</td>
+                                            <td class="py-3 font-medium text-red-600">28 jours</td>
+                                            <td class="py-3 text-gray-600">Marc D.</td>
+                                        </tr>
+                                        <tr class="text-sm text-gray-900">
+                                            <td class="py-3 font-medium">Agence ImmoSud</td>
+                                            <td class="py-3">1 800 €</td>
+                                            <td class="py-3 font-medium text-red-600">25 jours</td>
+                                            <td class="py-3 text-gray-600">Admin</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Chart.js setup
+        // CORRECTION: .getContext('d') -> .getContext('2d')
+        const ctx = document.getElementById('cashflowChart').getContext('2d');
+        const cashflowChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Sept.'],
+                datasets: [
+                    {
+                        label: 'Facturé',
+                        data: [28000, 32000, 25000, 41000, 38000, 43000],
+                        backgroundColor: '#C7D2FE', // indigo-200
+                        borderRadius: 4,
+                    },
+                    {
+                        label: 'Encaissé',
+                        data: [22000, 29000, 30000, 35000, 34000, 18100], // 18100 for current month
+                        backgroundColor: '#34D399', // green-400
+                        borderRadius: 4,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) { return value / 1000 + 'k €'; }
+                        }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        align: 'end',
+                        labels: { usePointStyle: true, boxWidth: 8 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.formattedValue + ' €';
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
+                }
+            }
+        });
+
+        // Mobile menu toggle
+        const menuButton = document.getElementById('menu-button');
+        const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+
+        const toggleSidebar = () => {
+            sidebar.classList.toggle('sidebar-closed');
+            sidebar.classList.toggle('sidebar-open');
+            backdrop.classList.toggle('hidden');
+        };
+
+        menuButton.addEventListener('click', toggleSidebar);
+        backdrop.addEventListener('click', toggleSidebar);
+
+        // --- Gemini API ---
+        const geminiAnalyzeBtn = document.getElementById('gemini-analyze-btn');
+        const geminiIcon = document.getElementById('gemini-analyze-icon');
+        const geminiText = document.getElementById('gemini-analyze-text');
+        const geminiBox = document.getElementById('gemini-analysis-box');
+        const geminiContent = document.getElementById('gemini-analysis-content');
+
+        // Mock data from the dashboard to send to Gemini
+        const getDashboardData = () => {
+            return {
+                total_en_attente: "42 850 €",
+                total_en_retard: "11 200 €",
+                encaisse_30j: "18 100 €",
+                delai_moyen_paiement: "22 jours",
+                actions_requises: [
+                    "12 Paiements à rapprocher",
+                    "8 Clients à appeler (Urgent)",
+                    "3 Litiges en attente"
+                ],
+                plus_gros_retards: [
+                    { client: "Agence du Port", montant: "4 500 €", retard: "42 jours" },
+                    { client: "Notaire Le Goff", montant: "3 100 €", retard: "35 jours" }
+                ],
+                flux_tresorerie: [
+                    { mois: "Avril", facture: 28000, encaisse: 22000 },
+                    { mois: "Mai", facture: 32000, encaisse: 29000 },
+                    { mois: "Juin", facture: 25000, encaisse: 30000 },
+                    { mois: "Juillet", facture: 41000, encaisse: 35000 },
+                    { mois: "Août", facture: 38000, encaisse: 34000 },
+                    { mois: "Sept.", facture: 43000, encaisse: 18100 },
+                ]
+            };
+        };
+
+        const callGeminiAPI = async (prompt, systemPrompt) => {
+            // Mettez l'API Key ici si nécessaire, sinon laissez vide
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+            };
+
+            // Implémentation de l'exponential backoff pour les essais
+            let response;
+            let delay = 1000;
+            for (let i = 0; i < 5; i++) {
+                try {
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        const candidate = result.candidates?.[0];
+                        if (candidate && candidate.content?.parts?.[0]?.text) {
+                            return candidate.content.parts[0].text;
+                        } else {
+                            throw new Error("Réponse de l'API mal formatée.");
+                        }
+                    } else if (response.status === 429 || response.status >= 500) {
+                        // Throttling ou erreur serveur, on réessaie
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2;
+                    } else {
+                        // Erreur client, on ne réessaie pas
+                        console.error("Erreur API:", response.status, await response.text());
+                        return "Désolé, une erreur est survenue lors de l'analyse.";
+                    }
+                } catch (error) {
+                    console.error("Erreur lors de l'appel API:", error);
+                    if (i === 4) { // Dernier essai
+                        return "Désolé, une erreur est survenue lors de l'analyse.";
+                    }
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                }
+            }
+            return "Désolé, impossible de contacter le service d'analyse après plusieurs tentatives.";
+        };
+
+        geminiAnalyzeBtn.addEventListener('click', async () => {
+            // État de chargement
+            geminiText.textContent = "Analyse en cours...";
+            geminiIcon.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>`;
+            geminiAnalyzeBtn.disabled = true;
+            geminiBox.classList.add('hidden');
+
+            const dashboardData = getDashboardData();
+            const systemPrompt = "Tu es un expert-comptable et conseiller financier pour artisans. Rédige une analyse courte (3 phrases maximum), en langage simple, direct et actionnable. Ne sois pas alarmiste mais sois clair sur les priorités. Parle en 'vous'. Tu réponds en français.";
+            const userPrompt = `Voici les données de mon tableau debord de suivi de facturation : ${JSON.stringify(dashboardData)}. Rédige un résumé de la situation et dis-moi quelle est ma priorité n°1.`;
+
+            // Appel (simulé ou réel)
+            // const analysisResult = "Analyse simulée : Votre trésorerie est tendue ce mois-ci, l'encaissé est plus faible que le facturé. Votre priorité est de gérer les 8 clients en retard, en commençant par l'Agence du Port (4 500 €).";
+            const analysisResult = await callGeminiAPI(userPrompt, systemPrompt);
+
+            // Affichage du résultat
+            geminiContent.textContent = analysisResult;
+            geminiBox.classList.remove('hidden');
+            
+            // Réinitialisation du bouton
+            geminiText.textContent = "Analyser la situation";
+            geminiIcon.innerHTML = "✨";
+            geminiAnalyzeBtn.disabled = false;
+        });
+    </script>
+</body>
+</html>
+

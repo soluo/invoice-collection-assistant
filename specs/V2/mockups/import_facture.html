@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-gray-100">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importer - ZenRelance</title>
+    <!-- Chargement de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chargement de Google Font "Inter" -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chargement de Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* Définition de la police Inter comme police par défaut */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Style pour la scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Style pour la sidebar active */
+        .sidebar-link.active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+        }
+
+        .sidebar-link.active i {
+            color: white;
+        }
+
+        /* Spinner */
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4f46e5; /* indigo-600 */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+        }
+    </style>
+</head>
+
+<body class="h-full flex">
+
+    <!-- Backdrop pour le menu mobile -->
+    <div id="menu-backdrop" class="fixed inset-0 bg-black/30 z-30 md:hidden hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar"
+        class="fixed top-0 left-0 w-64 h-full bg-white shadow-lg z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col">
+        <!-- Logo -->
+        <div class="flex items-center justify-center h-16 border-b px-4">
+            <h1 class="text-2xl font-bold text-indigo-600">ZenRelance</h1>
+        </div>
+        <!-- Navigation -->
+        <nav class="flex-1 overflow-y-auto py-4">
+            <ul class="space-y-2 px-4">
+                <li>
+                    <a href="dashboard_admin.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-house text-xl text-gray-500"></i>
+                        <span>Tableau de bord</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="rapprochement.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-arrows-counter-clockwise text-xl text-gray-500"></i>
+                        <span>Rapprochement</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="factures.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-files text-xl text-gray-500"></i>
+                        <span>Factures</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="import_facture.html"
+                        class="sidebar-link active flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-upload-simple text-xl text-gray-500"></i>
+                        <span>Importer</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="clients.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-users text-xl text-gray-500"></i>
+                        <span>Clients</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="plan_appels.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-phone-call text-xl text-gray-500"></i>
+                        <span>Clients à appeler</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="agenda.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-calendar-blank text-xl text-gray-500"></i>
+                        <span>Agenda</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <!-- User / Settings -->
+        <div class="border-t p-4">
+            <a href="reglages.html"
+                class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                <i class="ph-bold ph-gear text-xl text-gray-500"></i>
+                <span>Réglages</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="flex-1 md:ml-64 flex flex-col overflow-hidden">
+
+        <!-- Top bar -->
+        <header class="flex items-center justify-between h-16 px-6 bg-white border-b md:justify-end">
+            <!-- Mobile menu button -->
+            <button id="menu-button" class="md:hidden text-gray-600 focus:outline-none">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                    stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+            </button>
+            <!-- User menu -->
+            <div class="flex items-center">
+                <span class="text-sm font-medium mr-4 text-gray-700">Bonjour, Alexandre</span>
+                <div
+                    class="w-10 h-10 rounded-full bg-indigo-200 text-indigo-700 flex items-center justify-center font-bold">
+                    A
+                </div>
+            </div>
+        </header>
+
+        <!-- Page content -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+            <div class="container mx-auto max-w-2xl">
+
+                <!-- En-tête -->
+                <div class="mb-6">
+                    <h1 class="text-3xl font-bold text-gray-900">Importer une facture</h1>
+                    <p class="mt-2 text-lg text-gray-600">Déposez votre PDF, nous lirons les informations pour vous.</p>
+                </div>
+
+                <!-- Conteneur principal -->
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm">
+
+                    <!-- Zone d'Upload (Visible par défaut) -->
+                    <div id="upload-zone" class="p-6">
+                        <label for="file-upload"
+                            class="relative flex flex-col items-center justify-center w-full h-64 border-2 border-indigo-300 border-dashed rounded-lg cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6 text-center">
+                                <i class="ph-bold ph-upload-simple text-5xl text-indigo-500"></i>
+                                <p class="mb-2 text-lg font-semibold text-indigo-700">Glissez-déposez votre facture</p>
+                                <p class="text-sm text-gray-500">ou cliquez pour sélectionner un fichier (PDF, JPG, PNG)</p>
+                            </div>
+                            <input id="file-upload" type="file" class="hidden" onchange="handleFileSelect(this)" />
+                        </label>
+                        <div class="mt-6 text-center">
+                            <button id="manual-entry-btn" type="button"
+                                class="text-indigo-600 font-medium hover:text-indigo-800">
+                                ou entrer les informations manuellement
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Spinner (Caché) -->
+                    <div id="loading-spinner" class="p-6 hidden">
+                        <div class="flex flex-col items-center justify-center h-64 text-center">
+                            <div class="spinner"></div>
+                            <p class="mt-4 text-lg font-semibold text-indigo-700">Analyse de votre facture en cours...</p>
+                            <p class="text-sm text-gray-500">Veuillez patienter.</p>
+                        </div>
+                    </div>
+
+                    <!-- Formulaire (Caché par défaut) -->
+                    <form id="invoice-form" class="hidden">
+                        <!-- Message de succès (pour pré-remplissage) -->
+                        <div id="form-success-message" class="hidden p-4 m-6 bg-green-50 text-green-700 border border-green-200 rounded-lg">
+                            <p class="font-medium">Données extraites !</p>
+                            <p class="text-sm">Veuillez vérifier les informations ci-dessous avant de valider.</p>
+                        </div>
+
+                        <!-- Nom du fichier (pour pré-remplissage) -->
+                        <div id="file-info" class="hidden px-6 pt-6">
+                            <div class="flex justify-between items-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                                <div class="flex items-center gap-2">
+                                    <i class="ph ph-file-pdf text-xl text-red-500"></i>
+                                    <span id="file-name" class="text-sm font-medium text-gray-700"></span>
+                                </div>
+                                <button type="button" id="change-file-btn" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">Changer</button>
+                            </div>
+                        </div>
+
+                        <div class="p-6 space-y-6">
+                            <!-- Infos Facture -->
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">Détails de la facture</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div>
+                                        <label for="invoice-number" class="block text-sm font-medium text-gray-700">Numéro de facture / Dossier <span class="text-red-500">*</span></label>
+                                        <input type="text" id="invoice-number" placeholder="Ex: F2024-081 ou 'Dossier Martin'"
+                                            class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label for="client-name" class="block text-sm font-medium text-gray-700">Client / Donneur d'ordre <span class="text-red-500">*</span></label>
+                                        <input type="text" id="client-name" placeholder="Ex: Agence Immo Sud"
+                                            class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label for="invoice-amount" class="block text-sm font-medium text-gray-700">Montant Total TTC <span class="text-red-500">*</span></label>
+                                        <div class="relative mt-1">
+                                            <input type="number" id="invoice-amount" placeholder="0,00"
+                                                class="w-full rounded-lg border-gray-300 pl-10 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">€</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label for="due-date" class="block text-sm font-medium text-gray-700">Date d'échéance <span class="text-red-500">*</span></label>
+                                        <input type="date" id="due-date"
+                                            class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Infos Contact (Optionnel) -->
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">Contact pour la relance (Recommandé)</h3>
+                                <p class="text-sm text-gray-500 mt-2">Qui devons-nous contacter ? (Ex: Sophie de l'agence, ou le service compta)</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div>
+                                        <label for="contact-email" class="block text-sm font-medium text-gray-700">Email</label>
+                                        <input type="email" id="contact-email" placeholder="Ex: compta@agence.fr"
+                                            class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label for="contact-phone" class="block text-sm font-medium text-gray-700">Téléphone</label>
+                                        <input type="tel" id="contact-phone" placeholder="Ex: 04 01 02 03 04"
+                                            class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pied de page du formulaire -->
+                        <div class="flex items-center justify-end space-x-4 border-t border-gray-200 bg-gray-50 px-6 py-4 rounded-b-xl">
+                            <button type="button" id="cancel-form-btn"
+                                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
+                                Annuler
+                            </button>
+                            <button type="submit"
+                                class="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+                                Ajouter la facture
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Logique de la Sidebar ---
+            const menuButton = document.getElementById('menu-button');
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('menu-backdrop');
+
+            const toggleMenu = () => {
+                sidebar.classList.toggle('-translate-x-full');
+                backdrop.classList.toggle('hidden');
+            };
+
+            if (menuButton) menuButton.addEventListener('click', toggleMenu);
+            if (backdrop) backdrop.addEventListener('click', toggleMenu);
+
+            // --- Logique de l'import ---
+            const uploadZone = document.getElementById('upload-zone');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const invoiceForm = document.getElementById('invoice-form');
+            const manualEntryBtn = document.getElementById('manual-entry-btn');
+            const cancelFormBtn = document.getElementById('cancel-form-btn');
+            const changeFileBtn = document.getElementById('change-file-btn');
+
+            const formSuccessMessage = document.getElementById('form-success-message');
+            const fileInfo = document.getElementById('file-info');
+            const fileNameEl = document.getElementById('file-name');
+
+            const showForm = (isPreFilled = false) => {
+                uploadZone.classList.add('hidden');
+                loadingSpinner.classList.add('hidden');
+                invoiceForm.classList.remove('hidden');
+
+                if (isPreFilled) {
+                    formSuccessMessage.classList.remove('hidden');
+                    fileInfo.classList.remove('hidden');
+                } else {
+                    formSuccessMessage.classList.add('hidden');
+                    fileInfo.classList.add('hidden');
+                }
+            };
+
+            const showUpload = () => {
+                uploadZone.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+                invoiceForm.classList.add('hidden');
+            };
+
+            const showSpinner = () => {
+                uploadZone.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+                invoiceForm.classList.add('hidden');
+            };
+
+            // Clic sur "Entrer manuellement"
+            manualEntryBtn.addEventListener('click', () => {
+                showForm(false);
+            });
+
+            // Clic sur "Annuler"
+            cancelFormBtn.addEventListener('click', () => {
+                showUpload();
+            });
+
+            // Clic sur "Changer" (fichier)
+            changeFileBtn.addEventListener('click', () => {
+                showUpload();
+            });
+
+            // Simulation d'upload et pré-remplissage
+            window.handleFileSelect = (input) => {
+                if (input.files && input.files[0]) {
+                    const file = input.files[0];
+                    fileNameEl.textContent = file.name;
+
+                    showSpinner();
+
+                    // Simule une analyse de 2 secondes
+                    setTimeout(() => {
+                        // Pré-remplissage des champs (simulation)
+                        document.getElementById('invoice-number').value = 'F2024-082';
+                        document.getElementById('client-name').value = 'Agence de la Plage';
+                        document.getElementById('invoice-amount').value = '1450.00';
+                        document.getElementById('due-date').value = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // J+30
+                        document.getElementById('contact-email').value = 'contact@plage-immo.fr';
+
+                        showForm(true);
+                    }, 2000);
+                }
+            };
+
+            // Empêcher la soumission réelle du formulaire
+            invoiceForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                // Idéalement, ici : afficher un message de succès et reset le form
+                alert('Facture ajoutée (simulation) !');
+                showUpload();
+                invoiceForm.reset();
+            });
+
+        });
+    </script>
+</body>
+
+</html>

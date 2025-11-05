@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-gray-100">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda - ZenRelance</title>
+    <!-- Chargement de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chargement de Google Font "Inter" -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chargement de Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* Définition de la police Inter comme police par défaut */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Style pour la scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Style pour la sidebar active */
+        .sidebar-link.active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+        }
+
+        .sidebar-link.active i {
+            color: white;
+        }
+
+        /* Style pour les onglets */
+        .tab-button {
+            @apply whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium;
+        }
+        .tab-button.active {
+            @apply border-indigo-600 text-indigo-600;
+        }
+        .tab-button:not(.active) {
+            @apply border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700;
+        }
+    </style>
+</head>
+
+<body class="h-full flex">
+
+    <!-- Backdrop pour le menu mobile -->
+    <div id="menu-backdrop" class="fixed inset-0 bg-black/30 z-30 md:hidden hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar"
+        class="fixed top-0 left-0 w-64 h-full bg-white shadow-lg z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col">
+        <!-- Logo -->
+        <div class="flex items-center justify-center h-16 border-b px-4">
+            <h1 class="text-2xl font-bold text-indigo-600">ZenRelance</h1>
+        </div>
+        <!-- Navigation -->
+        <nav class="flex-1 overflow-y-auto py-4">
+            <ul class="space-y-2 px-4">
+                <li>
+                    <a href="dashboard_admin.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-house text-xl text-gray-500"></i>
+                        <span>Tableau de bord</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="rapprochement.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-arrows-counter-clockwise text-xl text-gray-500"></i>
+                        <span>Rapprochement</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="factures.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-files text-xl text-gray-500"></i>
+                        <span>Factures</span>
+                    </a>
+                </li>
+                 <li>
+                    <a href="import_facture.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-upload-simple text-xl text-gray-500"></i>
+                        <span>Importer</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="clients.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-users text-xl text-gray-500"></i>
+                        <span>Clients</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="plan_appels.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-phone-call text-xl text-gray-500"></i>
+                        <span>Clients à appeler</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="agenda.html"
+                        class="sidebar-link active flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-calendar-blank text-xl text-gray-500"></i>
+                        <span>Agenda</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <!-- User / Settings -->
+        <div class="border-t p-4">
+            <a href="reglages.html"
+                class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                <i class="ph-bold ph-gear text-xl text-gray-500"></i>
+                <span>Réglages</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="flex-1 md:ml-64 flex flex-col overflow-hidden">
+
+        <!-- Top bar -->
+        <header class="flex items-center justify-between h-16 px-6 bg-white border-b md:justify-end">
+            <!-- Mobile menu button -->
+            <button id="menu-button" class="md:hidden text-gray-600 focus:outline-none">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+            </button>
+            <!-- User menu -->
+            <div class="flex items-center">
+                <span class="text-sm font-medium mr-4 text-gray-700">Bonjour, Alexandre</span>
+                <div class="w-10 h-10 rounded-full bg-indigo-200 text-indigo-700 flex items-center justify-center font-bold">
+                    A
+                </div>
+            </div>
+        </header>
+
+        <!-- Page content -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+            <div class="container mx-auto max-w-4xl">
+
+                <!-- En-tête -->
+                <div class="mb-6">
+                    <h1 class="text-3xl font-bold text-gray-900">Agenda des relances</h1>
+                    <p class="mt-2 text-lg text-gray-600">Suivez ce que le système fait pour vous et ce qui a été fait.</p>
+                </div>
+
+                <!-- Onglets -->
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-6">
+                        <button data-tab="upcoming" class="tab-button active">
+                            À Venir (5)
+                        </button>
+                        <button data-tab="history" class="tab-button">
+                            Historique (13)
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Panneau "À Venir" (Actif) -->
+                <div id="panel-upcoming" class="tab-content mt-6 space-y-6">
+
+                    <!-- Groupe de date : Aujourd'hui -->
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900 mb-3">Aujourd'hui (Vendredi 24 Oct.)</h2>
+                        <div class="space-y-4">
+                            <!-- Carte Relance 1 -->
+                            <div class="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                                        <i class="ph-bold ph-paper-plane-tilt text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900">Agence Immo Sud (F2024-065)</p>
+                                        <p class="text-sm text-gray-500">Envoi Email <span class="font-medium text-orange-700">"Sérieux (J+10)"</span></p>
+                                    </div>
+                                </div>
+                                <div class="flex-shrink-0 text-right">
+                                    <p class="text-base font-semibold text-gray-900">1 200,00 €</p>
+                                    <p class="text-sm text-red-600">Retard 10 j</p>
+                                    <button class="mt-1 text-sm font-medium text-gray-500 hover:text-indigo-600">
+                                        Mettre en pause
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Carte Relance 2 -->
+                            <div class="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                                        <i class="ph-bold ph-device-mobile text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900">Mme. Valérie Petit (F2024-072)</p>
+                                        <p class="text-sm text-gray-500">Envoi SMS <span class="font-medium text-red-700">"Rappel (J+20)"</span></p>
+                                    </div>
+                                </div>
+                                <div class="flex-shrink-0 text-right">
+                                    <p class="text-base font-semibold text-gray-900">450,00 €</p>
+                                    <p class="text-sm text-red-600">Retard 20 j</p>
+                                    <button class="mt-1 text-sm font-medium text-gray-500 hover:text-indigo-600">
+                                        Mettre en pause
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Carte Relance 3 -->
+                            <div class="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                                        <i class="ph-bold ph-paper-plane-tilt text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900">M. Gérard Martin (F2024-080)</p>
+                                        <p class="text-sm text-gray-500">Envoi Email <span class="font-medium text-blue-700">"Amical (J+1)"</span></p>
+                                    </div>
+                                </div>
+                                <div class="flex-shrink-0 text-right">
+                                    <p class="text-base font-semibold text-gray-900">800,00 €</p>
+                                    <p class="text-sm text-red-600">Retard 1 j</p>
+                                    <button class="mt-1 text-sm font-medium text-gray-500 hover:text-indigo-600">
+                                        Mettre en pause
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Groupe de date : Demain -->
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900 mb-3">Demain (Samedi 25 Oct.)</h2>
+                        <div class="space-y-4">
+                             <!-- Carte Relance 4 -->
+                            <div class="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                                        <i class="ph-bold ph-paper-plane-tilt text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900">Syndic de la Baie (F2024-075)</p>
+                                        <p class="text-sm text-gray-500">Envoi Email <span class="font-medium text-blue-700">"Amical (J+1)"</span></p>
+                                    </div>
+                                </div>
+                                <div class="flex-shrink-0 text-right">
+                                    <p class="text-base font-semibold text-gray-900">1 400,00 €</p>
+                                    <p class="text-sm text-gray-500">Échéance</p>
+                                    <button class="mt-1 text-sm font-medium text-gray-500 hover:text-indigo-600">
+                                        Mettre en pause
+                                    </button>
+                                </div>
+                            </div>
+                             <!-- Carte Relance 5 -->
+                            <div class="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                                        <i class="ph-bold ph-paper-plane-tilt text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900">Notaire Ouest (F2024-078)</p>
+                                        <p class="text-sm text-gray-500">Envoi Email <span class="font-medium text-orange-700">"Sérieux (J+10)"</span></p>
+                                    </div>
+                                </div>
+                                <div class="flex-shrink-0 text-right">
+                                    <p class="text-base font-semibold text-gray-900">650,00 €</p>
+                                    <p class="text-sm text-red-600">Retard 10 j</p>
+                                    <button class="mt-1 text-sm font-medium text-gray-500 hover:text-indigo-600">
+                                        Mettre en pause
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panneau "Historique" (Caché) -->
+                <div id="panel-history" class="tab-content mt-6 hidden">
+                    <div class="flow-root">
+                        <ul role="list" class="-mb-8">
+                            <!-- Jour : 23 Octobre -->
+                            <li>
+                                <div class="relative pb-8">
+                                    <span class="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                    <div class="relative flex items-start space-x-3">
+                                        <div>
+                                            <div class="relative px-1">
+                                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 ring-8 ring-gray-100">
+                                                    <span class="font-semibold text-gray-700">23 OCT</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0 flex-1 py-1.5">
+                                            <div class="space-y-3">
+                                                <!-- Item 1 -->
+                                                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                                                    <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600"><i class="ph-bold ph-check"></i></div>
+                                                    <p class="text-sm text-gray-700">Facture <span class="font-semibold text-gray-900">F2024-077</span> (M. Luc Leroy) marquée <span class="font-semibold text-green-700">Payée</span> (Rapprochement bancaire).</p>
+                                                </div>
+                                                <!-- Item 2 -->
+                                                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                                                    <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600"><i class="ph-bold ph-file-plus"></i></div>
+                                                    <p class="text-sm text-gray-700">Facture <span class="font-semibold text-gray-900">F2024-075</span> (Syndic de la Baie) <span class="font-semibold text-gray-700">créée</span> pour 1 400,00 €.</p>
+                                                </div>
+                                                <!-- Item 3 -->
+                                                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                                                    <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600"><i class="ph-bold ph-file-plus"></i></div>
+                                                    <p class="text-sm text-gray-700">Facture <span class="font-semibold text-gray-900">F2024-078</span> (Notaire Ouest) <span class="font-semibold text-gray-700">créée</span> pour 650,00 €.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                            <!-- Jour : 21 Octobre -->
+                            <li>
+                                <div class="relative pb-8">
+                                    <span class="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                    <div class="relative flex items-start space-x-3">
+                                        <div>
+                                            <div class="relative px-1">
+                                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 ring-8 ring-gray-100">
+                                                    <span class="font-semibold text-gray-700">21 OCT</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0 flex-1 py-1.5">
+                                            <div class="space-y-3">
+                                                <!-- Item 4 -->
+                                                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                                                    <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600"><i class="ph-bold ph-paper-plane-tilt"></i></div>
+                                                    <p class="text-sm text-gray-700">Email "Amical (J+1)" envoyé à <span class="font-semibold text-gray-900">Agence Immo Sud</span> pour 1 200,00 €.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                            <!-- Jour : 15 Octobre -->
+                            <li>
+                                <div class="relative pb-8">
+                                    <span class="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                    <div class="relative flex items-start space-x-3">
+                                        <div>
+                                            <div class="relative px-1">
+                                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 ring-8 ring-gray-100">
+                                                    <span class="font-semibold text-gray-700">15 OCT</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0 flex-1 py-1.5">
+                                            <div class="space-y-3">
+                                                <!-- Item 5 -->
+                                                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                                                    <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600"><i class="ph-bold ph-paper-plane-tilt"></i></div>
+                                                    <p class="text-sm text-gray-700">Email "Sérieux (J+10)" envoyé à <span class="font-semibold text-gray-900">Mme. Valérie Petit</span> pour 450,00 €.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                            <!-- Jour : 14 Octobre -->
+                            <li>
+                                <div class="relative pb-8">
+                                    <span class="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                    <div class="relative flex items-start space-x-3">
+                                        <div>
+                                            <div class="relative px-1">
+                                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 ring-8 ring-gray-100">
+                                                    <span class="font-semibold text-gray-700">14 OCT</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0 flex-1 py-1.5">
+                                            <div class="space-y-3">
+                                                <!-- Item 6 -->
+                                                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                                                    <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600"><i class="ph-bold ph-file-plus"></i></div>
+                                                    <p class="text-sm text-gray-700">Facture <span class="font-semibold text-gray-900">F2024-080</span> (M. Gérard Martin) <span class="font-semibold text-gray-700">créée</span> pour 800,00 €.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                            <!-- Jour : 10 Octobre -->
+                            <li>
+                                <div class="relative pb-8">
+                                    <span class="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                    <div class="relative flex items-start space-x-3">
+                                        <div>
+                                            <div class="relative px-1">
+                                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 ring-8 ring-gray-100">
+                                                    <span class="font-semibold text-gray-700">10 OCT</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0 flex-1 py-1.5">
+                                            <div class="space-y-3">
+                                                <!-- Item 7 -->
+                                                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                                                    <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600"><i class="ph-bold ph-file-plus"></i></div>
+                                                    <p class="text-sm text-gray-700">Facture <span class="font-semibold text-gray-900">F2024-065</span> (Agence Immo Sud) <span class="font-semibold text-gray-700">créée</span> pour 1 200,00 €.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                             <!-- Jour : 5 Octobre -->
+                            <li>
+                                <div class="relative pb-8">
+                                    <span class="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                    <div class="relative flex items-start space-x-3">
+                                        <div>
+                                            <div class="relative px-1">
+                                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 ring-8 ring-gray-100">
+                                                    <span class="font-semibold text-gray-700">05 OCT</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0 flex-1 py-1.5">
+                                            <div class="space-y-3">
+                                                <!-- Item 8 -->
+                                                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                                                    <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600"><i class="ph-bold ph-paper-plane-tilt"></i></div>
+                                                    <p class="text-sm text-gray-700">Email "Amical (J+1)" envoyé à <span class="font-semibold text-gray-900">Mme. Valérie Petit</span> pour 450,00 €.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                             <!-- Jour : 1 Octobre -->
+                            <li>
+                                <div class="relative pb-8">
+                                    <span class="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                    <div class="relative flex items-start space-x-3">
+                                        <div>
+                                            <div class="relative px-1">
+                                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 ring-8 ring-gray-100">
+                                                    <span class="font-semibold text-gray-700">01 OCT</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0 flex-1 py-1.5">
+                                            <div class="space-y-3">
+                                                <!-- Item 9 -->
+                                                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                                                    <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600"><i class="ph-bold ph-paper-plane-tilt"></i></div>
+                                                    <p class="text-sm text-gray-700">Email "Sérieux (J+10)" envoyé à <span class="font-semibold text-gray-900">M. Luc Leroy</span> pour 550,00 €.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                            <!-- Jour : 25 Septembre -->
+                            <li>
+                                <div class="relative pb-8">
+                                    <span class="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                    <div class="relative flex items-start space-x-3">
+                                        <div>
+                                            <div class="relative px-1">
+                                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 ring-8 ring-gray-100">
+                                                    <span class="font-semibold text-gray-700">25 SEPT</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0 flex-1 py-1.5">
+                                            <div class="space-y-3">
+                                                <!-- Item 10 -->
+                                                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                                                    <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600"><i class="ph-bold ph-file-plus"></i></div>
+                                                    <p class="text-sm text-gray-700">Facture <span class="font-semibold text-gray-900">F2024-072</span> (Mme. Valérie Petit) <span class="font-semibold text-gray-700">créée</span> pour 450,00 €.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                             <!-- Jour : 22 Septembre -->
+                            <li>
+                                <div class="relative pb-8">
+                                    <span class="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                    <div class="relative flex items-start space-x-3">
+                                        <div>
+                                            <div class="relative px-1">
+                                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 ring-8 ring-gray-100">
+                                                    <span class="font-semibold text-gray-700">22 SEPT</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0 flex-1 py-1.5">
+                                            <div class="space-y-3">
+                                                <!-- Item 11 -->
+                                                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                                                    <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600"><i class="ph-bold ph-check"></i></div>
+                                                    <p class="text-sm text-gray-700">Facture <span class="font-semibold text-gray-900">F2024-070</span> (Notaire Dupont & Associés) marquée <span class="font-semibold text-green-700">Payée</span>.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                            <!-- Jour : 21 Septembre -->
+                            <li>
+                                <div class="relative pb-8">
+                                    <span class="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                    <div class="relative flex items-start space-x-3">
+                                        <div>
+                                            <div class="relative px-1">
+                                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 ring-8 ring-gray-100">
+                                                    <span class="font-semibold text-gray-700">21 SEPT</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0 flex-1 py-1.5">
+                                            <div class="space-y-3">
+                                                <!-- Item 12 -->
+                                                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                                                    <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600"><i class="ph-bold ph-paper-plane-tilt"></i></div>
+                                                    <p class="text-sm text-gray-700">Email "Amical (J+1)" envoyé à <span class="font-semibold text-gray-900">M. Luc Leroy</span> pour 550,00 €.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                             <!-- Jour : 20 Septembre -->
+                            <li>
+                                <div class="relative pb-8">
+                                    <span class="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                    <div class="relative flex items-start space-x-3">
+                                        <div>
+                                            <div class="relative px-1">
+                                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 ring-8 ring-gray-100">
+                                                    <span class="font-semibold text-gray-700">20 SEPT</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0 flex-1 py-1.5">
+                                            <div class="space-y-3">
+                                                <!-- Item 13 -->
+                                                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                                                    <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600"><i class="ph-bold ph-file-plus"></i></div>
+                                                    <p class="text-sm text-gray-700">Facture <span class="font-semibold text-gray-900">F2024-077</span> (M. Luc Leroy) <span class="font-semibold text-gray-700">créée</span> pour 550,00 €.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Logique de la Sidebar ---
+            const menuButton = document.getElementById('menu-button');
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('menu-backdrop');
+
+            const toggleMenu = () => {
+                sidebar.classList.toggle('-translate-x-full');
+                backdrop.classList.toggle('hidden');
+            };
+
+            if (menuButton) menuButton.addEventListener('click', toggleMenu);
+            if (backdrop) backdrop.addEventListener('click', toggleMenu);
+
+
+            // --- Logique des Onglets ---
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabName = button.dataset.tab;
+
+                    // Gérer l'état actif des boutons
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    // Gérer la visibilité du contenu
+                    tabContents.forEach(content => {
+                        if (content.id === `panel-${tabName}`) {
+                            content.classList.remove('hidden');
+                        } else {
+                            content.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-gray-100">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réglages - ZenRelance</title>
+    <!-- Chargement de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chargement de Google Font "Inter" -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chargement de Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* Définition de la police Inter comme police par défaut */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Style pour la scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Style pour la sidebar active */
+        .sidebar-link.active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+        }
+
+        .sidebar-link.active i {
+            color: white;
+        }
+
+        /* Style pour les onglets */
+        .tab-button {
+            @apply whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium;
+        }
+        .tab-button.active {
+            @apply border-indigo-600 text-indigo-600;
+        }
+        .tab-button:not(.active) {
+            @apply border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700;
+        }
+
+        /* Transition pour les modales */
+        .modal {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .modal.hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+        }
+        .modal.visible {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+        .modal-backdrop.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .modal-backdrop.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+
+<body class="h-full flex">
+
+    <!-- Backdrop pour le menu mobile -->
+    <div id="menu-backdrop" class="fixed inset-0 bg-black/30 z-30 md:hidden hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar"
+        class="fixed top-0 left-0 w-64 h-full bg-white shadow-lg z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col">
+        <!-- Logo -->
+        <div class="flex items-center justify-center h-16 border-b px-4">
+            <h1 class="text-2xl font-bold text-indigo-600">ZenRelance</h1>
+        </div>
+        <!-- Navigation -->
+        <nav class="flex-1 overflow-y-auto py-4">
+            <ul class="space-y-2 px-4">
+                <li>
+                    <a href="dashboard_admin.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-house text-xl text-gray-500"></i>
+                        <span>Tableau de bord</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="rapprochement.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-arrows-counter-clockwise text-xl text-gray-500"></i>
+                        <span>Rapprochement</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="factures.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-files text-xl text-gray-500"></i>
+                        <span>Factures</span>
+                    </a>
+                </li>
+                 <li>
+                    <a href="import_facture.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-upload-simple text-xl text-gray-500"></i>
+                        <span>Importer</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="clients.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-users text-xl text-gray-500"></i>
+                        <span>Clients</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="plan_appels.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-phone-call text-xl text-gray-500"></i>
+                        <span>Clients à appeler</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="agenda.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-calendar-blank text-xl text-gray-500"></i>
+                        <span>Agenda</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <!-- User / Settings -->
+        <div class="border-t p-4">
+            <a href="reglages.html"
+                class="sidebar-link active flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                <i class="ph-bold ph-gear text-xl text-gray-500"></i>
+                <span>Réglages</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="flex-1 md:ml-64 flex flex-col overflow-hidden">
+
+        <!-- Top bar -->
+        <header class="flex items-center justify-between h-16 px-6 bg-white border-b md:justify-end">
+            <!-- Mobile menu button -->
+            <button id="menu-button" class="md:hidden text-gray-600 focus:outline-none">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+            </button>
+            <!-- User menu -->
+            <div class="flex items-center">
+                <span class="text-sm font-medium mr-4 text-gray-700">Bonjour, Alexandre</span>
+                <div class="w-10 h-10 rounded-full bg-indigo-200 text-indigo-700 flex items-center justify-center font-bold">
+                    A
+                </div>
+            </div>
+        </header>
+
+        <!-- Page content -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+            <div class="container mx-auto max-w-4xl">
+
+                <!-- En-tête -->
+                <div class="mb-6">
+                    <h1 class="text-3xl font-bold text-gray-900">Réglages</h1>
+                    <p class="mt-2 text-lg text-gray-600">Gérez votre profil, vos connexions et vos scénarios de relance.</p>
+                </div>
+
+                <!-- Onglets -->
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-6">
+                        <button data-tab="profil" class="tab-button active">Profil</button>
+                        <button data-tab="connexion" class="tab-button">Connexion Email</button>
+                        <button data-tab="scenarios" class="tab-button">Scénarios</button>
+                    </nav>
+                </div>
+
+                <!-- Panneau "Profil" -->
+                <div id="panel-profil" class="tab-content mt-6">
+                    <div class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                        <div class="p-6 space-y-4">
+                            <div>
+                                <label for="company-name" class="block text-sm font-medium text-gray-700">Nom de l'entreprise</label>
+                                <input type="text" id="company-name" value="Agenda DIO" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label for="user-name" class="block text-sm font-medium text-gray-700">Votre nom</label>
+                                <input type="text" id="user-name" value="Alexandre" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 px-6 py-4 text-right">
+                            <button class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">Enregistrer</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panneau "Connexion Email" -->
+                <div id="panel-connexion" class="tab-content mt-6 hidden">
+                    <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-gray-900">Connecter votre boîte mail</h3>
+                        <p class="mt-1 text-sm text-gray-600">Permet d'envoyer les relances directement depuis votre adresse email (ex: alexandre@agendadio.fr) pour rassurer vos clients.</p>
+                        <div class="mt-6 grid grid-cols-2 gap-4">
+                            <button class="flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 hover:bg-gray-50">
+                                <img src="https://placehold.co/24x24/DE5246/FFFFFF?text=G" alt="Google" class="w-6 h-6">
+                                <span class="text-sm font-medium text-gray-700">Connecter avec Google</span>
+                            </button>
+                            <button class="flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 hover:bg-gray-50">
+                                <img src="https://placehold.co/24x24/0078D4/FFFFFF?text=O" alt="Outlook" class="w-6 h-6">
+                                <span class="text-sm font-medium text-gray-700">Connecter avec Outlook</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panneau "Scénarios" -->
+                <div id="panel-scenarios" class="tab-content mt-6 hidden">
+                    <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">Votre scénario de relance</h3>
+                                <p class="mt-1 text-sm text-gray-600">La séquence d'actions automatiques qui s'applique à chaque facture en retard.</p>
+                            </div>
+                            <button class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+                                Ajouter une étape
+                            </button>
+                        </div>
+
+                        <!-- Timeline des scénarios -->
+                        <div class="mt-8 flow-root">
+                            <ul role="list" class="-mb-8">
+                                <!-- Étape 1: J+7 -->
+                                <li>
+                                    <div class="relative pb-8">
+                                        <span class="absolute left-6 top-6 -ml-px h-full w-0.5 bg-gray-300" aria-hidden="true"></span>
+                                        <div class="relative flex items-start space-x-3">
+                                            <div class="relative">
+                                                <span class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 ring-8 ring-white">
+                                                    <span class="font-semibold text-gray-700">J+7</span>
+                                                </span>
+                                            </div>
+                                            <div class="min-w-0 flex-1 pt-1.5">
+                                                <div class="open-scenario-modal cursor-pointer rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:border-gray-400" data-scenario-id="1">
+                                                    <p class="text-sm text-gray-500">Email automatique</p>
+                                                    <p class="font-semibold text-gray-900">Relance amicale</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                                <!-- Étape 2: J+14 -->
+                                <li>
+                                    <div class="relative pb-8">
+                                        <span class="absolute left-6 top-6 -ml-px h-full w-0.5 bg-gray-300" aria-hidden="true"></span>
+                                        <div class="relative flex items-start space-x-3">
+                                            <div class="relative">
+                                                <span class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 ring-8 ring-white">
+                                                    <span class="font-semibold text-gray-700">J+14</span>
+                                                </span>
+                                            </div>
+                                            <div class="min-w-0 flex-1 pt-1.5">
+                                                <div class="open-scenario-modal cursor-pointer rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:border-gray-400" data-scenario-id="2">
+                                                    <p class="text-sm text-gray-500">Email automatique</p>
+                                                    <p class="font-semibold text-gray-900">Relance sérieuse</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                                <!-- Étape 3: J+30 -->
+                                <li>
+                                    <div class="relative pb-8">
+                                        <span class="absolute left-6 top-6 -ml-px h-full w-0.5 bg-gray-300" aria-hidden="true"></span>
+                                        <div class="relative flex items-start space-x-3">
+                                            <div class="relative">
+                                                <span class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 ring-8 ring-white">
+                                                    <span class="font-semibold text-gray-700">J+30</span>
+                                                </span>
+                                            </div>
+                                            <div class="min-w-0 flex-1 pt-1.5">
+                                                <div class="open-scenario-modal cursor-pointer rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:border-gray-400" data-scenario-id="3">
+                                                    <p class="text-sm text-gray-500">Email automatique</F<p>
+                                                    <p class="font-semibold text-gray-900">Dernier avis avant appel</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                                <!-- Étape 4: Appel -->
+                                <li>
+                                    <div class="relative">
+                                        <div class="relative flex items-start space-x-3">
+                                            <div class="relative">
+                                                <span class="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 ring-8 ring-white">
+                                                    <i class="ph-bold ph-phone-call text-2xl text-indigo-700"></i>
+                                                </span>
+                                            </div>
+                                            <div class="min-w-0 flex-1 pt-1.5">
+                                                <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
+                                                    <p class="text-sm text-gray-500">Action manuelle</p>
+                                                    <p class="font-semibold text-gray-900">Ajout à "Clients à appeler"</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modale Backdrop -->
+    <div id="modal-backdrop" class="modal-backdrop fixed inset-0 bg-black/50 z-40 hidden transition-opacity duration-300"></div>
+
+    <!-- Modale Édition Scénario -->
+    <div id="edit-scenario-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl transform overflow-hidden">
+            <!-- En-tête -->
+            <div class="flex justify-between items-center p-6 border-b">
+                <h3 class="text-xl font-semibold text-gray-900">Éditer l'étape : Relance amicale</h3>
+                <button id="close-scenario-modal" class="text-gray-400 hover:text-gray-600">
+                    <i class="ph-bold ph-x text-2xl"></i>
+                </button>
+            </div>
+            <!-- Contenu -->
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="scenario-type" class="block text-sm font-medium text-gray-700">Type d'action</label>
+                        <select id="scenario-type" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option>Email</option>
+                            <option>SMS</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="scenario-delay" class="block text-sm font-medium text-gray-700">Délai (après échéance)</label>
+                        <input type="text" id="scenario-delay" value="J+7" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div>
+                    <label for="scenario-template" class="block text-sm font-medium text-gray-700">Modèle du message</label>
+                    <textarea id="scenario-template" rows="8" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">Bonjour [Nom du Client],
+
+Ceci est un simple rappel amical concernant la facture n°[Numéro Facture] d'un montant de [Montant Facture] €, arrivée à échéance le [Date Échéance].
+
+Si le paiement a déjà été effectué, veuillez ne pas tenir compte de cet email.
+
+Bien cordialement,
+[Votre Nom]</textarea>
+                    <div id="gemini-response-template" class="mt-2 text-sm text-gray-700 p-3 bg-gray-50 rounded-lg border border-gray-200 hidden"></div>
+                </div>
+                <button id="open-gemini-modal" class="w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 border border-indigo-200">
+                    <i class="ph-bold ph-sparkle text-lg"></i>
+                    Générer ou améliorer avec l'IA
+                </button>
+            </div>
+            <!-- Footer -->
+            <div class="bg-gray-50 px-6 py-4 flex justify-end gap-3">
+                <button id="delete-scenario" class="text-sm font-medium text-red-600 hover:text-red-800">Supprimer l'étape</button>
+                <button class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale Choix du Ton (Gemini) -->
+    <div id="gemini-tone-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg transform">
+            <div class="flex justify-between items-center p-5 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Générer un message</h3>
+                <button id="close-gemini-modal" class="text-gray-400 hover:text-gray-600">
+                    <i class="ph-bold ph-x text-2xl"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-gray-600 mb-4">Choisissez le ton pour l'IA. Le message sera généré en utilisant le modèle de l'étape actuelle comme base.</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button class="tone-button" data-tone="amical">Plus amical</button>
+                    <button class="tone-button" data-tone="ferme">Plus ferme</button>
+                    <button class="tone-button" data-tone="concis">Plus concis</button>
+                    <button class="tone-button" data-tone="empathique">Plus empathique</button>
+                </div>
+                <div id="gemini-loader-tone" class="mt-4 text-center hidden">
+                    <div class="inline-flex items-center gap-2 text-sm text-gray-600">
+                        <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Génération en cours...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // Fonction d'appel API Gemini (avec correction)
+        async function callGeminiAPI(prompt, loaderId, responseId, targetTextareaId) {
+            const loader = document.getElementById(loaderId);
+            const responseContainer = document.getElementById(responseId);
+            const targetTextarea = document.getElementById(targetTextareaId);
+
+            if (loader) loader.classList.remove('hidden');
+            if (responseContainer) responseContainer.classList.add('hidden');
+
+            const systemPrompt = "Tu es un assistant expert en recouvrement amiable pour artisans. Ta tâche est de réécrire ou de générer des emails de relance. Tu dois être professionnel, clair, et toujours inclure les variables [Nom du Client], [Numéro Facture], [Montant Facture], [Date Échéance], et [Votre Nom].";
+            const userQuery = prompt;
+            const apiKey = ""; // Laissé vide, sera géré par l'environnement
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userQuery }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    const text = candidate.content.parts[0].text;
+                    if (targetTextarea) {
+                        targetTextarea.value = text;
+                        // Simuler une "saisie" pour les frameworks
+                        targetTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    if (responseContainer) {
+                        responseContainer.innerText = text;
+                        responseContainer.classList.remove('hidden');
+                    }
+                } else {
+                    throw new Error("Réponse de l'API invalide ou vide.");
+                }
+
+            } catch (error) {
+                console.error("Erreur lors de l'appel API:", error);
+                if (responseContainer) {
+                    responseContainer.innerText = "Erreur lors de la génération du texte. Veuillez réessayer.";
+                    responseContainer.classList.remove('hidden');
+                }
+            } finally {
+                if (loader) loader.classList.add('hidden');
+            }
+        }
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Logique de la Sidebar ---
+            const menuButton = document.getElementById('menu-button');
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('menu-backdrop');
+
+            const toggleMenu = () => {
+                sidebar.classList.toggle('-translate-x-full');
+                backdrop.classList.toggle('hidden');
+            };
+
+            if (menuButton) menuButton.addEventListener('click', toggleMenu);
+            if (backdrop) backdrop.addEventListener('click', toggleMenu);
+
+
+            // --- Logique des Onglets ---
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabName = button.dataset.tab;
+
+                    // Gérer l'état actif des boutons
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    // Gérer la visibilité du contenu
+                    tabContents.forEach(content => {
+                        if (content.id === `panel-${tabName}`) {
+                            content.classList.remove('hidden');
+                        } else {
+                            content.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            // --- Logique des Modales ---
+            const modalBackdrop = document.getElementById('modal-backdrop');
+
+            // Modale Scénario
+            const scenarioModal = document.getElementById('edit-scenario-modal');
+            const openScenarioButtons = document.querySelectorAll('.open-scenario-modal');
+            const closeScenarioButton = document.getElementById('close-scenario-modal');
+
+            const openScenarioModal = () => {
+                modalBackdrop.classList.remove('hidden');
+                modalBackdrop.classList.add('visible');
+                scenarioModal.classList.remove('hidden');
+                scenarioModal.classList.add('visible');
+            };
+
+            const closeScenarioModal = () => {
+                modalBackdrop.classList.remove('visible');
+                modalBackdrop.classList.add('hidden');
+                scenarioModal.classList.remove('visible');
+                scenarioModal.classList.add('hidden');
+            };
+
+            openScenarioButtons.forEach(btn => btn.addEventListener('click', openScenarioModal));
+            if (closeScenarioButton) closeScenarioButton.addEventListener('click', closeScenarioModal);
+
+            // Modale Gemini
+            const geminiModal = document.getElementById('gemini-tone-modal');
+            const openGeminiButton = document.getElementById('open-gemini-modal');
+            const closeGeminiButton = document.getElementById('close-gemini-modal');
+            const toneButtons = document.querySelectorAll('.tone-button');
+
+            const openGeminiModal = () => {
+                geminiModal.classList.remove('hidden');
+                geminiModal.classList.add('visible');
+            };
+
+            const closeGeminiModal = () => {
+                geminiModal.classList.remove('visible');
+                geminiModal.classList.add('hidden');
+            };
+
+            if (openGeminiButton) openGeminiButton.addEventListener('click', openGeminiModal);
+            if (closeGeminiButton) closeGeminiButton.addEventListener('click', closeGeminiModal);
+
+            // Gérer le clic sur un ton
+            toneButtons.forEach(button => {
+                button.classList.add('w-full', 'p-3', 'rounded-lg', 'border', 'text-sm', 'font-semibold', 'transition-colors', 'bg-white', 'border-gray-300', 'text-gray-700', 'hover:bg-gray-50');
+
+                button.addEventListener('click', () => {
+                    const tone = button.dataset.tone;
+                    const currentTemplate = document.getElementById('scenario-template').value;
+                    const prompt = `Réécris le message suivant avec un ton plus ${tone}:\n\n"${currentTemplate}"`;
+
+                    // Appeler Gemini
+                    callGeminiAPI(prompt, 'gemini-loader-tone', 'gemini-response-template', 'scenario-template');
+
+                    // Fermer la modale de ton
+                    closeGeminiModal();
+                });
+            });
+
+            // Fermer les modales en cliquant sur le backdrop
+            modalBackdrop.addEventListener('click', () => {
+                closeScenarioModal();
+                closeGeminiModal();
+            });
+
+        });
+    </script>
+
+</body>
+</html>

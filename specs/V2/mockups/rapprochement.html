@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-gray-100">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapprochement - ZenRelance</title>
+    <!-- Chargement de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chargement de Google Font "Inter" -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chargement de Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* Définition de la police Inter comme police par défaut */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Style pour la scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Style pour la sidebar active */
+        .sidebar-link.active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+        }
+
+        .sidebar-link.active i {
+            color: white;
+        }
+
+        /* Cacher les flèches sur les inputs number */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
+
+        /* Style pour les onglets de la modale */
+        .tab-btn {
+            @apply px-4 py-2 font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700 hover:border-gray-300;
+        }
+        .tab-btn.active {
+            @apply text-indigo-600 border-indigo-600;
+        }
+    </style>
+</head>
+
+<body class="h-full flex">
+
+    <!-- Backdrop pour le menu mobile -->
+    <div id="menu-backdrop" class="fixed inset-0 bg-black/30 z-30 md:hidden hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar"
+        class="fixed top-0 left-0 w-64 h-full bg-white shadow-lg z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col">
+        <!-- Logo -->
+        <div class="flex items-center justify-center h-16 border-b px-4">
+            <h1 class="text-2xl font-bold text-indigo-600">ZenRelance</h1>
+        </div>
+        <!-- Navigation -->
+        <nav class="flex-1 overflow-y-auto py-4">
+            <ul class="space-y-2 px-4">
+                <li>
+                    <a href="dashboard_admin.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-house text-xl text-gray-500"></i>
+                        <span>Tableau de bord</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="rapprochement.html"
+                        class="sidebar-link active flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-arrows-counter-clockwise text-xl text-gray-500"></i>
+                        <span>Rapprochement</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="factures.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-files text-xl text-gray-500"></i>
+                        <span>Factures</span>
+                    </a>
+                </li>
+                 <li>
+                    <a href="import_facture.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-upload-simple text-xl text-gray-500"></i>
+                        <span>Importer</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="clients.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-users text-xl text-gray-500"></i>
+                        <span>Clients</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="plan_appels.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-phone-call text-xl text-gray-500"></i>
+                        <span>Clients à appeler</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="agenda.html"
+                        class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <i class="ph-bold ph-calendar-blank text-xl text-gray-500"></i>
+                        <span>Agenda</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <!-- User / Settings -->
+        <div class="border-t p-4">
+            <a href="reglages.html"
+                class="sidebar-link flex items-center gap-3 p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                <i class="ph-bold ph-gear text-xl text-gray-500"></i>
+                <span>Réglages</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="flex-1 md:ml-64 flex flex-col overflow-hidden">
+
+        <!-- Top bar -->
+        <header class="flex items-center justify-between h-16 px-6 bg-white border-b md:justify-end">
+            <!-- Mobile menu button -->
+            <button id="menu-button" class="md:hidden text-gray-600 focus:outline-none">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+            </button>
+            <!-- User menu -->
+            <div class="flex items-center">
+                <span class="text-sm font-medium mr-4 text-gray-700">Bonjour, Alexandre</span>
+                <div class="w-10 h-10 rounded-full bg-indigo-200 text-indigo-700 flex items-center justify-center font-bold">
+                    A
+                </div>
+            </div>
+        </header>
+
+        <!-- Page content -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+            <div class="container mx-auto max-w-7xl">
+
+                <!-- En-tête -->
+                <div class="mb-6">
+                    <h1 class="text-3xl font-bold text-gray-900">Rapprochement bancaire</h1>
+                    <p class="mt-2 text-lg text-gray-600">Pointez les paiements reçus sur votre compte pour les marquer comme payés.</p>
+                </div>
+
+                <!-- Filtres -->
+                <div class="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div>
+                            <label for="search-amount" class="block text-sm font-medium text-gray-700">Rechercher par montant exact</label>
+                            <div class="relative mt-1">
+                                <input type="number" id="search-amount" placeholder="1250,00" class="w-full rounded-lg border-gray-300 pl-10 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">€</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="search-client" class="block text-sm font-medium text-gray-700">Rechercher par client, N° facture...</label>
+                            <div class="relative mt-1">
+                                <input type="search" id="search-client" placeholder="Agence Immo Sud, F2024-065..." class="w-full rounded-lg border-gray-300 pl-10 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="search-status" class="block text-sm font-medium text-gray-700">Filtrer par statut</label>
+                            <select id="search-status" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option>Toutes les factures en attente</option>
+                                <option>En retard uniquement</option>
+                                <option>Non échues</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Liste des factures à rapprocher -->
+                <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Client / N° Facture</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Échéance</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Statut</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Solde Dû</th>
+                                <th scope="col" class="relative px-6 py-3">
+                                    <span class="sr-only">Action</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 bg-white">
+
+                            <!-- Facture 1 (En retard) -->
+                            <tr id="invoice-row-1">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="font-semibold text-gray-900">Agence Immo Sud</div>
+                                    <div class="text-sm text-gray-500">F2024-065</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">31/08/2024</td>
+                                <td class="px-6 py-4 whitespace-nowrap" id="invoice-status-1">
+                                    <span class="inline-flex rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-800">
+                                        En retard (54 j)
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-base font-semibold text-gray-900" id="invoice-amount-1" data-amount="3500">3 500,00 €</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button onclick="openModal('F2024-065', '3 500,00 €', 3500, 1)" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+                                        Enregistrer un paiement
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Facture 2 (En attente) -->
+                            <tr id="invoice-row-2">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="font-semibold text-gray-900">M. Martin (Particulier)</div>
+                                    <div class="text-sm text-gray-500">F2024-080</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">30/10/2024</td>
+                                <td class="px-6 py-4 whitespace-nowrap" id="invoice-status-2">
+                                    <span class="inline-flex rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-800">
+                                        En cours
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-base font-semibold text-gray-900" id="invoice-amount-2" data-amount="1200">1 200,00 €</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button onclick="openModal('F2024-080', '1 200,00 €', 1200, 2)" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+                                        Enregistrer un paiement
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Facture 3 (En retard) -->
+                            <tr id="invoice-row-3">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="font-semibold text-gray-900">Notaire Dupont & Associés</div>
+                                    <div class="text-sm text-gray-500">F2024-071</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">15/09/2024</td>
+                                <td class="px-6 py-4 whitespace-nowrap" id="invoice-status-3">
+                                    <span class="inline-flex rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-800">
+                                        En retard (39 j)
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-base font-semibold text-gray-900" id="invoice-amount-3" data-amount="850">850,00 €</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button onclick="openModal('F2024-071', '850,00 €', 850, 3)" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+                                        Enregistrer un paiement
+                                    </button>
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal de confirmation -->
+    <div id="reconciliation-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 hidden" onclick="closeModal()">
+        <div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-2xl" onclick="event.stopPropagation()">
+            <h3 class="text-xl font-semibold text-gray-900">Enregistrer un paiement</h3>
+
+            <!-- Infos Facture -->
+            <div class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div class="flex justify-between">
+                    <span class="text-sm font-medium text-gray-500">Facture</span>
+                    <span id="modal-invoice-num" class="font-semibold text-gray-900"></span>
+                </div>
+                <div class="mt-2 flex justify-between">
+                    <span class="text-sm font-medium text-gray-500">Montant total</span>
+                    <span id="modal-invoice-total" class="font-semibold text-gray-900"></span>
+                </div>
+                <div class="mt-2 flex justify-between">
+                    <span class="text-sm font-medium text-gray-500">Solde dû</span>
+                    <span id="modal-invoice-due" class="text-xl font-bold text-red-600"></span>
+                </div>
+            </div>
+
+            <!-- Onglets -->
+            <div class="mt-6 border-b border-gray-200">
+                <nav class="-mb-px flex space-x-4" aria-label="Tabs">
+                    <button id="tab-virement" class="tab-btn active" onclick="switchTab('virement')">Virement</button>
+                    <button id="tab-cheque" class="tab-btn" onclick="switchTab('cheque')">Chèque(s)</button>
+                </nav>
+            </div>
+
+            <form id="confirmation-form" class="mt-4">
+                <input type="hidden" id="modal-invoice-id">
+                <input type="hidden" id="modal-due-amount-raw">
+
+                <!-- Panneau Virement -->
+                <div id="panel-virement" class="space-y-4">
+                    <div>
+                        <label for="payment-date" class="block text-sm font-medium text-gray-700">Date de réception</label>
+                        <input type="date" id="payment-date" name="payment-date" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label for="payment-amount" class="block text-sm font-medium text-gray-700">Montant reçu</label>
+                        <div class="relative mt-1">
+                            <input type="number" id="payment-amount" name="payment-amount" placeholder="0,00" class="w-full rounded-lg border-gray-300 pl-10 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">€</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panneau Chèque(s) -->
+                <div id="panel-cheque" class="space-y-4 hidden">
+                    <div id="check-list" class="max-h-32 overflow-y-auto space-y-2 pr-2">
+                        <!-- Chèques ajoutés dynamiquement ici -->
+                    </div>
+                    <button type="button" onclick="addCheck()" class="w-full rounded-lg border-2 border-dashed border-gray-300 py-2 text-sm font-semibold text-indigo-600 hover:border-indigo-500 hover:bg-indigo-50">
+                        + Ajouter un chèque
+                    </button>
+                    <div class="flex justify-between border-t border-gray-200 pt-2">
+                        <span class="font-semibold text-gray-700">Total des chèques :</span>
+                        <span id="check-total" class="font-bold text-gray-900">0,00 €</span>
+                    </div>
+                </div>
+
+            </form>
+
+            <div class="mt-6 flex justify-end space-x-4">
+                <button type="button" onclick="closeModal()" class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
+                    Annuler
+                </button>
+                <button type="button" onclick="confirmPayment()" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-700">
+                    Enregistrer le paiement
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Logique de la Sidebar
+            const menuButton = document.getElementById('menu-button');
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('menu-backdrop');
+
+            const toggleMenu = () => {
+                sidebar.classList.toggle('-translate-x-full');
+                backdrop.classList.toggle('hidden');
+            };
+
+            if (menuButton) menuButton.addEventListener('click', toggleMenu);
+            if (backdrop) backdrop.addEventListener('click', toggleMenu);
+
+            // Logique de la Modale de Rapprochement
+            const modal = document.getElementById('reconciliation-modal');
+            const modalInvoiceNum = document.getElementById('modal-invoice-num');
+            const modalInvoiceTotal = document.getElementById('modal-invoice-total');
+            const modalInvoiceDue = document.getElementById('modal-invoice-due');
+            const modalInvoiceId = document.getElementById('modal-invoice-id');
+            const modalDueAmountRaw = document.getElementById('modal-due-amount-raw');
+
+            const paymentDateInput = document.getElementById('payment-date');
+            const paymentAmountInput = document.getElementById('payment-amount');
+
+            const tabVirement = document.getElementById('tab-virement');
+            const tabCheque = document.getElementById('tab-cheque');
+            const panelVirement = document.getElementById('panel-virement');
+            const panelCheque = document.getElementById('panel-cheque');
+            const checkList = document.getElementById('check-list');
+            const checkTotal = document.getElementById('check-total');
+
+            let checkCounter = 0;
+            let checks = [];
+
+            // Mettre la date d'aujourd'hui par défaut
+            const today = new Date().toISOString().split('T')[0];
+            if(paymentDateInput) paymentDateInput.value = today;
+
+            window.switchTab = (tabName) => {
+                if (tabName === 'virement') {
+                    tabVirement.classList.add('active');
+                    tabCheque.classList.remove('active');
+                    panelVirement.classList.remove('hidden');
+                    panelCheque.classList.add('hidden');
+                } else {
+                    tabVirement.classList.remove('active');
+                    tabCheque.classList.add('active');
+                    panelVirement.classList.add('hidden');
+                    panelCheque.classList.remove('hidden');
+                }
+            }
+
+            window.addCheck = () => {
+                checkCounter++;
+                const checkId = `check-${checkCounter}`;
+                checks.push({ id: checkId, amount: 0, date: today });
+
+                const checkDiv = document.createElement('div');
+                checkDiv.id = checkId;
+                checkDiv.className = 'flex items-center space-x-2';
+                checkDiv.innerHTML = `
+                    <div class="relative flex-1">
+                        <input type="number" oninput="updateCheckAmount('${checkId}', this.value)" placeholder="Montant" class="w-full rounded-lg border-gray-300 pl-10 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 text-sm">€</span>
+                    </div>
+                    <input type="date" value="${today}" oninput="updateCheckDate('${checkId}', this.value)" class="flex-1 rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <button type="button" onclick="removeCheck('${checkId}')" class="text-red-500 hover:text-red-700">&times;</button>
+                `;
+                checkList.appendChild(checkDiv);
+            }
+
+            window.updateCheckAmount = (id, amount) => {
+                const check = checks.find(c => c.id === id);
+                if (check) check.amount = parseFloat(amount) || 0;
+                updateCheckTotal();
+            }
+
+            window.updateCheckDate = (id, date) => {
+                const check = checks.find(c => c.id === id);
+                if (check) check.date = date;
+            }
+
+            window.removeCheck = (id) => {
+                checks = checks.filter(c => c.id !== id);
+                document.getElementById(id).remove();
+                updateCheckTotal();
+            }
+
+            function updateCheckTotal() {
+                const total = checks.reduce((sum, c) => sum + c.amount, 0);
+                checkTotal.textContent = total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+            }
+
+            window.openModal = (invoiceNum, totalAmountStr, dueAmountRaw, invoiceId) => {
+                modalInvoiceNum.textContent = invoiceNum;
+                modalInvoiceTotal.textContent = totalAmountStr;
+                modalInvoiceDue.textContent = dueAmountRaw.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+                modalInvoiceId.value = invoiceId;
+                modalDueAmountRaw.value = dueAmountRaw;
+
+                if(paymentDateInput) paymentDateInput.value = today; // Reset
+                if(paymentAmountInput) {
+                    paymentAmountInput.value = ''; // Reset
+                    paymentAmountInput.placeholder = dueAmountRaw.toLocaleString('fr-FR', { minimumFractionDigits: 2 });
+                }
+
+                // Reset checks
+                checks = [];
+                if(checkList) checkList.innerHTML = '';
+                updateCheckTotal();
+
+                switchTab('virement'); // Revenir au premier onglet
+                if(modal) modal.classList.remove('hidden');
+            }
+
+            window.closeModal = () => {
+                if(modal) modal.classList.add('hidden');
+            }
+
+            window.confirmPayment = () => {
+                const invoiceId = modalInvoiceId.value;
+                const row = document.getElementById(`invoice-row-${invoiceId}`);
+                const statusCell = document.getElementById(`invoice-status-${invoiceId}`);
+                const amountCell = document.getElementById(`invoice-amount-${invoiceId}`);
+                const dueAmount = parseFloat(modalDueAmountRaw.value);
+
+                let receivedAmount = 0;
+                let paymentType = tabVirement.classList.contains('active') ? 'virement' : 'cheque';
+
+                if (paymentType === 'virement') {
+                    receivedAmount = parseFloat(paymentAmountInput.value) || 0;
+                } else {
+                    receivedAmount = checks.reduce((sum, c) => sum + c.amount, 0);
+                }
+
+                if (receivedAmount <= 0) {
+                    // Idéalement, remplacez alert par une notification non bloquante
+                    console.warn('Veuillez saisir un montant de paiement.');
+                    return;
+                }
+
+                console.log(`Paiement de ${receivedAmount} € enregistré pour la facture ID ${invoiceId}.`);
+
+                const newBalance = dueAmount - receivedAmount;
+
+                if (newBalance <= 0) {
+                    // Facture soldée
+                    row.classList.add('opacity-50', 'bg-green-50');
+                    statusCell.innerHTML = `<span class="inline-flex rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800">Payée</span>`;
+                    amountCell.textContent = (0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+                    amountCell.classList.remove('text-gray-900');
+                    amountCell.classList.add('text-green-700');
+                    const button = row.querySelector('button');
+                    button.disabled = true;
+                    button.textContent = 'Payée';
+                    button.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                    button.classList.add('bg-green-600', 'cursor-not-allowed');
+                } else {
+                    // Paiement partiel
+                    amountCell.dataset.amount = newBalance;
+                    amountCell.innerHTML = `${newBalance.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} <span class="block text-xs text-gray-500 font-normal">(sur ${dueAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})</span>`;
+                    statusCell.innerHTML = `<span class="inline-flex rounded-full bg-yellow-100 px-3 py-1 text-sm font-semibold text-yellow-800">Paiement partiel</span>`;
+                    
+                    // Mettre à jour les infos pour la prochaine ouverture de la modale
+                    row.querySelector('button').setAttribute('onclick', `openModal('${modalInvoiceNum.textContent}', '${modalInvoiceTotal.textContent}', ${newBalance}, ${invoiceId})`);
+                }
+                
+                closeModal();
+            }
+        });
+    </script>
+
+</body>
+</html>
+
