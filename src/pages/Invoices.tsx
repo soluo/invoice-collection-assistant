@@ -3,10 +3,11 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { useNavigate } from "react-router-dom";
-import { Search } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import { InvoicesList } from "@components/InvoicesList";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 export function Invoices() {
   const navigate = useNavigate();
@@ -84,15 +85,13 @@ export function Invoices() {
           </p>
         </div>
 
-        <button
+        <Button
           onClick={() => void navigate("/upload?returnTo=/invoices")}
-          className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className="flex items-center gap-2"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
+          <Plus className="w-4 h-4" />
           Ajouter une facture
-        </button>
+        </Button>
       </div>
 
       {/* ✅ V2 : Section Filtres enrichis */}
@@ -183,12 +182,12 @@ export function Invoices() {
 
           {/* Bouton Appliquer */}
           <div className="flex items-end">
-            <button
+            <Button
               type="submit"
-              className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+              className="w-full"
             >
               Appliquer les filtres
-            </button>
+            </Button>
           </div>
         </div>
       </form>
