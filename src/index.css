@@ -30,6 +30,18 @@
 :root {
   --color-light: #ffffff;
   --color-dark: #171717;
+
+  /* Variables shadcn/ui */
+  --popover: #ffffff;
+  --popover-foreground: #171717;
+}
+
+.bg-popover {
+  background-color: var(--popover);
+}
+
+.text-popover-foreground {
+  color: var(--popover-foreground);
 }
 
 .accent-text {

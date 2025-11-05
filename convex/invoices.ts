@@ -72,20 +72,26 @@ export const list = query({
       const dueDate = new Date(invoice.dueDate);
       const daysOverdue = Math.max(0, Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
 
+      // ✅ V2 : Calculer le solde dû
+      const outstandingBalance = invoice.amountTTC - (invoice.paidAmount || 0);
+
       // Ordre de priorité pour le tri
       const statusPriority = {
         litigation: 0,
         third_reminder: 1,
         second_reminder: 2,
         first_reminder: 3,
-        overdue: 4,
-        sent: 5,
-        paid: 6,
+        partial_payment: 4, // ✅ V2 : paiement partiel (priorité élevée)
+        overdue: 5,
+        pending: 6, // ✅ V2 : en attente (entre overdue et sent)
+        sent: 7,
+        paid: 8,
       };
 
       return {
         ...invoice,
         daysOverdue,
+        outstandingBalance, // ✅ V2 : nouveau champ
         priority: statusPriority[invoice.status],
       };
     });
@@ -102,12 +108,18 @@ export const list = query({
 
 /**
  * Liste les factures avec filtre (pour les admins uniquement)
+ * ✅ V2 : Filtres enrichis
  * - filterByUserId: filtre par technicien spécifique
- * - Si pas de filtre: toutes les factures de l'org
+ * - searchQuery: recherche par N° facture ou nom client
+ * - status: filtre par statut
+ * - amountFilter: filtre par montant (avec tolérance ±5%)
  */
 export const listWithFilter = query({
   args: {
     filterByUserId: v.optional(v.id("users")),
+    searchQuery: v.optional(v.string()), // ✅ V2 : recherche texte
+    status: v.optional(v.string()), // ✅ V2 : filtre statut
+    amountFilter: v.optional(v.number()), // ✅ V2 : filtre montant (±5%)
   },
   handler: async (ctx, args) => {
     const user = await getUserWithOrg(ctx);
@@ -119,6 +131,7 @@ export const listWithFilter = query({
 
     let invoices;
 
+    // Filtre 1 : Par technicien ou toute l'org
     if (args.filterByUserId) {
       // Filtrer par technicien spécifique
       const filterUserId = args.filterByUserId; // TypeScript narrowing
@@ -136,28 +149,59 @@ export const listWithFilter = query({
         .collect();
     }
 
+    // Filtre 2 : Par statut (si spécifié)
+    if (args.status && args.status !== "all") {
+      invoices = invoices.filter((invoice) => invoice.status === args.status);
+    }
+
+    // Filtre 3 : Recherche texte (N° facture ou client)
+    if (args.searchQuery) {
+      const query = args.searchQuery.toLowerCase().trim();
+      invoices = invoices.filter(
+        (invoice) =>
+          invoice.invoiceNumber.toLowerCase().includes(query) ||
+          invoice.clientName.toLowerCase().includes(query)
+      );
+    }
+
+    // Filtre 4 : Montant avec tolérance ±5%
+    if (args.amountFilter && args.amountFilter > 0) {
+      const tolerance = 0.05; // 5%
+      const minAmount = args.amountFilter * (1 - tolerance);
+      const maxAmount = args.amountFilter * (1 + tolerance);
+      invoices = invoices.filter(
+        (invoice) => invoice.amountTTC >= minAmount && invoice.amountTTC <= maxAmount
+      );
+    }
+
     // Enrichir avec le nom du créateur
     const invoicesWithCreator = await enrichInvoicesWithCreator(ctx, invoices);
 
-    // Calculer les jours de retard et trier par urgence
+    // Calculer les jours de retard, solde dû et trier par urgence
     const now = new Date();
     const invoicesWithDays = invoicesWithCreator.map((invoice) => {
       const dueDate = new Date(invoice.dueDate);
       const daysOverdue = Math.max(0, Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+
+      // ✅ V2 : Calculer le solde dû
+      const outstandingBalance = invoice.amountTTC - (invoice.paidAmount || 0);
 
       const statusPriority = {
         litigation: 0,
         third_reminder: 1,
         second_reminder: 2,
         first_reminder: 3,
-        overdue: 4,
-        sent: 5,
-        paid: 6,
+        partial_payment: 4, // ✅ V2 : paiement partiel (priorité élevée)
+        overdue: 5,
+        pending: 6, // ✅ V2 : en attente (entre overdue et sent)
+        sent: 7,
+        paid: 8,
       };
 
       return {
         ...invoice,
         daysOverdue,
+        outstandingBalance, // ✅ V2 : nouveau champ
         priority: statusPriority[invoice.status],
       };
     });

@@ -1,9 +1,11 @@
 export type InvoiceStatus =
   | "sent"
+  | "pending" // ✅ V2 : nouveau statut "En attente"
   | "overdue"
   | "first_reminder"
   | "second_reminder"
   | "third_reminder"
+  | "partial_payment" // ✅ V2 : nouveau statut "Paiement partiel"
   | "litigation"
   | "paid";
 
@@ -18,7 +20,6 @@ const overdueStatuses = new Set<InvoiceStatus>([
   "first_reminder",
   "second_reminder",
   "third_reminder",
-  "litigation",
 ]);
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
@@ -62,12 +63,34 @@ export function formatComplementPaid(days: number): string {
 
 /**
  * Calcule l'affichage du statut d'une facture (badge + complément + couleur)
+ * ✅ V2 : 5 variants de badges (rouge, orange, bleu, vert, jaune)
  */
 export function getStatusDisplay(invoice: any): StatusDisplay {
   const status: InvoiceStatus = invoice.status;
   const dueDate = invoice.dueDate ? new Date(invoice.dueDate) : undefined;
   const now = new Date();
 
+  // ✅ V2 : Paiement partiel (orange)
+  if (status === "partial_payment") {
+    const outstandingBalance = invoice.outstandingBalance ?? (invoice.amountTTC - (invoice.paidAmount || 0));
+    return {
+      badgeLabel: "Paiement partiel",
+      complement: `${outstandingBalance.toFixed(2)}€ restant`,
+      colorClass: "bg-orange-100 text-orange-800",
+    };
+  }
+
+  // ✅ V2 : En litige (jaune/gray)
+  if (status === "litigation") {
+    const daysOverdue = invoice.daysOverdue ?? 0;
+    return {
+      badgeLabel: "En litige",
+      complement: daysOverdue > 0 ? formatComplementOverdue(daysOverdue) : undefined,
+      colorClass: "bg-yellow-100 text-yellow-800",
+    };
+  }
+
+  // Payée (vert)
   if (status === "paid") {
     const invoiceDate = invoice.invoiceDate ? new Date(invoice.invoiceDate) : undefined;
     const paidDate = invoice.paidDate ? new Date(invoice.paidDate) : undefined;
@@ -89,15 +112,17 @@ export function getStatusDisplay(invoice: any): StatusDisplay {
     const remainingRaw = Math.ceil((dueDate.getTime() - now.getTime()) / DAY_IN_MS);
     const daysOverdue = invoice.daysOverdue ?? Math.max(0, Math.ceil((now.getTime() - dueDate.getTime()) / DAY_IN_MS));
 
-    if (status === "sent" && remainingRaw >= 0) {
+    // ✅ V2 : En attente (bleu) - pour "pending" ou "sent" avant échéance
+    if ((status === "pending" || status === "sent") && remainingRaw >= 0) {
       const daysRemaining = Math.max(0, remainingRaw);
       return {
-        badgeLabel: "Due",
+        badgeLabel: "En attente",
         complement: formatComplementDue(daysRemaining),
         colorClass: "bg-blue-100 text-blue-800",
       };
     }
 
+    // En retard (rouge) - pour "sent" après échéance ou statuts de relance
     if (status === "sent" && remainingRaw < 0) {
       const overdueDays = Math.max(1, Math.abs(remainingRaw));
       return {
@@ -117,6 +142,7 @@ export function getStatusDisplay(invoice: any): StatusDisplay {
     }
   }
 
+  // Fallback : À envoyer (gray)
   return {
     badgeLabel: "À envoyer",
     colorClass: "bg-gray-100 text-gray-800",

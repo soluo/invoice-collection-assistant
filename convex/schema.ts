@@ -73,16 +73,19 @@ const applicationTables = {
     dueDate: v.string(),
     status: v.union(
       v.literal("sent"),
+      v.literal("pending"), // ✅ V2 : nouveau statut "En attente"
       v.literal("overdue"),
       v.literal("first_reminder"),
       v.literal("second_reminder"),
       v.literal("third_reminder"),
+      v.literal("partial_payment"), // ✅ V2 : nouveau statut "Paiement partiel"
       v.literal("litigation"),
       v.literal("paid")
     ),
     pdfStorageId: v.optional(v.id("_storage")),
     lastReminderDate: v.optional(v.string()),
     paidDate: v.optional(v.string()),
+    paidAmount: v.optional(v.number()), // ✅ V2 : montant déjà payé (pour paiements partiels)
   })
     .index("by_user", ["userId"])
     .index("by_user_and_status", ["userId", "status"])
