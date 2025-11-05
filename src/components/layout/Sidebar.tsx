@@ -33,11 +33,11 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { name: "Tableau de bord", path: "/", icon: Home },
-  { name: "Factures", path: "/invoices", icon: FileText },
-  { name: "Clients", path: "/clients", icon: Users },
-  { name: "Clients à appeler", path: "/call-plan", icon: Phone },
   { name: "Import Facture", path: "/upload", icon: Upload },
+  /*{ name: "Clients", path: "/clients", icon: Users },*/
+  { name: "Clients à appeler", path: "/call-plan", icon: Phone },
   { name: "Rapprochement", path: "/reconciliation", icon: CreditCard },
+  { name: "Factures", path: "/invoices", icon: FileText },
   { name: "Agenda", path: "/agenda", icon: Calendar },
 ];
 
