@@ -2,8 +2,16 @@
 
 **Date de création :** 2025-11-05
 **Dernière mise à jour :** 2025-11-05
-**Statut global :** 🟡 En cours (Phase 1.1-1.2 complétée)
+**Statut global :** 🟡 En cours (Phase 1.1-1.2-1.3.2 + Phase 2.2 complétées)
 **Version cible :** 2.0.0
+
+---
+## Instructions
+
+Ce fichier sert au suivi de la mise en oeuvre de la spec.
+A chaque fois que je te le demande tu mets à jour ce fichier pour refléter l'avancement.
+
+Sois concis, contente toi de cocher les cases et d'ajouter un récap à la partie Changelog.
 
 ---
 
@@ -23,15 +31,15 @@
 - **Rapport d'analyse** : Voir section 12 de `MULTI_USER_SPEC.md`
 
 ### Progression globale
-- Phase 1 (Design System) : 7/15 ✅✅✅✅✅✅✅⬜⬜⬜⬜⬜⬜⬜⬜
-- Phase 2 (Écrans) : 0/45 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜
+- Phase 1 (Design System) : 8/15 ✅✅✅✅✅✅✅✅⬜⬜⬜⬜⬜⬜⬜
+- Phase 2 (Écrans) : 7/45 ✅✅⬜⬜⬜⬜⬜⬜⬜⬜
 - Phase 3 (Intégrations) : 0/12 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜
 
 ---
 
 ## PHASE 1 : Design System & Layout 🎨
 
-**Statut** : 🟡 En cours (1.1-1.2 complétées)
+**Statut** : 🟡 En cours (1.1-1.2-1.3.2 complétées)
 **Prérequis** : Accès MCP shadcn/ui ✅
 
 ### 1.1 Installation & Configuration
@@ -93,37 +101,47 @@
   - ✅ Fichier : `src/components/ui/button.tsx`
   - Note : Variants disponibles (default, secondary, ghost, destructive) mais style à ajuster pour indigo-600
 
-- [ ] **1.3.2** Card
+- [x] **1.3.2** ✅ Sidebar (créé manuellement avec composants shadcn)
+  - ✅ Fichier : `src/components/ui/sidebar.tsx`
+  - ✅ Composants : Sidebar, SidebarProvider, SidebarHeader, SidebarContent, SidebarFooter, SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset
+  - ✅ Fichier : `src/components/ui/collapsible.tsx` (dépendance)
+  - ✅ Variables CSS shadcn utilisées : `--sidebar-*`, `--primary`, `--accent`, `--muted-foreground`, etc.
+  - ✅ Responsive mobile/desktop avec détection automatique du viewport
+  - ✅ Tailles ajustées pour correspondre aux maquettes (p-3, gap-3, text-base, rounded-lg)
+  - ✅ État actif géré avec `useMatch` et `useResolvedPath` de React Router
+  - ✅ Dépendance installée : `@radix-ui/react-collapsible`
+
+- [ ] **1.3.3** Card
   - Base : border + rounded-xl + shadow-sm
   - Variante avec header/content/footer
 
-- [ ] **1.3.3** Badge
+- [ ] **1.3.4** Badge
   - Color variants : red (retard), green (payée), blue (en cours), orange (partiel), yellow (litige)
   - Size : sm, default
 
-- [ ] **1.3.4** Dialog (Modal)
+- [ ] **1.3.5** Dialog (Modal)
   - Overlay : bg-gray-900/50
   - Max-width : lg, 2xl variants
   - Animation : fade in/out
 
-- [ ] **1.3.5** Tabs
+- [ ] **1.3.6** Tabs
   - Style : underline (border-b-2)
   - Active : indigo-600
 
-- [ ] **1.3.6** Input / Textarea
+- [ ] **1.3.7** Input / Textarea
   - Focus : border-indigo-500 + ring-indigo-500
   - Variants : with prefix (€, search icon)
 
-- [ ] **1.3.7** Select / Dropdown
+- [ ] **1.3.8** Select / Dropdown
   - Style cohérent avec Input
 
-- [ ] **1.3.8** Sheet (Slide-over Panel)
+- [ ] **1.3.9** Sheet (Slide-over Panel)
   - Pour : Panel clients
   - Position : right
   - Max-width : 2xl
   - Overlay + animation translate-x
 
-- [ ] **1.3.9** Créer composant Timeline custom
+- [ ] **1.3.10** Créer composant Timeline custom
   - Fichier : `src/components/ui/Timeline.tsx`
   - Style : Cercle + ligne verticale
   - Props : items (array), variant (vertical/horizontal)
@@ -132,7 +150,7 @@
 
 ## PHASE 2 : Implémentation Écrans 🖥️
 
-**Statut** : 🔴 Non commencé
+**Statut** : 🟡 En cours (Phase 2.2 complétée)
 **Prérequis** : Phase 1 complétée
 
 ### 2.1 Dashboard Administrateur
@@ -178,38 +196,40 @@
 
 **Fichier** : `src/pages/Invoices.tsx` (refonte)
 **Maquette** : `specs/V2/mockups/factures.html`
-**Statut** : 🔴 Non commencé
+**Statut** : ✅ Complété
 
 #### Tâches :
-- [ ] **2.2.1** Refonte filtres avancés
-  - Recherche : N° facture ou nom client
-  - Dropdown : Statut (Tous, En retard, Paiement partiel, En attente, Payée, En litige)
-  - Slider/Input : Montant min-max
-  - Dropdown : Client (liste déroulante)
+- [x] **2.2.1** ✅ Refonte filtres avancés
+  - ✅ Recherche : N° facture ou nom client
+  - ✅ Dropdown : Statut (Tous, En retard, Paiement partiel, En attente, Payée, En litige)
+  - ✅ Input : Montant (±5% tolérance)
+  - ✅ Dropdown : Technicien (liste déroulante pour admins)
 
-- [ ] **2.2.2** Tableau responsive avec nouvelles colonnes
-  - Colonnes : N° Facture, Client/Donneur, Montant Total, **Solde Dû** (nouveau), Échéance, Statut
-  - Hover state : bg-gray-50
-  - Click row → `/invoices/:id` (détail)
+- [x] **2.2.2** ✅ Tableau responsive avec nouvelles colonnes
+  - ✅ Colonnes : N° Facture + Client regroupées, Date émission, Montant Total, **Solde Dû** (nouveau), Échéance, Statut, Responsable
+  - ✅ Hover state : bg-gray-50
+  - ✅ Lien "Voir" (détail à implémenter en Phase 2.3)
 
-- [ ] **2.2.3** Pagination
-  - shadcn Pagination component
-  - Limiter à 20 par page
+- [x] **2.2.3** ✅ Pagination
+  - ✅ shadcn Pagination component avec ellipsis
+  - ✅ Limiter à 20 par page
+  - ✅ Affichage "Page X sur Y (Z factures)"
 
-- [ ] **2.2.4** Nouveaux badges de statut
-  - En retard (red)
-  - Paiement partiel (orange) - NOUVEAU
-  - En attente (blue)
-  - Payée (green)
-  - En litige (yellow) - NOUVEAU
+- [x] **2.2.4** ✅ Nouveaux badges de statut
+  - ✅ En retard (red)
+  - ✅ Paiement partiel (orange) - NOUVEAU
+  - ✅ En attente (blue)
+  - ✅ Payée (green)
+  - ✅ En litige (yellow) - NOUVEAU
 
-- [ ] **2.2.5** Responsive mobile
-  - Cards empilées au lieu de table
-  - Filtres en accordéon/dropdown
+- [x] **2.2.5** ✅ Responsive mobile
+  - ✅ Cards empilées au lieu de table
+  - ✅ Filtres accessibles (formulaire responsive)
 
 #### Backend requis :
-- [ ] Ajouter statuts "partial_payment" et "litigation" au schema invoices
-- [ ] Enrichir query `invoices.listWithFilter` avec "Solde Dû"
+- [x] ✅ Ajouter statuts "partial_payment", "pending" et "litigation" au schema invoices
+- [x] ✅ Enrichir query `invoices.list` et `invoices.listWithFilter` avec champ `outstandingBalance` (Solde Dû)
+- [x] ✅ Implémenter filtres avancés dans `listWithFilter` : recherche texte, statut, montant ±5%, technicien
 
 ---
 
@@ -739,32 +759,35 @@ Via MCP :
 1. ✅ ~~Valider l'accès MCP shadcn/ui~~
 2. ✅ ~~Démarrer Phase 1.1 : Installation dépendances~~
 3. ✅ ~~Créer le nouveau layout (Phase 1.2)~~
-4. **Phase 1.3** : Installer les composants shadcn restants (Card, Badge, Dialog, Tabs, Input, etc.)
-5. **Phase 2.1** : Commencer refonte Dashboard avec KPIs et graphiques
+4. ✅ ~~Phase 1.3.2 : Créer composants Sidebar shadcn~~
+5. ✅ ~~Phase 2.2 : Écran Factures avec filtres, pagination, responsive~~
+6. **Phase 1.3 (suite)** : Installer les composants shadcn restants (Card, Badge, Dialog, Tabs, Input, Select, Sheet, Timeline)
+7. **Phase 2.3** : Créer l'écran Détail Facture avec historique et timeline (`/invoices/:id`)
+8. **Phase 2.1** : Refonte Dashboard avec KPIs et graphiques
 
 ---
 
 ## 📝 Changelog
 
-### 2025-11-05 - Phase 1.1 & 1.2 complétées ✅
+### 2025-11-05
 
-**Installation & Configuration (1.1)**
-- ✅ Configuré shadcn/ui via MCP (components.json sans tailwind.config.js pour Tailwind v4)
-- ✅ Thème Indigo configuré (`--color-primary: indigo-600`)
-- ✅ Décision : Utilisation de lucide-react au lieu de Phosphor Icons
-- ✅ Composants installés : Button, Avatar
+**Phase 2.2 : Écran Factures** ✅
+- Implémenté filtres avancés : recherche texte, statut, montant ±5%, technicien (admins)
+- Créé tableau responsive avec colonnes enrichies (Solde Dû, Date émission, Responsable)
+- Ajouté pagination shadcn (20 par page, ellipsis, navigation intelligente)
+- Implémenté badges pour tous les statuts (partial_payment, litigation, etc.)
+- Vue mobile avec cards empilées
+- Backend : ajout statuts V2 dans schema, calcul outstandingBalance, filtres dans listWithFilter
 
-**Layout Global (1.2)**
-- ✅ Créé `src/components/layout/Sidebar.tsx` avec 7 nav items + 2 bottom items
-- ✅ Créé `src/components/layout/Topbar.tsx` avec hamburger, greeting dynamique, user menu
-- ✅ Créé `src/components/layout/AppLayout.tsx` (wrapper Sidebar + Topbar)
-- ✅ Refonte `src/App.tsx` : ancien Header supprimé, toutes routes wrapped dans AppLayout
-- ✅ **Navigation améliorée** : Utilisation de `<NavLink>` au lieu de boutons (URL preview, accessibilité)
-- ✅ Responsive mobile/desktop fonctionnel
+**Phase 1.3.2 : Composants Sidebar shadcn** ✅
+- Créé `sidebar.tsx` et `collapsible.tsx` avec composants shadcn complets
+- Refactorisé `Sidebar.tsx` : utilisation variables CSS shadcn, styles ajustés maquettes
+- Installé `@radix-ui/react-collapsible`
 
-**Documentation**
-- ✅ Mise à jour `CLAUDE.md` : ajout section "Navigation Best Practices" (préférer NavLink)
-- ✅ Mise à jour `V2_TRACKING.md` : progression et décisions documentées
+**Phase 1.1-1.2 : Installation & Layout** ✅
+- Configuré shadcn/ui (Tailwind v4, thème Indigo)
+- Créé layout global (Sidebar, Topbar, AppLayout)
+- Navigation avec `<NavLink>`, responsive mobile/desktop
 
 ---
 
