@@ -1,37 +1,33 @@
-import { useState } from "react";
+import React from 'react'
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
+import {
+  SidebarProvider,
+  SidebarInset,
+} from "@/components/ui/sidebar";
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen((prev) => !prev);
-  };
-
-  const closeSidebar = () => {
-    setIsSidebarOpen(false);
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
+    <SidebarProvider>
+      <div className="flex h-screen w-full">
+        {/* Sidebar */}
+        <Sidebar />
 
-      {/* Main content area */}
-      <div className="md:pl-64">
-        {/* Topbar */}
-        <Topbar onMenuClick={toggleSidebar} />
+        {/* Main content area */}
+        <SidebarInset className="bg-gray-50">
+          {/* Topbar */}
+          <Topbar />
 
-        {/* Page content */}
-        <main className="p-4 md:p-6">
-          {children}
-        </main>
+          {/* Page content */}
+          <main className="flex-1 overflow-y-auto p-4 md:p-6">
+            {children}
+          </main>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }

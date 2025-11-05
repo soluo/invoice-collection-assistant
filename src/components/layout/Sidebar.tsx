@@ -1,5 +1,5 @@
 import React from 'react'
-import { NavLink } from "react-router-dom";
+import { NavLink, useMatch, useResolvedPath } from "react-router-dom";
 import {
   Home,
   FileText,
@@ -12,11 +12,18 @@ import {
   User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface SidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+import {
+  Sidebar as SidebarComp,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar";
 
 interface NavItem {
   name: string;
@@ -39,90 +46,61 @@ const bottomNavItems: NavItem[] = [
   { name: "Mon Compte", path: "/account", icon: User },
 ];
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+function NavItem({ item, onClick }: { item: NavItem; onClick: () => void }) {
+  const Icon = item.icon;
+  const resolved = useResolvedPath(item.path);
+  const match = useMatch({ path: resolved.pathname, end: item.path === "/" });
+  const isActive = !!match;
+
   return (
-    <>
-      {/* Mobile backdrop */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-gray-900/50 z-30 md:hidden"
-          onClick={onClose}
-          aria-hidden="true"
-        />
-      )}
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild isActive={isActive}>
+        <NavLink to={item.path} onClick={onClick}>
+          <Icon className={cn("h-5 w-5", isActive ? "text-primary-foreground" : "text-muted-foreground")} />
+          <span>{item.name}</span>
+        </NavLink>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
 
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed left-0 top-0 z-40 h-screen w-64 bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out",
-          "md:translate-x-0", // Always visible on desktop
-          isOpen ? "translate-x-0" : "-translate-x-full" // Toggle on mobile
-        )}
-      >
-        <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="flex items-center h-16 px-6 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-indigo-600">ZenRelance</h1>
+export function Sidebar() {
+  const { setOpenMobile } = useSidebar();
+
+  return (
+    <SidebarComp>
+      {/* Header avec logo */}
+      <SidebarHeader>
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
+            Z
           </div>
-
-          {/* Main navigation */}
-          <nav className="flex-1 overflow-y-auto py-4 px-3">
-            <ul className="space-y-1">
-              {mainNavItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <li key={item.path}>
-                    <NavLink
-                      to={item.path}
-                      end={item.path === "/"}
-                      onClick={onClose}
-                      className={({ isActive }) =>
-                        cn(
-                          "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                          isActive
-                            ? "bg-indigo-600 text-white"
-                            : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                        )
-                      }
-                    >
-                      <Icon className="w-5 h-5 shrink-0" />
-                      <span>{item.name}</span>
-                    </NavLink>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-
-          {/* Bottom navigation */}
-          <div className="border-t border-gray-200 py-4 px-3">
-            <ul className="space-y-1">
-              {bottomNavItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <li key={item.path}>
-                    <NavLink
-                      to={item.path}
-                      onClick={onClose}
-                      className={({ isActive }) =>
-                        cn(
-                          "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                          isActive
-                            ? "bg-indigo-600 text-white"
-                            : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                        )
-                      }
-                    >
-                      <Icon className="w-5 h-5 shrink-0" />
-                      <span>{item.name}</span>
-                    </NavLink>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+          <h1 className="text-lg font-bold text-foreground">ZenRelance</h1>
         </div>
-      </aside>
-    </>
+      </SidebarHeader>
+
+      {/* Main content */}
+      <SidebarContent>
+        {/* Main navigation group */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {mainNavItems.map((item) => (
+                <NavItem key={item.path} item={item} onClick={() => setOpenMobile(false)} />
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      {/* Footer navigation */}
+      <SidebarFooter>
+        <SidebarMenu>
+          {bottomNavItems.map((item) => (
+            <NavItem key={item.path} item={item} onClick={() => setOpenMobile(false)} />
+          ))}
+        </SidebarMenu>
+      </SidebarFooter>
+    </SidebarComp>
   );
 }

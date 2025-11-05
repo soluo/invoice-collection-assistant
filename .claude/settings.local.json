@@ -13,7 +13,9 @@
       "Bash(git log:*)",
       "mcp__shadcn__search_items_in_registries",
       "mcp__shadcn__get_add_command_for_items",
-      "Bash(pnpm dlx shadcn@latest add:*)"
+      "Bash(pnpm dlx shadcn@latest add:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm dev)"
     ],
     "deny": [],
     "ask": []
