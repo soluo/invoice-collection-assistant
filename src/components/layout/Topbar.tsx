@@ -85,8 +85,8 @@ export function Topbar() {
           aria-haspopup="true"
           aria-expanded={isMenuOpen}
         >
-          <Avatar className="h-10 w-10 bg-indigo-600 text-white">
-            <AvatarFallback className="bg-indigo-600 text-white font-semibold">
+          <Avatar className="h-10 w-10 bg-primary text-white">
+            <AvatarFallback className="bg-primary text-white font-semibold">
               {initials}
             </AvatarFallback>
           </Avatar>
