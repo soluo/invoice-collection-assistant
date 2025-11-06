@@ -31,7 +31,7 @@ Sois concis, contente toi de cocher les cases et d'ajouter un récap à la parti
 - **Rapport d'analyse** : Voir section 12 de `MULTI_USER_SPEC.md`
 
 ### Progression globale
-- Phase 1 (Design System) : 9/16 ✅✅✅✅✅✅✅✅✅⬜⬜⬜⬜⬜⬜⬜
+- Phase 1 (Design System) : 11/16 ✅✅✅✅✅✅✅✅✅✅✅⬜⬜⬜⬜⬜
 - Phase 2 (Écrans) : 13/45 ✅✅✅✅✅✅✅⬜⬜⬜
 - Phase 3 (Intégrations) : 0/12 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜
 
@@ -39,7 +39,7 @@ Sois concis, contente toi de cocher les cases et d'ajouter un récap à la parti
 
 ## PHASE 1 : Design System & Layout 🎨
 
-**Statut** : 🟡 En cours (1.1-1.2-1.3.2 complétées)
+**Statut** : 🟡 En cours (1.1-1.2-1.3.2-1.3.7-1.3.8-1.3.9 complétées)
 **Prérequis** : Accès MCP shadcn/ui ✅
 
 ### 1.1 Installation & Configuration
@@ -132,12 +132,14 @@ Sois concis, contente toi de cocher les cases et d'ajouter un récap à la parti
   - ✅ Fichier : `src/components/ui/label.tsx`
   - ✅ Utilisé dans formulaire InvoiceUpload pour accessibilité
 
-- [ ] **1.3.8** Input / Textarea
-  - Focus : border-indigo-500 + ring-indigo-500
-  - Variants : with prefix (€, search icon)
+- [x] **1.3.8** ✅ Input / Textarea (installés via MCP)
+  - ✅ Fichier : `src/components/ui/input.tsx`
+  - ✅ Fichier : `src/components/ui/textarea.tsx`
+  - ✅ Utilisés dans formulaires InvoiceUpload et Invoices (filtres)
 
-- [ ] **1.3.9** Select / Dropdown
-  - Style cohérent avec Input
+- [x] **1.3.9** ✅ Select / Dropdown (installé via MCP)
+  - ✅ Fichier : `src/components/ui/select.tsx`
+  - ✅ Utilisé dans formulaire de filtres Invoices (statut, technicien)
 
 - [ ] **1.3.10** Sheet (Slide-over Panel)
   - Pour : Panel clients
@@ -208,11 +210,14 @@ Sois concis, contente toi de cocher les cases et d'ajouter un récap à la parti
   - ✅ Dropdown : Statut (Tous, En retard, Paiement partiel, En attente, Payée, En litige)
   - ✅ Input : Montant (±5% tolérance)
   - ✅ Dropdown : Technicien (liste déroulante pour admins)
+  - ✅ **Filtres synchronisés avec URL** (partage/bookmark)
 
 - [x] **2.2.2** ✅ Tableau responsive avec nouvelles colonnes
   - ✅ Colonnes : N° Facture + Client regroupées, Date émission, Montant Total, **Solde Dû** (nouveau), Échéance, Statut, Responsable
   - ✅ Hover state : bg-gray-50
   - ✅ Lien "Voir" (détail à implémenter en Phase 2.3)
+  - ✅ **Tri côté serveur** avec icônes cliquables (Émission, Montant TTC, Solde Dû, Échéance)
+  - ✅ **Tri synchronisé avec URL** (défaut: Date émission DESC)
 
 - [x] **2.2.3** ✅ Pagination
   - ✅ shadcn Pagination component avec ellipsis
@@ -234,6 +239,7 @@ Sois concis, contente toi de cocher les cases et d'ajouter un récap à la parti
 - [x] ✅ Ajouter statuts "partial_payment", "pending" et "litigation" au schema invoices
 - [x] ✅ Enrichir query `invoices.list` et `invoices.listWithFilter` avec champ `outstandingBalance` (Solde Dû)
 - [x] ✅ Implémenter filtres avancés dans `listWithFilter` : recherche texte, statut, montant ±5%, technicien
+- [x] ✅ **Tri serveur** : ajout paramètres `sortBy` et `sortOrder` aux queries
 
 ---
 
@@ -778,6 +784,16 @@ Via MCP :
 ## 📝 Changelog
 
 ### 2025-11-06
+
+**Phase 1.3.8-1.3.9 : Composants shadcn Input, Textarea, Select** ✅
+- Installés via MCP : Input, Textarea, Select
+- Utilisés dans formulaire InvoiceUpload et filtres Invoices
+
+**Phase 2.2 : Améliorations liste Factures** ✅
+- Tri côté serveur sur 4 colonnes : Émission, Montant TTC, Solde Dû, Échéance (défaut: Date émission DESC)
+- Icônes de tri cliquables (ArrowUpDown/ArrowUp/ArrowDown) avec toggle DESC → ASC
+- Synchronisation filtres + tri avec URL (partage, bookmark, navigation)
+- Backend : ajout paramètres `sortBy` et `sortOrder` dans `invoices.list` et `listWithFilter`
 
 **Phase 2.6 : Import Facture** ✅
 - Refonte complète de `InvoiceUpload.tsx` avec design V2 indigo theme
