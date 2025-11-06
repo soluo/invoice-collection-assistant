@@ -18,114 +18,59 @@ export function Invoices() {
   const currentUser = useQuery(api.auth.loggedInUser);
   const allUsers = useQuery(api.organizations.listUsers);
 
-  // ✅ V2 : États des filtres initialisés depuis l'URL
-  const [selectedUserId, setSelectedUserId] = useState<Id<"users"> | undefined>(() => {
-    const urlUserId = searchParams.get("userId");
-    return urlUserId ? (urlUserId as Id<"users">) : undefined;
-  });
-  const [searchQuery, setSearchQuery] = useState(() => searchParams.get("search") || "");
-  const [statusFilter, setStatusFilter] = useState<string>(() => searchParams.get("status") || "all");
-  const [amountFilter, setAmountFilter] = useState<string>(() => searchParams.get("amount") || "");
-  const [appliedFilters, setAppliedFilters] = useState(() => {
-    const urlAmount = searchParams.get("amount");
-    const urlUserId = searchParams.get("userId");
-    return {
-      searchQuery: searchParams.get("search") || "",
-      status: searchParams.get("status") || "all",
-      amountFilter: urlAmount && !isNaN(parseFloat(urlAmount)) ? parseFloat(urlAmount) : undefined,
-      userId: urlUserId ? (urlUserId as Id<"users">) : undefined,
-    };
-  });
+  // ===== LIRE DEPUIS L'URL (source de vérité unique) =====
+  const search = searchParams.get("search") || "";
+  const status = searchParams.get("status") || "all";
+  const amount = searchParams.get("amount") || "";
+  const userId = searchParams.get("userId") || "";
 
-  // États du tri initialisés depuis l'URL
-  const [sortBy, setSortBy] = useState<SortField>(() => {
-    const urlSortBy = searchParams.get("sortBy");
-    if (urlSortBy === "invoiceDate" || urlSortBy === "amountTTC" ||
-        urlSortBy === "outstandingBalance" || urlSortBy === "dueDate") {
-      return urlSortBy;
-    }
-    return "invoiceDate";
-  });
-  const [sortOrder, setSortOrder] = useState<SortOrder>(() => {
-    const urlSortOrder = searchParams.get("sortOrder");
-    return urlSortOrder === "asc" ? "asc" : "desc";
-  });
+  const amountValue = amount && !isNaN(parseFloat(amount))
+    ? parseFloat(amount)
+    : undefined;
+
+  const urlSortBy = searchParams.get("sortBy");
+  const sortBy: SortField =
+    (urlSortBy === "invoiceDate" || urlSortBy === "amountTTC" ||
+     urlSortBy === "outstandingBalance" || urlSortBy === "dueDate")
+      ? urlSortBy
+      : "invoiceDate";
+
+  const urlSortOrder = searchParams.get("sortOrder");
+  const sortOrder: SortOrder = urlSortOrder === "asc" ? "asc" : "desc";
 
   const isAdmin = currentUser?.role === "admin";
 
-  // ✅ V2 : Convertir amountFilter en nombre (ou undefined si vide)
-  const amountValue = amountFilter && !isNaN(parseFloat(amountFilter)) ? parseFloat(amountFilter) : undefined;
+  // ===== HANDLERS =====
 
-  // Appliquer les filtres via le formulaire avec synchronisation URL
-  const handleSubmitFilters = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const newFilters = {
-      searchQuery,
-      status: statusFilter,
-      amountFilter: amountValue,
-      userId: selectedUserId,
-    };
-
-    setAppliedFilters(newFilters);
-
-    // Construire les paramètres d'URL
-    const params: Record<string, string> = {
-      sortBy,
-      sortOrder,
-    };
-
-    if (searchQuery) params.search = searchQuery;
-    if (statusFilter && statusFilter !== "all") params.status = statusFilter;
-    if (amountFilter) params.amount = amountFilter;
-    if (selectedUserId) params.userId = selectedUserId;
-
-    setSearchParams(params);
-  };
-
-  // Gestionnaire de tri avec synchronisation URL (préserve les filtres)
   const handleSort = (field: SortField) => {
-    let newSortOrder: SortOrder;
-    if (sortBy === field) {
-      // Toggle entre DESC et ASC
-      newSortOrder = sortOrder === "desc" ? "asc" : "desc";
-    } else {
-      // Nouvelle colonne : commencer par DESC
-      newSortOrder = "desc";
-    }
+    // Toggle entre DESC et ASC si même champ, sinon commencer par DESC
+    const newSortOrder: SortOrder =
+      sortBy === field ? (sortOrder === "desc" ? "asc" : "desc") : "desc";
 
-    // Mettre à jour l'état
-    setSortBy(field);
-    setSortOrder(newSortOrder);
-
-    // Synchroniser avec l'URL en préservant les filtres
-    const params: Record<string, string> = {
+    // Mettre à jour l'URL en préservant tous les paramètres existants
+    setSearchParams({
+      ...Object.fromEntries(searchParams),
       sortBy: field,
       sortOrder: newSortOrder,
-    };
-
-    // Conserver les filtres appliqués
-    if (appliedFilters.searchQuery) params.search = appliedFilters.searchQuery;
-    if (appliedFilters.status && appliedFilters.status !== "all") params.status = appliedFilters.status;
-    if (appliedFilters.amountFilter) params.amount = appliedFilters.amountFilter.toString();
-    if (appliedFilters.userId) params.userId = appliedFilters.userId;
-
-    setSearchParams(params);
+    });
   };
 
-  // Utiliser la bonne query selon le rôle et le filtre appliqué
+  // ===== DATA QUERY =====
   const invoices = useQuery(
-    isAdmin ? api.invoices.listWithFilter : api.invoices.list,
+    api.invoices.listWithFilter,
     isAdmin
       ? {
-          filterByUserId: appliedFilters.userId,
-          searchQuery: appliedFilters.searchQuery || undefined,
-          status: appliedFilters.status !== "all" ? appliedFilters.status : undefined,
-          amountFilter: appliedFilters.amountFilter,
+          filterByUserId: userId ? (userId as Id<"users">) : undefined,
+          searchQuery: search || undefined,
+          status: status !== "all" ? status : undefined,
+          amountFilter: amountValue,
           sortBy,
           sortOrder,
         }
-      : { sortBy, sortOrder }
+      : {
+          sortBy,
+          sortOrder,
+        }
   );
 
   // ✅ V2 : Garder les résultats précédents pendant le rechargement
@@ -167,8 +112,8 @@ export function Invoices() {
         </Button>
       </div>
 
-      {/* ✅ V2 : Section Filtres enrichis */}
-      <form onSubmit={handleSubmitFilters} className="bg-white rounded-lg border p-6">
+      {/* Section Filtres */}
+      <div className="bg-white rounded-lg border p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Recherche N° facture ou client */}
           <div className="lg:col-span-2">
@@ -178,11 +123,31 @@ export function Invoices() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
+                key={`search-${search}`}
                 id="search"
                 type="text"
                 placeholder="N° facture, client, dossier..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                defaultValue={search}
+                onBlur={(e) => {
+                  const params = Object.fromEntries(searchParams);
+                  if (e.target.value) {
+                    params.search = e.target.value;
+                  } else {
+                    delete params.search;
+                  }
+                  setSearchParams(params);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const params = Object.fromEntries(searchParams);
+                    if (e.currentTarget.value) {
+                      params.search = e.currentTarget.value;
+                    } else {
+                      delete params.search;
+                    }
+                    setSearchParams(params);
+                  }
+                }}
                 className="pl-10"
               />
             </div>
@@ -193,7 +158,18 @@ export function Invoices() {
             <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
               Statut
             </label>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={status}
+              onValueChange={(value) => {
+                const params = Object.fromEntries(searchParams);
+                if (value !== "all") {
+                  params.status = value;
+                } else {
+                  delete params.status;
+                }
+                setSearchParams(params);
+              }}
+            >
               <SelectTrigger id="status">
                 <SelectValue placeholder="Tous les statuts" />
               </SelectTrigger>
@@ -208,15 +184,23 @@ export function Invoices() {
             </Select>
           </div>
 
-          {/* Bouton Appliquer ou Filtre Responsable */}
+          {/* Filtre Responsable */}
           {isAdmin && allUsers ? (
             <div>
               <label htmlFor="responsable" className="block text-sm font-medium text-gray-700 mb-2">
                 Technicien
               </label>
               <Select
-                value={selectedUserId || "all"}
-                onValueChange={(value) => setSelectedUserId(value === "all" ? undefined : (value as Id<"users">))}
+                value={userId || "all"}
+                onValueChange={(value) => {
+                  const params = Object.fromEntries(searchParams);
+                  if (value !== "all") {
+                    params.userId = value;
+                  } else {
+                    delete params.userId;
+                  }
+                  setSearchParams(params);
+                }}
               >
                 <SelectTrigger id="responsable">
                   <SelectValue placeholder="Tous les techniciens" />
@@ -236,34 +220,44 @@ export function Invoices() {
           )}
         </div>
 
-        {/* Deuxième ligne : Montant et Bouton */}
+        {/* Deuxième ligne : Montant */}
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
               Montant (±5%)
             </label>
             <Input
+              key={`amount-${amount}`}
               id="amount"
               type="number"
               placeholder="Ex: 1500"
-              value={amountFilter}
-              onChange={(e) => setAmountFilter(e.target.value)}
+              defaultValue={amount}
+              onBlur={(e) => {
+                const params = Object.fromEntries(searchParams);
+                if (e.target.value) {
+                  params.amount = e.target.value;
+                } else {
+                  delete params.amount;
+                }
+                setSearchParams(params);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const params = Object.fromEntries(searchParams);
+                  if (e.currentTarget.value) {
+                    params.amount = e.currentTarget.value;
+                  } else {
+                    delete params.amount;
+                  }
+                  setSearchParams(params);
+                }
+              }}
               step="0.01"
               min="0"
             />
           </div>
-
-          {/* Bouton Appliquer */}
-          <div className="flex items-end">
-            <Button
-              type="submit"
-              className="w-full"
-            >
-              Appliquer les filtres
-            </Button>
-          </div>
         </div>
-      </form>
+      </div>
 
       <InvoicesList
         invoices={displayedInvoices || []}
