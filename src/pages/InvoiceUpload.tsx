@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useMutation, useAction, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
@@ -79,7 +79,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
     const pdfFile = files.find(file => file.type === "application/pdf");
 
     if (pdfFile) {
-      handleFileUpload(pdfFile);
+      void handleFileUpload(pdfFile);
     } else {
       toast.error("Veuillez sélectionner un fichier PDF");
     }
@@ -88,7 +88,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type === "application/pdf") {
-      handleFileUpload(file);
+      void handleFileUpload(file);
     } else {
       toast.error("Veuillez sélectionner un fichier PDF");
     }
@@ -317,7 +317,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
 
       {/* ✅ V2 : Formulaire avec sections */}
       {showManualEntry && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl border shadow-sm p-6 space-y-6">
+        <form onSubmit={(e) => void handleSubmit(e)} className="bg-white md:rounded-xl md:border p-4 -mx-4 lg:mx-0 lg:p-6 space-y-6">
           {/* ✅ V2 : Bandeau succès */}
           {extractionSuccess && (
             <div className="p-4 bg-green-50 text-green-700 border border-green-200 rounded-lg">
@@ -342,9 +342,12 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
 
           {/* ✅ V2 : Section 1 - Détails de la facture */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">Détails de la facture</h3>
+            <div className="flex items-center gap-2">
+              <div className="flex shrink-0 size-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">1</div>
+              <h3 className="text-lg font-medium text-gray-900">Détails de la facture</h3>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="pl-8 grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Ligne 1 : Numéro de facture | Montant TTC */}
               <div className="space-y-2">
                 <Label htmlFor="invoiceNumber">Numéro de facture / Dossier <span className="text-red-500">*</span></Label>
@@ -354,7 +357,6 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
                   value={formData.invoiceNumber}
                   onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="Ex: F2024-081 ou 'Dossier Martin'"
                   required
                 />
               </div>
@@ -370,7 +372,6 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
                     value={formData.amountTTC}
                     onChange={(e) => setFormData({ ...formData, amountTTC: e.target.value })}
                     className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="0,00"
                     required
                   />
                 </div>
@@ -415,7 +416,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
                     }
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="Ex: Agence Immo Sud"
+                  placeholder="Nom du client ou agence"
                   required
                 />
               </div>
@@ -444,11 +445,14 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
           {/* ✅ V2 Phase 2.6 : Section 2 - Contact pour la relance */}
           <div className="space-y-4 pt-2">
             <div>
-              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">Contact pour la relance (Recommandé)</h3>
-              <p className="text-sm text-gray-500 mt-2">Qui devons-nous contacter ? (Ex: Sophie de l'agence, ou le service compta)</p>
+              <div className="flex items-center gap-2">
+                <div className="flex shrink-0 size-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">2</div>
+                <h3 className="text-lg font-medium text-gray-900">Contact pour la relance (Recommandé)</h3>
+              </div>
+              <p className="ml-8 text-sm text-gray-500 mt-2">Qui devons-nous contacter ? (Ex: Sophie de l'agence, ou le client en direct)</p>
             </div>
 
-            <div className="space-y-4">
+            <div className="pl-8 space-y-4">
               {/* Nom du contact - Pleine largeur */}
               <div className="space-y-2">
                 <Label htmlFor="contactName">Nom du contact</Label>
@@ -458,7 +462,6 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
                   value={formData.contactName}
                   onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="Ex: Sophie de l'agence"
                 />
               </div>
 
@@ -472,7 +475,6 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
                     value={formData.contactEmail}
                     onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="compta@agence.fr"
                   />
                 </div>
 
@@ -484,7 +486,6 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
                     value={formData.contactPhone}
                     onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="04 01 02 03 04"
                   />
                 </div>
               </div>
@@ -500,13 +501,11 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
                 handleChangeFile();
                 setShowManualEntry(false);
               }}
-              className="rounded-lg border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
             >
               Annuler
             </Button>
             <Button
               type="submit"
-              className="rounded-lg bg-indigo-600 px-6 hover:bg-indigo-700 text-white font-semibold"
             >
               Ajouter la facture
             </Button>
