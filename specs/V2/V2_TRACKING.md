@@ -1,8 +1,8 @@
 # Suivi Développement V2 - ZenRelance
 
 **Date de création :** 2025-11-05
-**Dernière mise à jour :** 2025-11-05
-**Statut global :** 🟡 En cours (Phase 1.1-1.2-1.3.2 + Phase 2.2 complétées)
+**Dernière mise à jour :** 2025-11-06
+**Statut global :** 🟡 En cours (Phase 1.1-1.2-1.3.2 + Phase 2.2 + Phase 2.6 complétées)
 **Version cible :** 2.0.0
 
 ---
@@ -31,8 +31,8 @@ Sois concis, contente toi de cocher les cases et d'ajouter un récap à la parti
 - **Rapport d'analyse** : Voir section 12 de `MULTI_USER_SPEC.md`
 
 ### Progression globale
-- Phase 1 (Design System) : 8/15 ✅✅✅✅✅✅✅✅⬜⬜⬜⬜⬜⬜⬜
-- Phase 2 (Écrans) : 7/45 ✅✅⬜⬜⬜⬜⬜⬜⬜⬜
+- Phase 1 (Design System) : 9/16 ✅✅✅✅✅✅✅✅✅⬜⬜⬜⬜⬜⬜⬜
+- Phase 2 (Écrans) : 13/45 ✅✅✅✅✅✅✅⬜⬜⬜
 - Phase 3 (Intégrations) : 0/12 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜
 
 ---
@@ -128,20 +128,24 @@ Sois concis, contente toi de cocher les cases et d'ajouter un récap à la parti
   - Style : underline (border-b-2)
   - Active : indigo-600
 
-- [ ] **1.3.7** Input / Textarea
+- [x] **1.3.7** ✅ Label (installé via MCP)
+  - ✅ Fichier : `src/components/ui/label.tsx`
+  - ✅ Utilisé dans formulaire InvoiceUpload pour accessibilité
+
+- [ ] **1.3.8** Input / Textarea
   - Focus : border-indigo-500 + ring-indigo-500
   - Variants : with prefix (€, search icon)
 
-- [ ] **1.3.8** Select / Dropdown
+- [ ] **1.3.9** Select / Dropdown
   - Style cohérent avec Input
 
-- [ ] **1.3.9** Sheet (Slide-over Panel)
+- [ ] **1.3.10** Sheet (Slide-over Panel)
   - Pour : Panel clients
   - Position : right
   - Max-width : 2xl
   - Overlay + animation translate-x
 
-- [ ] **1.3.10** Créer composant Timeline custom
+- [ ] **1.3.11** Créer composant Timeline custom
   - Fichier : `src/components/ui/Timeline.tsx`
   - Style : Cercle + ligne verticale
   - Props : items (array), variant (vertical/horizontal)
@@ -393,36 +397,40 @@ Sois concis, contente toi de cocher les cases et d'ajouter un récap à la parti
 
 **Fichier** : `src/pages/InvoiceUpload.tsx` (refonte)
 **Maquette** : `specs/V2/mockups/import_facture.html`
-**Statut** : 🔴 Non commencé
+**Statut** : ✅ Complété
 
 #### Tâches :
-- [ ] **2.6.1** Améliorer zone drag-drop
-  - Design V2 : border-dashed indigo-300, hauteur 256px
-  - Icône upload (équivalent Lucide)
-  - Texte "Glissez votre PDF ou cliquez pour sélectionner"
+- [x] **2.6.1** ✅ Améliorer zone drag-drop
+  - ✅ Design V2 : border-dashed indigo-300, hauteur 256px (h-64)
+  - ✅ Icône upload (Lucide Upload)
+  - ✅ Texte "Glissez-déposez votre facture ou cliquez pour sélectionner"
+  - ✅ Lien "ou entrer les informations manuellement"
 
-- [ ] **2.6.2** Spinner pendant analyse
-  - Overlay avec spinner + texte "Analyse de la facture en cours..."
+- [x] **2.6.2** ✅ Spinner pendant analyse
+  - ✅ Spinner indigo-600 + texte "Analyse de votre facture en cours..."
+  - ✅ Affichage du formulaire pendant l'extraction
 
-- [ ] **2.6.3** Formulaire pré-rempli - Section 1 : Détails facture
-  - N° Facture
-  - Client (autocomplete en fonction des noms déjà saisis en base)
-  - Montant TTC
-  - Date d'émission
-  - Date d'échéance (par défaut à J+14 de la date d'émission)
+- [x] **2.6.3** ✅ Formulaire pré-rempli - Section 1 : Détails facture
+  - ✅ N° Facture / Dossier (avec label shadcn)
+  - ✅ Client / Donneur d'ordre
+  - ✅ Montant Total TTC (avec préfixe €)
+  - ✅ Date d'échéance (par défaut J+14)
 
-- [ ] **2.6.4** Formulaire pré-rempli - Section 2 : Contact (recommandé)
-  - Email
-  - Téléphone
-  - Note : "(Recommandé pour automatiser les relances)"
+- [x] **2.6.4** ✅ Formulaire pré-rempli - Section 2 : Contact (recommandé)
+  - ✅ Email (optionnel, avec placeholder)
+  - ✅ Téléphone (optionnel, avec placeholder)
+  - ✅ Note : "Qui devons-nous contacter ?"
 
-- [ ] **2.6.5** UX
-  - En desktop on affiche par défaut la zone de drag&drop, et on propose la saisie manuelle (voir maquette)
-  - En mobile on affiche par défaut le formulaire de saisie, pas de zone drag & drop
+- [x] **2.6.5** ✅ UX
+  - ✅ Desktop : zone drag&drop par défaut + bouton saisie manuelle
+  - ✅ Mobile : formulaire direct (pas de drag&drop)
+  - ✅ Bandeau succès après extraction IA
+  - ✅ Affichage nom fichier + bouton "Changer"
 
 #### Backend requis :
-- [ ] Enrichir extraction AI pour inclure email/téléphone contact
-- [ ] Mutation `invoices.create` accepte `contactEmail` et `contactPhone`
+- [x] ✅ Enrichir extraction AI pour inclure contactEmail et contactPhone
+- [x] ✅ Mutation `invoices.create` accepte `contactName`, `contactEmail` et `contactPhone`
+- [x] ✅ Schema : ajout champs `contactName`, `contactEmail`, `contactPhone`
 
 ---
 
@@ -769,6 +777,22 @@ Via MCP :
 
 ## 📝 Changelog
 
+### 2025-11-06
+
+**Phase 2.6 : Import Facture** ✅
+- Refonte complète de `InvoiceUpload.tsx` avec design V2 indigo theme
+- Zone drag-drop redessinée : h-64, border-dashed indigo-300, icône Upload (lucide-react)
+- Formulaire structuré en 2 sections : Détails facture + Contact pour la relance
+- Nouveaux champs contact : `contactName`, `contactEmail`, `contactPhone`
+- UX responsive : drag-drop sur desktop, formulaire direct sur mobile
+- Bandeau succès après extraction IA + affichage fichier avec bouton "Changer"
+- Backend : schema et mutations mis à jour avec champs contact, extraction IA enrichie
+- Date d'échéance par défaut : J+14 (au lieu de J+7)
+
+**Phase 1.3.3 : Composant Label shadcn** ✅
+- Installé composant `Label` via MCP shadcn
+- Utilisé dans formulaire InvoiceUpload pour accessibilité
+
 ### 2025-11-05
 
 **Phase 2.2 : Écran Factures** ✅
@@ -791,4 +815,4 @@ Via MCP :
 
 ---
 
-**Dernière mise à jour** : 2025-11-05
+**Dernière mise à jour** : 2025-11-06
