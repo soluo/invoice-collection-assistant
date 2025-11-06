@@ -156,450 +156,55 @@ Sois concis, contente toi de cocher les cases et d'ajouter un récap à la parti
 
 ## PHASE 2 : Implémentation Écrans 🖥️
 
-**Statut** : 🟡 En cours (Phase 2.2 complétée)
+**Statut** : 🟡 En cours (2.2 et 2.6 complétés)
 **Prérequis** : Phase 1 complétée
 
-### 2.1 Dashboard Administrateur
-
-**Fichier** : `src/pages/Dashboard.tsx` (refonte)
-**Maquette** : `specs/V2/mockups/dashboard_admin.html`
-**Statut** : 🔴 Non commencé
-
-#### Tâches :
-- [ ] **2.1.1** Refonte layout KPIs (4 cards)
-  - Total en attente (€)
-  - Total en retard (€)
-  - Encaissé (30j)
-  - Délai paiement moyen (jours)
-
-- [ ] **2.1.2** Intégrer Chart.js - Graphique trésorerie
-  - Type : Line chart
-  - Données : 6 mois glissants
-  - Backend : Créer query `dashboard.getTreasuryCashFlow`
-
-- [ ] **2.1.3** Section "Priorités" avec analyse IA
-  - Card dédiée
-  - Bouton "Analyser la situation" → Call Gemini API
-  - Affichage résultat analyse (loading state)
-
-- [ ] **2.1.4** Table "Plus Gros Retards"
-  - Colonnes : Client, N° Facture, Montant, Échéance, Retard, **Technicien** (nouveau)
-  - Tri par montant décroissant
-  - Backend : Enrichir query avec technicien (createdBy)
-
-- [ ] **2.1.5** Actions rapides (3 cards cliquables)
-  - "X paiements à rapprocher" → `/reconciliation`
-  - "Y clients à appeler" → `/call-plan`
-  - "Z litiges actifs" → `/invoices?status=litigation`
-
-#### Backend requis :
-- [ ] Query `dashboard.getTreasuryCashFlow` (6 mois)
-- [ ] Action `dashboard.analyzeWithGemini` (intégration Gemini API)
-
----
-
-### 2.2 Factures (Liste)
-
-**Fichier** : `src/pages/Invoices.tsx` (refonte)
-**Maquette** : `specs/V2/mockups/factures.html`
-**Statut** : ✅ Complété
-
-#### Tâches :
-- [x] **2.2.1** ✅ Refonte filtres avancés
-  - ✅ Recherche : N° facture ou nom client
-  - ✅ Dropdown : Statut (Tous, En retard, Paiement partiel, En attente, Payée, En litige)
-  - ✅ Input : Montant (±5% tolérance)
-  - ✅ Dropdown : Technicien (liste déroulante pour admins)
-  - ✅ **Filtres synchronisés avec URL** (partage/bookmark)
-
-- [x] **2.2.2** ✅ Tableau responsive avec nouvelles colonnes
-  - ✅ Colonnes : N° Facture + Client regroupées, Date émission, Montant Total, **Solde Dû** (nouveau), Échéance, Statut, Responsable
-  - ✅ Hover state : bg-gray-50
-  - ✅ Lien "Voir" (détail à implémenter en Phase 2.3)
-  - ✅ **Tri côté serveur** avec icônes cliquables (Émission, Montant TTC, Solde Dû, Échéance)
-  - ✅ **Tri synchronisé avec URL** (défaut: Date émission DESC)
-
-- [x] **2.2.3** ✅ Pagination
-  - ✅ shadcn Pagination component avec ellipsis
-  - ✅ Limiter à 20 par page
-  - ✅ Affichage "Page X sur Y (Z factures)"
-
-- [x] **2.2.4** ✅ Nouveaux badges de statut
-  - ✅ En retard (red)
-  - ✅ Paiement partiel (orange) - NOUVEAU
-  - ✅ En attente (blue)
-  - ✅ Payée (green)
-  - ✅ En litige (yellow) - NOUVEAU
-
-- [x] **2.2.5** ✅ Responsive mobile
-  - ✅ Cards empilées au lieu de table
-  - ✅ Filtres accessibles (formulaire responsive)
-
-#### Backend requis :
-- [x] ✅ Ajouter statuts "partial_payment", "pending" et "litigation" au schema invoices
-- [x] ✅ Enrichir query `invoices.list` et `invoices.listWithFilter` avec champ `outstandingBalance` (Solde Dû)
-- [x] ✅ Implémenter filtres avancés dans `listWithFilter` : recherche texte, statut, montant ±5%, technicien
-- [x] ✅ **Tri serveur** : ajout paramètres `sortBy` et `sortOrder` aux queries
-
----
-
-### 2.3 Détail Facture ⭐ NOUVEAU
-
-**Fichier** : `src/pages/InvoiceDetail.tsx` (à créer)
-**Maquette** : `specs/V2/mockups/facture_detail.html`
-**Statut** : 🔴 Non commencé
-
-#### Tâches :
-- [ ] **2.3.1** Créer route `/invoices/:id`
-  - Ajouter dans `App.tsx`
-
-- [ ] **2.3.2** Layout 2 colonnes
-  - Colonne gauche (35%) : Détails facture
-  - Colonne droite (65%) : Historique
-  - Responsive : empilées sur mobile
-
-- [ ] **2.3.3** Détails facture (colonne gauche)
-  - Badge statut dynamique (large)
-  - Infos : N° Facture, Client, Montant TTC, Solde Dû, Date facture, Échéance, Retard
-  - Section "Client" : Nom, Email, Téléphone, Technicien
-
-- [ ] **2.3.4** Actions rapides (4 boutons)
-  - "Marquer comme payée" → Modal confirmation
-  - "Loguer une action" → Modal textarea
-  - "Mettre en pause" → Toggle
-  - "Télécharger PDF" → Download
-
-- [ ] **2.3.5** Historique détaillé (colonne droite)
-  - Timeline verticale (composant Timeline)
-  - Types d'événements :
-    - Création (icône File)
-    - Relance auto (icône PaperPlaneTilt)
-    - Email ouvert (icône EnvelopeOpen) - Nouveau
-    - Action manuelle (icône User)
-    - Paiement (icône Check green)
-  - Chaque entry : Timestamp + description + auteur
-
-#### Backend requis :
-- [ ] Query `invoices.getDetailWithHistory`
-- [ ] Table `invoiceHistory` (ou enrichir `reminders`)
-  - Champs : invoiceId, type, description, createdBy, createdAt
-- [ ] Mutation `invoices.logAction` (pour "Loguer une action")
-- [ ] Mutation `invoices.togglePause`
-
----
-
-### 2.4 Clients
-
-**Fichier** : `src/pages/Clients.tsx` (à créer)
-**Maquette** : `specs/V2/mockups/clients.html`
-**Statut** : 🔴 Non commencé
-
-#### Tâches :
-- [ ] **2.4.1** Créer route `/clients`
-  - Ajouter dans `App.tsx`
-
-- [ ] **2.4.2** Grille responsive
-  - Layout : `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
-  - Gap : 6
-
-- [ ] **2.4.3** Cards clients
-  - Nom client (heading)
-  - Contact principal (nom + email)
-  - Badge statut : En retard / À jour / En cours
-  - Bouton "Voir le dossier" → Ouvre panel latéral
-
-- [ ] **2.4.4** Panel latéral coulissant (Sheet)
-  - shadcn Sheet component (position: right)
-  - Max-width : 2xl
-  - Fermeture : Click backdrop ou X
-
-- [ ] **2.4.5** Contenu panel - Header KPIs
-  - Total en retard (€)
-  - En cours (€)
-  - Total facturé (12 mois)
-  - Délai paiement moyen
-
-- [ ] **2.4.6** Contenu panel - Onglets
-  - Onglet 1 : Contacts (gestion multi-contacts)
-  - Onglet 2 : Factures (liste des factures du client)
-  - Onglet 3 : Informations (détails client)
-
-- [ ] **2.4.7** Onglet Contacts - Gestion multi-contacts
-  - Liste contacts avec : Nom, Email, Téléphone, "Par défaut" (checkbox)
-  - Bouton "+ Ajouter un contact" → Modal formulaire
-  - Actions : Éditer, Supprimer (sauf si dernier contact)
-
-#### Backend requis :
-- [ ] Table `clients`
-  - Champs : name, organizationId, status, createdAt, createdBy
-- [ ] Table `clientContacts`
-  - Champs : clientId, name, email, phone, isDefault, createdAt
-- [ ] Query `clients.list` (avec stats)
-- [ ] Query `clients.getDetail` (avec contacts + factures)
-- [ ] Mutations CRUD : `clients.create`, `clients.update`, `clients.delete`
-- [ ] Mutations CRUD contacts : `clientContacts.create`, `clientContacts.update`, `clientContacts.delete`, `clientContacts.setDefault`
-- [ ] Lier `invoices.clientId` → `clients._id`
-
----
-
-### 2.5 Clients à Appeler ⭐ NOUVEAU
-
-**Fichier** : `src/pages/CallPlan.tsx` (à créer)
-**Maquette** : `specs/V2/mockups/plan_appels.html`
-**Statut** : 🔴 Non commencé
-
-#### Tâches :
-- [ ] **2.5.1** Créer route `/call-plan`
-  - Ajouter dans `App.tsx`
-
-- [ ] **2.5.2** Layout split 2 colonnes
-  - Colonne gauche (1/4) : Liste clients à appeler
-  - Colonne droite (3/4) : Cockpit d'appel
-  - Responsive : empilées sur mobile
-
-- [ ] **2.5.3** Liste clients (colonne gauche)
-  - Cards clients : Nom, N° Facture, Retard (jours)
-  - Active state : border-indigo-600
-  - Click → Charge cockpit
-
-- [ ] **2.5.4** Cockpit d'appel (colonne droite)
-  - Section 1 : Infos client
-    - Nom (heading)
-    - Contact : Email (mailto:) + Téléphone (tel:) cliquables
-    - Montant en retard
-
-- [ ] **2.5.5** Cockpit - Historique des relances
-  - Timeline courte
-  - Icônes + dates des dernières relances
-
-- [ ] **2.5.6** Cockpit - Script d'appel
-  - Textarea pré-rempli (suggestion IA ?)
-  - Éditable inline
-
-- [ ] **2.5.7** Cockpit - Actions après appel
-  - 3 boutons :
-    - "Pas de réponse" (gris)
-    - "Paiement promis" (green) → Affiche DatePicker
-    - "En litige" (red)
-  - Si "Paiement promis" : DatePicker + input montant
-
-- [ ] **2.5.8** Cockpit - Notes internes
-  - Textarea "Notes de l'appel"
-
-- [ ] **2.5.9** Cockpit - Validation
-  - Bouton "Valider et passer au suivant"
-  - Enregistre action + passe au client suivant
-
-#### Backend requis :
-- [ ] Query `callPlan.getClientsToCall` (clients avec factures en retard)
-- [ ] Mutation `callPlan.recordCallOutcome`
-  - Args : clientId, invoiceId, outcome, promisedDate?, amount?, notes
-  - Update invoice status si "Paiement promis" ou "En litige"
-- [ ] Action `callPlan.generateCallScript` (optionnel : génération IA)
-
----
-
-### 2.6 Import Facture
-
-**Fichier** : `src/pages/InvoiceUpload.tsx` (refonte)
-**Maquette** : `specs/V2/mockups/import_facture.html`
-**Statut** : ✅ Complété
-
-#### Tâches :
-- [x] **2.6.1** ✅ Améliorer zone drag-drop
-  - ✅ Design V2 : border-dashed indigo-300, hauteur 256px (h-64)
-  - ✅ Icône upload (Lucide Upload)
-  - ✅ Texte "Glissez-déposez votre facture ou cliquez pour sélectionner"
-  - ✅ Lien "ou entrer les informations manuellement"
-
-- [x] **2.6.2** ✅ Spinner pendant analyse
-  - ✅ Spinner indigo-600 + texte "Analyse de votre facture en cours..."
-  - ✅ Affichage du formulaire pendant l'extraction
-
-- [x] **2.6.3** ✅ Formulaire pré-rempli - Section 1 : Détails facture
-  - ✅ N° Facture / Dossier (avec label shadcn)
-  - ✅ Client / Donneur d'ordre
-  - ✅ Montant Total TTC (avec préfixe €)
-  - ✅ Date d'échéance (par défaut J+14)
-
-- [x] **2.6.4** ✅ Formulaire pré-rempli - Section 2 : Contact (recommandé)
-  - ✅ Email (optionnel, avec placeholder)
-  - ✅ Téléphone (optionnel, avec placeholder)
-  - ✅ Note : "Qui devons-nous contacter ?"
-
-- [x] **2.6.5** ✅ UX
-  - ✅ Desktop : zone drag&drop par défaut + bouton saisie manuelle
-  - ✅ Mobile : formulaire direct (pas de drag&drop)
-  - ✅ Bandeau succès après extraction IA
-  - ✅ Affichage nom fichier + bouton "Changer"
-
-#### Backend requis :
-- [x] ✅ Enrichir extraction AI pour inclure contactEmail et contactPhone
-- [x] ✅ Mutation `invoices.create` accepte `contactName`, `contactEmail` et `contactPhone`
-- [x] ✅ Schema : ajout champs `contactName`, `contactEmail`, `contactPhone`
-
----
-
-### 2.7 Rapprochement Bancaire ⭐ NOUVEAU
-
-**Fichier** : `src/pages/BankReconciliation.tsx` (à créer)
-**Maquette** : `specs/V2/mockups/rapprochement.html`
-**Statut** : 🔴 Non commencé
-
-#### Tâches :
-- [ ] **2.7.1** Créer route `/reconciliation`
-  - Ajouter dans `App.tsx`
-
-- [ ] **2.7.2** Filtres
-  - Input : Recherche montant exact (€)
-  - Input : Recherche client ou N° facture
-  - Dropdown : Statut (Tous, En attente, En retard)
-
-- [ ] **2.7.3** Table factures à rapprocher
-  - Colonnes : Client/N° Facture, Échéance, Statut, Solde Dû
-  - Bouton "Enregistrer paiement" par ligne → Ouvre modal
-
-- [ ] **2.7.4** Modal enregistrement paiement
-  - Header : Infos facture (Client, N°, Montant total)
-  - Onglets : "Virement" vs "Chèque(s)"
-
-- [ ] **2.7.5** Modal - Onglet Virement
-  - DatePicker : Date de paiement
-  - Input : Montant (€)
-  - Validation : Bouton "Enregistrer"
-
-- [ ] **2.7.6** Modal - Onglet Chèque(s)
-  - Liste dynamique de chèques
-  - Par chèque : Input montant + DatePicker date
-  - Bouton "+ Ajouter un chèque"
-  - Total calculé en temps réel
-  - Validation : Bouton "Enregistrer"
-
-- [ ] **2.7.7** Mise à jour en temps réel
-  - Si montant = solde dû → Statut "Payée" (green badge)
-  - Si montant < solde dû → Statut "Paiement partiel" (orange badge)
-  - Refresh table après enregistrement
-
-#### Backend requis :
-- [ ] Query `reconciliation.getUnpaidInvoices`
-- [ ] Mutation `reconciliation.recordPayment`
-  - Args : invoiceId, paymentType (virement/cheque), payments (array), totalAmount
-  - Update invoice : paidAmount, status, paidDate
-- [ ] Table `payments` (optionnel : historique paiements détaillé)
-  - Champs : invoiceId, type, amount, date, chequeNumber?, createdAt
-
----
-
-### 2.8 Agenda des Relances ⭐ NOUVEAU
-
-**Fichier** : `src/pages/RemindersAgenda.tsx` (à créer)
-**Maquette** : `specs/V2/mockups/agenda.html`
-**Statut** : 🔴 Non commencé
-
-#### Tâches :
-- [ ] **2.8.1** Créer route `/agenda`
-  - Ajouter dans `App.tsx`
-
-- [ ] **2.8.2** Onglets principaux
-  - Onglet 1 : "À Venir" (badge count)
-  - Onglet 2 : "Historique" (badge count)
-
-- [ ] **2.8.3** Onglet "À Venir" - Groupement par date
-  - Sections : Aujourd'hui, Demain, Cette semaine, Plus tard
-  - Tri chronologique
-
-- [ ] **2.8.4** Onglet "À Venir" - Cards relance
-  - Icône type action (Email, SMS, Appel)
-  - Client + N° Facture
-  - Montant + Retard (jours)
-  - Date/heure prévue
-  - Bouton "Mettre en pause" (icône Pause)
-
-- [ ] **2.8.5** Onglet "Historique" - Timeline verticale
-  - Groupement par date (Aujourd'hui, Hier, Cette semaine, etc.)
-  - Timeline composant custom
-  - Icônes d'événements :
-    - Création (File)
-    - Email envoyé (PaperPlaneTilt)
-    - SMS envoyé (ChatCircle)
-    - Paiement reçu (Check green)
-  - Infos : Client, N° Facture, Montant, Description
-
-- [ ] **2.8.6** Action "Mettre en pause"
-  - Click → Confirmation modal
-  - Mutation backend → Update reminder status "paused"
-  - Refresh liste
-
-#### Backend requis :
-- [ ] Query `agenda.getUpcomingReminders` (groupées par date)
-- [ ] Query `agenda.getReminderHistory` (événements passés)
-- [ ] Mutation `agenda.pauseReminder`
-- [ ] Ajouter statut "paused" au schema reminders
-
----
-
-### 2.9 Réglages
-
-**Fichier** : `src/pages/Settings.tsx` (refonte)
-**Maquette** : `specs/V2/mockups/reglages.html`
-**Statut** : 🔴 Non commencé
-
-#### Tâches :
-- [ ] **2.9.1** Onglets principaux
-  - Onglet 1 : Profil
-  - Onglet 2 : Connexion Email
-  - Onglet 3 : Scénarios de relance (nouveau)
-
-- [ ] **2.9.2** Onglet Profil
-  - Input : Nom de l'entreprise
-  - Input : Votre nom
-  - Bouton "Enregistrer"
-
-- [ ] **2.9.3** Onglet Connexion Email
-  - Card Google : Logo + "Connecter avec Google" → OAuth
-  - Card Outlook : Logo + "Connecter avec Outlook" → OAuth
-  - Si connecté : Afficher email + Bouton "Déconnecter"
-
-- [ ] **2.9.4** Onglet Scénarios - Timeline éditable
-  - Affichage : Timeline horizontale des étapes
-    - J+7 : Email "Relance amicale"
-    - J+14 : Email "Relance sérieuse"
-    - J+30 : Email "Dernier avis"
-    - J+35 : Appel manuel → "Clients à appeler"
-  - Bouton "Modifier" par étape → Ouvre modal
-
-- [ ] **2.9.5** Modal édition étape
-  - Dropdown : Type d'action (Email, SMS, Appel manuel)
-  - Input : Délai (jours après échéance)
-  - Input : Nom de l'étape (ex: "Relance amicale")
-  - Textarea : Template (si Email/SMS)
-  - Bouton "Générer avec IA" → Ouvre modal IA
-
-- [ ] **2.9.6** Modal Génération IA (Gemini)
-  - Contexte : Affiche infos facture type
-  - Dropdown : Choix de ton
-    - Amical et bienveillant
-    - Ferme mais professionnel
-    - Concis et direct
-    - Empathique
-  - Bouton "Générer" → Call Gemini
-  - Affichage résultat (loading state)
-  - Bouton "Utiliser ce texte" → Remplit textarea
-
-- [ ] **2.9.7** Validation scénarios
-  - Bouton "Enregistrer les modifications"
-  - Toast confirmation
-
-#### Backend requis :
-- [ ] Table `reminderScenarios` (ou enrichir `organizations`)
-  - Champs : organizationId, steps (JSON array), updatedAt
-  - Step : { delay, type, name, template }
-- [ ] Query `scenarios.get`
-- [ ] Mutation `scenarios.update`
-- [ ] Action `scenarios.generateWithGemini`
-  - Args : tone, context (facture type)
-  - Call Gemini API
-  - Retourne template généré
+**Note** : Les specs détaillées de chaque écran sont maintenant dans des fichiers séparés :
+
+- [ ] **2.1** Dashboard Administrateur → [`SCREENS/2.1_Dashboard.md`](./SCREENS/2.1_Dashboard.md)
+  - Fichier : `src/pages/Dashboard.tsx` (refonte)
+  - Maquette : `specs/V2/mockups/dashboard_admin.html`
+  - Statut : 🔴 Non commencé
+
+- [x] **2.2** Factures (Liste) → [`SCREENS/2.2_Invoices.md`](./SCREENS/2.2_Invoices.md)
+  - Fichier : `src/pages/Invoices.tsx` (refonte)
+  - Maquette : `specs/V2/mockups/factures.html`
+  - Statut : ✅ Complété
+
+- [ ] **2.3** Détail Facture ⭐ NOUVEAU → [`SCREENS/2.3_InvoiceDetail.md`](./SCREENS/2.3_InvoiceDetail.md)
+  - Fichier : `src/pages/InvoiceDetail.tsx` (à créer)
+  - Maquette : `specs/V2/mockups/facture_detail.html`
+  - Statut : 🔴 Non commencé
+
+- [ ] **2.4** Clients → [`SCREENS/2.4_Clients.md`](./SCREENS/2.4_Clients.md)
+  - Fichier : `src/pages/Clients.tsx` (à créer)
+  - Maquette : `specs/V2/mockups/clients.html`
+  - Statut : 🔴 Non commencé
+
+- [ ] **2.5** Clients à Appeler ⭐ NOUVEAU → [`SCREENS/2.5_CallPlan.md`](./SCREENS/2.5_CallPlan.md)
+  - Fichier : `src/pages/CallPlan.tsx` (à créer)
+  - Maquette : `specs/V2/mockups/plan_appels.html`
+  - Statut : 🔴 Non commencé
+
+- [x] **2.6** Import Facture → [`SCREENS/2.6_InvoiceUpload.md`](./SCREENS/2.6_InvoiceUpload.md)
+  - Fichier : `src/pages/InvoiceUpload.tsx` (refonte)
+  - Maquette : `specs/V2/mockups/import_facture.html`
+  - Statut : ✅ Complété
+
+- [ ] **2.7** Rapprochement Bancaire ⭐ NOUVEAU → [`SCREENS/2.7_BankReconciliation.md`](./SCREENS/2.7_BankReconciliation.md)
+  - Fichier : `src/pages/BankReconciliation.tsx` (à créer)
+  - Maquette : `specs/V2/mockups/rapprochement.html`
+  - Statut : 🔴 Non commencé
+
+- [ ] **2.8** Agenda des Relances ⭐ NOUVEAU → [`SCREENS/2.8_RemindersAgenda.md`](./SCREENS/2.8_RemindersAgenda.md)
+  - Fichier : `src/pages/RemindersAgenda.tsx` (à créer)
+  - Maquette : `specs/V2/mockups/agenda.html`
+  - Statut : 🔴 Non commencé
+
+- [ ] **2.9** Réglages → [`SCREENS/2.9_Settings.md`](./SCREENS/2.9_Settings.md)
+  - Fichier : `src/pages/Settings.tsx` (refonte)
+  - Maquette : `specs/V2/mockups/reglages.html`
+  - Statut : 🔴 Non commencé
 
 ---
 
@@ -608,79 +213,12 @@ Sois concis, contente toi de cocher les cases et d'ajouter un récap à la parti
 **Statut** : 🔴 Non commencé
 **Prérequis** : Phases 1 & 2 complétées
 
-### 3.1 Intégration Chart.js
+**Note** : Les specs détaillées sont maintenant dans [`PHASE_3_INTEGRATIONS.md`](./PHASE_3_INTEGRATIONS.md)
 
-- [ ] **3.1.1** Créer composant `TreasuryCashFlowChart`
-  - Fichier : `src/components/charts/TreasuryCashFlowChart.tsx`
-  - Type : Line chart (courbe)
-  - Axes : X = mois (6 derniers), Y = montant (€)
-  - Datasets : Encaissé vs Attendu (2 courbes)
-
-- [ ] **3.1.2** Backend : Query `dashboard.getTreasuryCashFlow`
-  - Calculer pour chaque mois (6 derniers) :
-    - Encaissé = somme paiements reçus
-    - Attendu = somme factures émises
-  - Retourner : `{ months: string[], received: number[], expected: number[] }`
-
-### 3.2 Intégration IA Gemini
-
-- [ ] **3.2.1** Configurer clé API Gemini
-  - Ajouter `GEMINI_API_KEY` dans Convex env vars
-  - Installer SDK : `pnpm add @google/generative-ai`
-
-- [ ] **3.2.2** Action `dashboard.analyzeWithGemini`
-  - Args : stats dashboard (KPIs)
-  - Prompt : "Analyse la situation financière suivante... Donne 3 recommandations prioritaires."
-  - Retourne : texte analyse
-
-- [ ] **3.2.3** Action `scenarios.generateWithGemini`
-  - Args : tone, invoiceContext (montant, client, retard)
-  - Prompt : "Génère un template de relance [tone] pour une facture de [montant]€ en retard de [jours] jours."
-  - Retourne : template email
-
-- [ ] **3.2.4** UI : Loading states + Error handling
-  - Spinner pendant appel API
-  - Toast si erreur
-  - Retry button
-
-### 3.3 Gestion Multi-Contacts Clients
-
-- [ ] **3.3.1** Schema Convex : Table `clientContacts`
-  - Déjà listé en 2.4 Backend
-
-- [ ] **3.3.2** Lier contacts aux relances
-  - Enrichir `reminders` avec `contactId` (optionnel)
-  - Permettre choix du contact destinataire lors envoi relance
-
-- [ ] **3.3.3** UI : Sélection contact dans ReminderModal
-  - Dropdown "Destinataire" si client a plusieurs contacts
-  - Pré-sélectionner contact par défaut
-
-### 3.4 Historique Détaillé Factures
-
-- [ ] **3.4.1** Schema : Table `invoiceHistory`
-  - Champs :
-    - invoiceId: Id<"invoices">
-    - type: "created" | "reminder_sent" | "email_opened" | "manual_action" | "payment_received" | "status_changed"
-    - description: string
-    - metadata: any (JSON)
-    - createdBy: Id<"users">
-    - createdAt: number
-
-- [ ] **3.4.2** Créer événements automatiquement
-  - Hook création facture → Insert "created"
-  - Hook envoi relance → Insert "reminder_sent"
-  - Hook paiement → Insert "payment_received"
-
-- [ ] **3.4.3** Webhook Email ouvert (optionnel avancé)
-  - Tracking pixel dans emails
-  - Endpoint HTTP `/webhooks/email-opened`
-  - Insert "email_opened" dans historique
-
-- [ ] **3.4.4** Mutation `invoices.logManualAction`
-  - Args : invoiceId, description
-  - Insert "manual_action" dans historique
-  - Appelée depuis InvoiceDetail "Loguer une action"
+- [ ] **3.1** Intégration Chart.js
+- [ ] **3.2** Intégration IA Gemini
+- [ ] **3.3** Gestion Multi-Contacts Clients
+- [ ] **3.4** Historique Détaillé Factures
 
 ---
 
@@ -696,8 +234,7 @@ Sois concis, contente toi de cocher les cases et d'ajouter un récap à la parti
 # - sonner (toasts)
 # - lucide-react (icons) ✅
 
-# À installer
-# pnpm add @phosphor-icons/react          # Icons - NON NÉCESSAIRE (on utilise lucide-react)
+# À installer (voir PHASE_3_INTEGRATIONS.md)
 pnpm add chart.js react-chartjs-2       # Charts
 pnpm add @google/generative-ai          # Gemini AI
 pnpm add date-fns                        # Date utilities
@@ -707,16 +244,17 @@ pnpm add date-fns                        # Date utilities
 Via MCP :
 - Button ✅
 - Avatar ✅
+- Label ✅
+- Input ✅
+- Textarea ✅
+- Select ✅
+- Pagination ✅
 - Card
 - Badge
 - Dialog
 - Tabs
-- Input
-- Textarea
-- Select
 - Sheet (Slide-over)
 - DatePicker (Calendar + Popover)
-- Pagination
 
 ---
 
@@ -753,7 +291,7 @@ Via MCP :
 - **Composants métier** : `src/components/` (ex: InvoiceCard)
 - **Pages** : `src/pages/`
 - **Utilities** : `src/lib/`
-- **Icons** : Phosphor (`@phosphor-icons/react`)
+- **Icons** : lucide-react (déjà installé)
 - **Colors** : Thème indigo (indigo-600 primary)
 
 ### Tests à prévoir :
@@ -775,7 +313,7 @@ Via MCP :
 3. ✅ ~~Créer le nouveau layout (Phase 1.2)~~
 4. ✅ ~~Phase 1.3.2 : Créer composants Sidebar shadcn~~
 5. ✅ ~~Phase 2.2 : Écran Factures avec filtres, pagination, responsive~~
-6. **Phase 1.3 (suite)** : Installer les composants shadcn restants (Card, Badge, Dialog, Tabs, Input, Select, Sheet, Timeline)
+6. **Phase 1.3 (suite)** : Installer les composants shadcn restants (Card, Badge, Dialog, Tabs, Sheet, Timeline)
 7. **Phase 2.3** : Créer l'écran Détail Facture avec historique et timeline (`/invoices/:id`)
 8. **Phase 2.1** : Refonte Dashboard avec KPIs et graphiques
 
@@ -808,6 +346,12 @@ Via MCP :
 **Phase 1.3.3 : Composant Label shadcn** ✅
 - Installé composant `Label` via MCP shadcn
 - Utilisé dans formulaire InvoiceUpload pour accessibilité
+
+**Réorganisation des specs** ✅
+- Création du dossier `SCREENS/` avec 9 fichiers de specs détaillées (2.1 à 2.9)
+- Création du fichier `PHASE_3_INTEGRATIONS.md` pour les intégrations avancées
+- Allègement de `V2_TRACKING.md` : conserve Phase 1 complète + résumés des Phases 2-3
+- Bénéfice : Réduction du contexte de ~835 lignes → ~350 lignes dans le fichier principal
 
 ### 2025-11-05
 
