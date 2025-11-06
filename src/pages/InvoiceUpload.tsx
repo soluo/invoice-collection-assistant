@@ -13,6 +13,26 @@ interface InvoiceUploadProps {
   onSuccess: () => void;
 }
 
+const formatDateToISO = (date: Date) => date.toISOString().split("T")[0];
+
+const addDays = (date: Date, days: number) => {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+};
+
+const getTodayISO = () => formatDateToISO(new Date());
+
+const getDefaultDueDate = (invoiceDate?: string | null) => {
+  if (invoiceDate) {
+    const parsed = new Date(invoiceDate);
+    if (!Number.isNaN(parsed.getTime())) {
+      return formatDateToISO(addDays(parsed, 14));
+    }
+  }
+  return formatDateToISO(addDays(new Date(), 14));
+};
+
 export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -29,8 +49,8 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
     contactPhone: "", // ✅ V2 Phase 2.6 : Nouveau champ
     invoiceNumber: "",
     amountTTC: "",
-    invoiceDate: new Date().toISOString().split('T')[0],
-    dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // ✅ V2 : J+14 par défaut
+    invoiceDate: getTodayISO(),
+    dueDate: getDefaultDueDate(getTodayISO()), // ✅ V2 : J+14 par défaut
   });
   const [pdfStorageId, setPdfStorageId] = useState<any>(null);
 
@@ -127,6 +147,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
 
       try {
         const extractedData = await extractPdfData({ storageId: json.storageId });
+        const extractedInvoiceDate = extractedData.invoiceDate || getTodayISO();
 
         setFormData({
           clientName: extractedData.clientName,
@@ -134,9 +155,9 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
           contactEmail: extractedData.contactEmail, // ✅ V2 Phase 2.6
           contactPhone: extractedData.contactPhone, // ✅ V2 Phase 2.6
           invoiceNumber: extractedData.invoiceNumber,
-          amountTTC: extractedData.amountTTC.toString(),
-          invoiceDate: extractedData.invoiceDate,
-          dueDate: extractedData.dueDate,
+          amountTTC: extractedData.amountTTC != null ? extractedData.amountTTC.toString() : "",
+          invoiceDate: extractedInvoiceDate,
+          dueDate: extractedData.dueDate || getDefaultDueDate(extractedInvoiceDate),
         });
 
         // Afficher le message en fonction du score de confiance
@@ -158,6 +179,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
 
         // Pré-remplir avec des données par défaut
         const fileName = file.name.replace('.pdf', '');
+        const fallbackInvoiceDate = getTodayISO();
         setFormData({
           clientName: "",
           contactName: "",
@@ -165,8 +187,8 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
           contactPhone: "",
           invoiceNumber: fileName.includes('FAC') ? fileName : `FAC-${Date.now()}`,
           amountTTC: "",
-          invoiceDate: new Date().toISOString().split('T')[0],
-          dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // ✅ V2 : J+14
+          invoiceDate: fallbackInvoiceDate,
+          dueDate: getDefaultDueDate(fallbackInvoiceDate), // ✅ V2 : J+14
         });
 
         // ✅ Afficher le formulaire même en cas d'erreur
@@ -186,6 +208,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
     setUploadedFileName("");
     setExtractionSuccess(false);
     setShowManualEntry(false);
+    const resetInvoiceDate = getTodayISO();
     setFormData({
       clientName: "",
       contactName: "",
@@ -193,8 +216,8 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
       contactPhone: "",
       invoiceNumber: "",
       amountTTC: "",
-      invoiceDate: new Date().toISOString().split('T')[0],
-      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      invoiceDate: resetInvoiceDate,
+      dueDate: getDefaultDueDate(resetInvoiceDate),
     });
   };
 
