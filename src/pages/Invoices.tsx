@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search, Plus } from "lucide-react";
 import { InvoicesList } from "@components/InvoicesList";
 import { Input } from "@/components/ui/input";
@@ -14,51 +14,103 @@ type SortOrder = "asc" | "desc";
 
 export function Invoices() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const currentUser = useQuery(api.auth.loggedInUser);
   const allUsers = useQuery(api.organizations.listUsers);
 
-  // ✅ V2 : États des filtres
-  const [selectedUserId, setSelectedUserId] = useState<Id<"users"> | undefined>(undefined);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [amountFilter, setAmountFilter] = useState<string>("");
-  const [appliedFilters, setAppliedFilters] = useState({
-    searchQuery: "",
-    status: "all",
-    amountFilter: undefined as number | undefined,
-    userId: undefined as Id<"users"> | undefined,
+  // ✅ V2 : États des filtres initialisés depuis l'URL
+  const [selectedUserId, setSelectedUserId] = useState<Id<"users"> | undefined>(() => {
+    const urlUserId = searchParams.get("userId");
+    return urlUserId ? (urlUserId as Id<"users">) : undefined;
+  });
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get("search") || "");
+  const [statusFilter, setStatusFilter] = useState<string>(() => searchParams.get("status") || "all");
+  const [amountFilter, setAmountFilter] = useState<string>(() => searchParams.get("amount") || "");
+  const [appliedFilters, setAppliedFilters] = useState(() => {
+    const urlAmount = searchParams.get("amount");
+    const urlUserId = searchParams.get("userId");
+    return {
+      searchQuery: searchParams.get("search") || "",
+      status: searchParams.get("status") || "all",
+      amountFilter: urlAmount && !isNaN(parseFloat(urlAmount)) ? parseFloat(urlAmount) : undefined,
+      userId: urlUserId ? (urlUserId as Id<"users">) : undefined,
+    };
   });
 
-  // États du tri
-  const [sortBy, setSortBy] = useState<SortField>("invoiceDate");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  // États du tri initialisés depuis l'URL
+  const [sortBy, setSortBy] = useState<SortField>(() => {
+    const urlSortBy = searchParams.get("sortBy");
+    if (urlSortBy === "invoiceDate" || urlSortBy === "amountTTC" ||
+        urlSortBy === "outstandingBalance" || urlSortBy === "dueDate") {
+      return urlSortBy;
+    }
+    return "invoiceDate";
+  });
+  const [sortOrder, setSortOrder] = useState<SortOrder>(() => {
+    const urlSortOrder = searchParams.get("sortOrder");
+    return urlSortOrder === "asc" ? "asc" : "desc";
+  });
 
   const isAdmin = currentUser?.role === "admin";
 
   // ✅ V2 : Convertir amountFilter en nombre (ou undefined si vide)
   const amountValue = amountFilter && !isNaN(parseFloat(amountFilter)) ? parseFloat(amountFilter) : undefined;
 
-  // Appliquer les filtres via le formulaire
+  // Appliquer les filtres via le formulaire avec synchronisation URL
   const handleSubmitFilters = (e: React.FormEvent) => {
     e.preventDefault();
-    setAppliedFilters({
+
+    const newFilters = {
       searchQuery,
       status: statusFilter,
       amountFilter: amountValue,
       userId: selectedUserId,
-    });
+    };
+
+    setAppliedFilters(newFilters);
+
+    // Construire les paramètres d'URL
+    const params: Record<string, string> = {
+      sortBy,
+      sortOrder,
+    };
+
+    if (searchQuery) params.search = searchQuery;
+    if (statusFilter && statusFilter !== "all") params.status = statusFilter;
+    if (amountFilter) params.amount = amountFilter;
+    if (selectedUserId) params.userId = selectedUserId;
+
+    setSearchParams(params);
   };
 
-  // Gestionnaire de tri
+  // Gestionnaire de tri avec synchronisation URL (préserve les filtres)
   const handleSort = (field: SortField) => {
+    let newSortOrder: SortOrder;
     if (sortBy === field) {
       // Toggle entre DESC et ASC
-      setSortOrder(sortOrder === "desc" ? "asc" : "desc");
+      newSortOrder = sortOrder === "desc" ? "asc" : "desc";
     } else {
       // Nouvelle colonne : commencer par DESC
-      setSortBy(field);
-      setSortOrder("desc");
+      newSortOrder = "desc";
     }
+
+    // Mettre à jour l'état
+    setSortBy(field);
+    setSortOrder(newSortOrder);
+
+    // Synchroniser avec l'URL en préservant les filtres
+    const params: Record<string, string> = {
+      sortBy: field,
+      sortOrder: newSortOrder,
+    };
+
+    // Conserver les filtres appliqués
+    if (appliedFilters.searchQuery) params.search = appliedFilters.searchQuery;
+    if (appliedFilters.status && appliedFilters.status !== "all") params.status = appliedFilters.status;
+    if (appliedFilters.amountFilter) params.amount = appliedFilters.amountFilter.toString();
+    if (appliedFilters.userId) params.userId = appliedFilters.userId;
+
+    setSearchParams(params);
   };
 
   // Utiliser la bonne query selon le rôle et le filtre appliqué
