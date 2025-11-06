@@ -2,9 +2,12 @@ import React, { useState, useRef, useEffect } from "react";
 import { useMutation, useAction, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
-import { Upload, CheckCircle2, X } from "lucide-react";
+import { Upload } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 
 interface InvoiceUploadProps {
   onSuccess: () => void;
@@ -238,6 +241,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
       toast.success("Facture ajoutée avec succès");
       onSuccess();
     } catch (error) {
+      console.error("Erreur lors de l'ajout de la facture:", error);
       toast.error("Erreur lors de l'ajout de la facture");
     }
   };
@@ -351,52 +355,51 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
               {/* Ligne 1 : Numéro de facture | Montant TTC */}
               <div className="space-y-2">
                 <Label htmlFor="invoiceNumber">Numéro de facture / Dossier <span className="text-red-500">*</span></Label>
-                <input
+                <Input
                   id="invoiceNumber"
                   type="text"
                   value={formData.invoiceNumber}
                   onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full"
                   required
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="amountTTC">Montant Total TTC <span className="text-red-500">*</span></Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2 text-gray-500">€</span>
-                  <input
+                <InputGroup>
+                  <InputGroupAddon>€</InputGroupAddon>
+                  <InputGroupInput
                     id="amountTTC"
                     type="number"
                     step="0.01"
                     value={formData.amountTTC}
                     onChange={(e) => setFormData({ ...formData, amountTTC: e.target.value })}
-                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     required
                   />
-                </div>
+                </InputGroup>
               </div>
 
               {/* Ligne 2 : Date d'émission | Date d'échéance */}
               <div className="space-y-2">
                 <Label htmlFor="invoiceDate">Date d'émission</Label>
-                <input
+                <Input
                   id="invoiceDate"
                   type="date"
                   value={formData.invoiceDate}
                   onChange={(e) => setFormData({ ...formData, invoiceDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full block"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="dueDate">Date d'échéance <span className="text-red-500">*</span></Label>
-                <input
+                <Input
                   id="dueDate"
                   type="date"
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full block"
                   required
                 />
               </div>
@@ -404,7 +407,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
               {/* Ligne 3 : Client / Donneur d'ordre | Responsable de la facture */}
               <div className="space-y-2">
                 <Label htmlFor="clientName">Client / Donneur d'ordre <span className="text-red-500">*</span></Label>
-                <input
+                <Input
                   id="clientName"
                   type="text"
                   value={formData.clientName}
@@ -415,7 +418,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
                       setFormData(prev => ({ ...prev, contactName: e.target.value }));
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full"
                   placeholder="Nom du client ou agence"
                   required
                 />
@@ -425,18 +428,18 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
               {isAdmin && users && users.length > 0 && (
                 <div className="space-y-2">
                   <Label htmlFor="responsible">Responsable de la facture</Label>
-                  <select
-                    id="responsible"
-                    value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  >
-                    {users.map((user) => (
-                      <option key={user._id} value={user._id}>
-                        {user.name || user.email} {user.role === "admin" ? "(Admin)" : "(Technicien)"}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={selectedUserId || undefined} onValueChange={setSelectedUserId}>
+                    <SelectTrigger id="responsible">
+                      <SelectValue placeholder="Sélectionner un responsable" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.map((user) => (
+                        <SelectItem key={user._id} value={user._id}>
+                          {user.name || user.email} {user.role === "admin" ? "(Admin)" : "(Technicien)"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
             </div>
@@ -456,12 +459,12 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
               {/* Nom du contact - Pleine largeur */}
               <div className="space-y-2">
                 <Label htmlFor="contactName">Nom du contact</Label>
-                <input
+                <Input
                   id="contactName"
                   type="text"
                   value={formData.contactName}
                   onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full"
                 />
               </div>
 
@@ -469,23 +472,23 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="contactEmail">Email</Label>
-                  <input
+                  <Input
                     id="contactEmail"
                     type="email"
                     value={formData.contactEmail}
                     onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="contactPhone">Téléphone</Label>
-                  <input
+                  <Input
                     id="contactPhone"
                     type="tel"
                     value={formData.contactPhone}
                     onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full"
                   />
                 </div>
               </div>
