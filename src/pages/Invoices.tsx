@@ -9,6 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 
+type SortField = "invoiceDate" | "amountTTC" | "outstandingBalance" | "dueDate";
+type SortOrder = "asc" | "desc";
+
 export function Invoices() {
   const navigate = useNavigate();
   const currentUser = useQuery(api.auth.loggedInUser);
@@ -26,6 +29,10 @@ export function Invoices() {
     userId: undefined as Id<"users"> | undefined,
   });
 
+  // États du tri
+  const [sortBy, setSortBy] = useState<SortField>("invoiceDate");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+
   const isAdmin = currentUser?.role === "admin";
 
   // ✅ V2 : Convertir amountFilter en nombre (ou undefined si vide)
@@ -42,6 +49,18 @@ export function Invoices() {
     });
   };
 
+  // Gestionnaire de tri
+  const handleSort = (field: SortField) => {
+    if (sortBy === field) {
+      // Toggle entre DESC et ASC
+      setSortOrder(sortOrder === "desc" ? "asc" : "desc");
+    } else {
+      // Nouvelle colonne : commencer par DESC
+      setSortBy(field);
+      setSortOrder("desc");
+    }
+  };
+
   // Utiliser la bonne query selon le rôle et le filtre appliqué
   const invoices = useQuery(
     isAdmin ? api.invoices.listWithFilter : api.invoices.list,
@@ -51,8 +70,10 @@ export function Invoices() {
           searchQuery: appliedFilters.searchQuery || undefined,
           status: appliedFilters.status !== "all" ? appliedFilters.status : undefined,
           amountFilter: appliedFilters.amountFilter,
+          sortBy,
+          sortOrder,
         }
-      : {}
+      : { sortBy, sortOrder }
   );
 
   // ✅ V2 : Garder les résultats précédents pendant le rechargement
@@ -194,6 +215,9 @@ export function Invoices() {
 
       <InvoicesList
         invoices={displayedInvoices || []}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSort={handleSort}
         emptyState={
           <div className="p-12 text-center text-gray-500">
             <div className="mx-auto h-16 w-16 text-gray-400 mb-4">

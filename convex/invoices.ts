@@ -41,8 +41,16 @@ async function enrichInvoicesWithCreator(ctx: QueryCtx, invoices: Doc<"invoices"
  * - Admin : toutes les factures de l'organisation
  */
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    sortBy: v.optional(v.union(
+      v.literal("invoiceDate"),
+      v.literal("amountTTC"),
+      v.literal("outstandingBalance"),
+      v.literal("dueDate")
+    )),
+    sortOrder: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
+  },
+  handler: async (ctx, args) => {
     const user = await getUserWithOrg(ctx);
 
     let invoices;
@@ -96,12 +104,40 @@ export const list = query({
       };
     });
 
-    // Trier par priorité puis par jours de retard
+    // Tri personnalisé ou tri par défaut
+    const sortBy = args.sortBy || "invoiceDate";
+    const sortOrder = args.sortOrder || "desc";
+
     return invoicesWithDays.sort((a, b) => {
-      if (a.priority !== b.priority) {
-        return a.priority - b.priority;
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortBy) {
+        case "invoiceDate":
+          aValue = new Date(a.invoiceDate).getTime();
+          bValue = new Date(b.invoiceDate).getTime();
+          break;
+        case "amountTTC":
+          aValue = a.amountTTC;
+          bValue = b.amountTTC;
+          break;
+        case "outstandingBalance":
+          aValue = a.outstandingBalance;
+          bValue = b.outstandingBalance;
+          break;
+        case "dueDate":
+          aValue = new Date(a.dueDate).getTime();
+          bValue = new Date(b.dueDate).getTime();
+          break;
+        default:
+          return 0;
       }
-      return b.daysOverdue - a.daysOverdue;
+
+      if (sortOrder === "asc") {
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+      } else {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+      }
     });
   },
 });
@@ -120,6 +156,13 @@ export const listWithFilter = query({
     searchQuery: v.optional(v.string()), // ✅ V2 : recherche texte
     status: v.optional(v.string()), // ✅ V2 : filtre statut
     amountFilter: v.optional(v.number()), // ✅ V2 : filtre montant (±5%)
+    sortBy: v.optional(v.union(
+      v.literal("invoiceDate"),
+      v.literal("amountTTC"),
+      v.literal("outstandingBalance"),
+      v.literal("dueDate")
+    )),
+    sortOrder: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
   },
   handler: async (ctx, args) => {
     const user = await getUserWithOrg(ctx);
@@ -206,12 +249,40 @@ export const listWithFilter = query({
       };
     });
 
-    // Trier par priorité puis par jours de retard
+    // Tri personnalisé ou tri par défaut
+    const sortBy = args.sortBy || "invoiceDate";
+    const sortOrder = args.sortOrder || "desc";
+
     return invoicesWithDays.sort((a, b) => {
-      if (a.priority !== b.priority) {
-        return a.priority - b.priority;
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortBy) {
+        case "invoiceDate":
+          aValue = new Date(a.invoiceDate).getTime();
+          bValue = new Date(b.invoiceDate).getTime();
+          break;
+        case "amountTTC":
+          aValue = a.amountTTC;
+          bValue = b.amountTTC;
+          break;
+        case "outstandingBalance":
+          aValue = a.outstandingBalance;
+          bValue = b.outstandingBalance;
+          break;
+        case "dueDate":
+          aValue = new Date(a.dueDate).getTime();
+          bValue = new Date(b.dueDate).getTime();
+          break;
+        default:
+          return 0;
       }
-      return b.daysOverdue - a.daysOverdue;
+
+      if (sortOrder === "asc") {
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+      } else {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+      }
     });
   },
 });

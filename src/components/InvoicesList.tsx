@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { getStatusDisplay, type InvoiceStatus } from "@/lib/invoiceStatus";
 import { canSendReminder, canMarkAsPaid } from "@/lib/invoiceHelpers";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import {
   Pagination,
   PaginationContent,
@@ -17,20 +18,38 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 
+type SortField = "invoiceDate" | "amountTTC" | "outstandingBalance" | "dueDate";
+type SortOrder = "asc" | "desc";
+
 interface InvoicesListProps {
   invoices: any[];
+  sortBy: SortField;
+  sortOrder: SortOrder;
+  onSort: (field: SortField) => void;
   emptyState: React.ReactNode;
 }
 
 const ITEMS_PER_PAGE = 20;
 
-export function InvoicesList({ invoices, emptyState }: InvoicesListProps) {
+export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }: InvoicesListProps) {
   const currentUser = useQuery(api.auth.loggedInUser);
   const markAsPaid = useMutation(api.invoices.markAsPaid);
   const [reminderModal, setReminderModal] = useState<{ invoice: any; status: InvoiceStatus } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   const isAdmin = currentUser?.role === "admin";
+
+  // Composant pour afficher l'icône de tri
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortBy !== field) {
+      return <ArrowUpDown className="w-4 h-4 ml-1 text-gray-400" />;
+    }
+    return sortOrder === "desc" ? (
+      <ArrowDown className="w-4 h-4 ml-1 text-blue-600" />
+    ) : (
+      <ArrowUp className="w-4 h-4 ml-1 text-blue-600" />
+    );
+  };
 
   // ✅ V2 : Pagination côté client
   const totalPages = Math.ceil(invoices.length / ITEMS_PER_PAGE);
@@ -68,17 +87,41 @@ export function InvoicesList({ invoices, emptyState }: InvoicesListProps) {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Facture client
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Émission
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => onSort("invoiceDate")}
+                >
+                  <div className="flex items-center">
+                    Émission
+                    <SortIcon field="invoiceDate" />
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Montant TTC
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => onSort("amountTTC")}
+                >
+                  <div className="flex items-center">
+                    Montant TTC
+                    <SortIcon field="amountTTC" />
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Solde Dû
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => onSort("outstandingBalance")}
+                >
+                  <div className="flex items-center">
+                    Solde Dû
+                    <SortIcon field="outstandingBalance" />
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Échéance
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => onSort("dueDate")}
+                >
+                  <div className="flex items-center">
+                    Échéance
+                    <SortIcon field="dueDate" />
+                  </div>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Statut
@@ -257,11 +300,11 @@ export function InvoicesList({ invoices, emptyState }: InvoicesListProps) {
 
       {/* ✅ V2 : Pagination */}
       {totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-between bg-white border rounded-lg p-4">
-          <div className="text-sm text-gray-700">
+        <div className="mt-6 flex flex-col lg:flex-row gap-3 items-center justify-between bg-white border rounded-lg p-4">
+          <div className="text-sm text-gray-700 w-full max-lg:text-center">
             Page {currentPage} sur {totalPages} ({invoices.length} factures au total)
           </div>
-          <Pagination>
+          <Pagination className="w-auto">
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
