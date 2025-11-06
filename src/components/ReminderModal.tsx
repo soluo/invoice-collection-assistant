@@ -135,7 +135,7 @@ export function ReminderModal({ invoice, currentStatus, onClose }: ReminderModal
           <div className="mb-4 p-4 bg-gray-50 rounded-lg">
             <h4 className="font-medium text-gray-900 mb-2">Informations facture</h4>
             <div className="text-sm text-gray-600">
-              <p><strong>Client:</strong> {invoice.clientName} ({invoice.clientEmail})</p>
+              <p><strong>Client:</strong> {invoice.clientName} {invoice.contactEmail && `(${invoice.contactEmail})`}</p>
               <p><strong>Facture:</strong> #{invoice.invoiceNumber}</p>
               <p><strong>Montant:</strong> {invoice.amountTTC.toFixed(2)} €</p>
             </div>

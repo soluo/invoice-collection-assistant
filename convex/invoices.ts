@@ -224,7 +224,9 @@ export const listWithFilter = query({
 export const create = mutation({
   args: {
     clientName: v.string(),
-    clientEmail: v.optional(v.string()), // ✅ Email facultatif
+    contactName: v.optional(v.string()), // ✅ V2 Phase 2.6 : Nom du contact
+    contactEmail: v.optional(v.string()), // ✅ V2 Phase 2.6 : Email du contact
+    contactPhone: v.optional(v.string()), // ✅ V2 Phase 2.6 : Téléphone du contact
     invoiceNumber: v.string(),
     amountTTC: v.number(),
     invoiceDate: v.string(),
@@ -344,7 +346,9 @@ export const update = mutation({
   args: {
     invoiceId: v.id("invoices"),
     clientName: v.string(),
-    clientEmail: v.optional(v.string()), // ✅ Email facultatif
+    contactName: v.optional(v.string()), // ✅ V2 Phase 2.6 : Nom du contact
+    contactEmail: v.optional(v.string()), // ✅ V2 Phase 2.6 : Email du contact
+    contactPhone: v.optional(v.string()), // ✅ V2 Phase 2.6 : Téléphone du contact
     invoiceNumber: v.string(),
     amountTTC: v.number(),
     invoiceDate: v.string(),
@@ -365,7 +369,9 @@ export const update = mutation({
     // Gérer le changement de créateur (admins uniquement)
     let updateData: any = {
       clientName: args.clientName,
-      clientEmail: args.clientEmail,
+      contactName: args.contactName,
+      contactEmail: args.contactEmail,
+      contactPhone: args.contactPhone,
       invoiceNumber: args.invoiceNumber,
       amountTTC: args.amountTTC,
       invoiceDate: args.invoiceDate,

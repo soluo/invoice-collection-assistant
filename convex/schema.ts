@@ -66,7 +66,10 @@ const applicationTables = {
     organizationId: v.id("organizations"), // ✅ Phase 2 : maintenant obligatoire
     createdBy: v.id("users"), // ✅ Phase 2 : maintenant obligatoire
     clientName: v.string(),
-    clientEmail: v.optional(v.string()), // ✅ Email facultatif
+    contactName: v.optional(v.string()), // ✅ V2 Phase 2.6 : Nom du contact
+    contactEmail: v.optional(v.string()), // ✅ V2 Phase 2.6 : Email du contact (renommé de clientEmail)
+    contactPhone: v.optional(v.string()), // ✅ V2 Phase 2.6 : Téléphone du contact
+    clientEmail: v.optional(v.string()), // 🔴 OBSOLETE - Use contactEmail instead (temporary for backward compatibility)
     invoiceNumber: v.string(),
     amountTTC: v.number(),
     invoiceDate: v.string(),

@@ -131,7 +131,7 @@ export const listForOrganization = query({
                 _id: invoice._id,
                 invoiceNumber: invoice.invoiceNumber,
                 clientName: invoice.clientName,
-                clientEmail: invoice.clientEmail ?? null,
+                contactEmail: invoice.contactEmail ?? null, // ✅ V2 Phase 2.6 : Renommé de clientEmail
                 amountTTC: invoice.amountTTC,
                 dueDate: invoice.dueDate,
                 status: invoice.status,
@@ -170,7 +170,7 @@ export const getReminderForSending = internalQuery({
         v.object({
           _id: v.id("invoices"),
           clientName: v.string(),
-          clientEmail: v.optional(v.string()),
+          contactEmail: v.optional(v.string()), // ✅ V2 Phase 2.6 : Renommé de clientEmail
           createdBy: v.id("users"),
         }),
         v.null()
@@ -200,7 +200,7 @@ export const getReminderForSending = internalQuery({
         ? {
             _id: invoice._id,
             clientName: invoice.clientName,
-            clientEmail: invoice.clientEmail,
+            contactEmail: invoice.contactEmail, // ✅ V2 Phase 2.6 : Renommé de clientEmail
             createdBy: invoice.createdBy,
           }
         : null,
@@ -287,8 +287,8 @@ export const sendReminderEmail = action({
     }
 
     const invoice = context.invoice;
-    if (!invoice?.clientEmail) {
-      throw new Error("Adresse email du client manquante");
+    if (!invoice?.contactEmail) { // ✅ V2 Phase 2.6 : Renommé de clientEmail
+      throw new Error("Adresse email du contact manquante");
     }
 
     const organizationTokens = await ctx.runQuery(internal.oauth.getOrganization, {
@@ -370,7 +370,7 @@ export const sendReminderEmail = action({
           toRecipients: [
             {
               emailAddress: {
-                address: invoice.clientEmail,
+                address: invoice.contactEmail, // ✅ V2 Phase 2.6 : Renommé de clientEmail
                 name: invoice.clientName,
               },
             },

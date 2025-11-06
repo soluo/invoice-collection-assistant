@@ -18,7 +18,7 @@ type ReminderRecord = {
     _id: string;
     invoiceNumber: string;
     clientName: string;
-    clientEmail: string | null;
+    contactEmail: string | null; // ✅ V2 Phase 2.6 : Renommé de clientEmail
     amountTTC: number;
     dueDate: string;
     status: string;
@@ -306,10 +306,10 @@ function ReminderPreviewModal({ reminder, organization, onClose }: ReminderPrevi
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const alreadySent = reminder.sendStatus === "sent";
-  const canSend = Boolean(reminder.invoice?.clientEmail) && !alreadySent;
+  const canSend = Boolean(reminder.invoice?.contactEmail) && !alreadySent; // ✅ V2 Phase 2.6 : Renommé de clientEmail
 
   const recipientName = reminder.invoice?.clientName ?? "Client inconnu";
-  const recipientEmail = reminder.invoice?.clientEmail ?? "Email indisponible";
+  const recipientEmail = reminder.invoice?.contactEmail ?? "Email indisponible"; // ✅ V2 Phase 2.6 : Renommé de clientEmail
   const senderName =
     organization?.emailAccountInfo?.name ??
     organization?.name ??

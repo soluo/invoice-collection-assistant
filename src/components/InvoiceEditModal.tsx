@@ -11,7 +11,9 @@ interface InvoiceEditModalProps {
 export function InvoiceEditModal({ invoice, onClose }: InvoiceEditModalProps) {
   const [formData, setFormData] = useState({
     clientName: invoice.clientName,
-    clientEmail: invoice.clientEmail || "",
+    contactName: invoice.contactName || invoice.clientName || "", // ✅ V2 Phase 2.6
+    contactEmail: invoice.contactEmail || "", // ✅ V2 Phase 2.6 : Renommé de clientEmail
+    contactPhone: invoice.contactPhone || "", // ✅ V2 Phase 2.6
     invoiceNumber: invoice.invoiceNumber,
     amountTTC: invoice.amountTTC.toString(),
     invoiceDate: invoice.invoiceDate,
@@ -34,15 +36,21 @@ export function InvoiceEditModal({ invoice, onClose }: InvoiceEditModalProps) {
       const updateData: any = {
         invoiceId: invoice._id,
         clientName: formData.clientName,
+        contactName: formData.contactName || formData.clientName, // ✅ V2 Phase 2.6 : Fallback sur clientName
         invoiceNumber: formData.invoiceNumber,
         amountTTC: parseFloat(formData.amountTTC),
         invoiceDate: formData.invoiceDate,
         dueDate: formData.dueDate,
       };
 
-      // ✅ Inclure clientEmail uniquement s'il est fourni
-      if (formData.clientEmail) {
-        updateData.clientEmail = formData.clientEmail;
+      // ✅ V2 Phase 2.6 : Inclure contactEmail uniquement s'il est fourni
+      if (formData.contactEmail) {
+        updateData.contactEmail = formData.contactEmail;
+      }
+
+      // ✅ V2 Phase 2.6 : Inclure contactPhone uniquement s'il est fourni
+      if (formData.contactPhone) {
+        updateData.contactPhone = formData.contactPhone;
       }
 
       // ✅ Envoyer assignToUserId si un utilisateur différent est sélectionné
@@ -93,13 +101,27 @@ export function InvoiceEditModal({ invoice, onClose }: InvoiceEditModalProps) {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email du client
+                Email du contact
               </label>
               <input
                 type="email"
-                value={formData.clientEmail}
-                onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={formData.contactEmail}
+                onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="email@exemple.fr"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Téléphone du contact
+              </label>
+              <input
+                type="tel"
+                value={formData.contactPhone}
+                onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="01 23 45 67 89"
               />
             </div>
             

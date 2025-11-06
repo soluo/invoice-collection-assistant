@@ -10,7 +10,8 @@ export const extractPdfDataAI = action({
   },
   returns: v.object({
     clientName: v.string(),
-    clientEmail: v.string(),
+    contactEmail: v.string(), // ✅ V2 Phase 2.6 : Renommé de clientEmail
+    contactPhone: v.string(), // ✅ V2 Phase 2.6 : Nouveau champ
     invoiceNumber: v.string(),
     amountTTC: v.number(),
     invoiceDate: v.string(),
@@ -50,7 +51,8 @@ Analysez cette facture PDF et extrayez EXACTEMENT les informations suivantes au 
 
 {
   "clientName": "nom complet du client (destinataire de la facture, PAS l'émetteur)",
-  "clientEmail": "email du client si visible, sinon \"\" (ne pas inventer)",
+  "contactEmail": "email de contact du client si visible, sinon \"\" (ne pas inventer)",
+  "contactPhone": "numéro de téléphone de contact si visible (format français), sinon \"\" (ne pas inventer)",
   "invoiceNumber": "numéro de facture exact tel qu'affiché",
   "amountTTC": "montant TTC en nombre décimal (ex: 403.48 sans €)",
   "invoiceDate": "date de facture au format YYYY-MM-DD",
@@ -61,6 +63,7 @@ REGLES IMPORTANTES :
 - Le CLIENT est le destinataire (celui qui doit payer), PAS l'entreprise émettrice
 - Pour les dates françaises : "13 novembre 2024" → "2024-11-13"
 - Pour les montants : "403,48" → 403.48 (sans virgule française)
+- Pour le téléphone : garder le format tel quel (ex: "01 23 45 67 89" ou "+33 1 23 45 67 89")
 - Si une info est manquante ou illisible, utiliser "" pour les textes, 0 pour les nombres
 
 Répondez UNIQUEMENT avec le JSON valide, sans markdown ni autre texte.`;
@@ -125,7 +128,8 @@ Répondez UNIQUEMENT avec le JSON valide, sans markdown ni autre texte.`;
         // Validation et calcul du score de confiance
         let confidence = 0;
         const clientName = String(extractedData.clientName || "").trim();
-        const clientEmail = String(extractedData.clientEmail || "").trim();
+        const contactEmail = String(extractedData.contactEmail || "").trim();
+        const contactPhone = String(extractedData.contactPhone || "").trim();
         const invoiceNumber = String(extractedData.invoiceNumber || "").trim();
         const amountTTC = parseFloat(extractedData.amountTTC) || 0;
         const invoiceDate = String(extractedData.invoiceDate || "").trim();
@@ -133,14 +137,16 @@ Répondez UNIQUEMENT avec le JSON valide, sans markdown ni autre texte.`;
 
         // Calculer le score de confiance basé sur les données extraites
         if (clientName && clientName !== "" && clientName.length > 2) confidence += 25;
-        if (clientEmail && clientEmail.includes('@')) confidence += 15;
+        if (contactEmail && contactEmail.includes('@')) confidence += 12;
+        if (contactPhone && contactPhone.length >= 10) confidence += 13; // ✅ V2 Phase 2.6 : score pour téléphone
         if (invoiceNumber && invoiceNumber !== "") confidence += 20;
         if (amountTTC > 0) confidence += 25;
         if (invoiceDate && invoiceDate.match(/^\d{4}-\d{2}-\d{2}$/)) confidence += 15;
 
         const result = {
           clientName: clientName || "Client non identifié",
-          clientEmail: clientEmail,
+          contactEmail: contactEmail,
+          contactPhone: contactPhone, // ✅ V2 Phase 2.6 : nouveau champ
           invoiceNumber: invoiceNumber || `FAC-${Date.now().toString().slice(-6)}`,
           amountTTC: amountTTC,
           invoiceDate: invoiceDate || new Date().toISOString().split('T')[0],
@@ -165,7 +171,8 @@ Répondez UNIQUEMENT avec le JSON valide, sans markdown ni autre texte.`;
 
       return {
         clientName: "Extraction IA échouée - vérifiez manuellement",
-        clientEmail: "",
+        contactEmail: "",
+        contactPhone: "", // ✅ V2 Phase 2.6 : nouveau champ
         invoiceNumber: `FAC-${Date.now().toString().slice(-6)}`,
         amountTTC: 0,
         invoiceDate: new Date().toISOString().split('T')[0],
