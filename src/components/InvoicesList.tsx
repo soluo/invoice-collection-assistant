@@ -1,3 +1,4 @@
+import { Badge } from '@components/ui/badge.tsx'
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -7,7 +8,7 @@ import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { getStatusDisplay, type InvoiceStatus } from "@/lib/invoiceStatus";
 import { canSendReminder, canMarkAsPaid } from "@/lib/invoiceHelpers";
-import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, MoreVertical } from "lucide-react";
 import {
   Pagination,
   PaginationContent,
@@ -17,6 +18,12 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type SortField = "invoiceDate" | "amountTTC" | "outstandingBalance" | "dueDate";
 type SortOrder = "asc" | "desc";
@@ -34,6 +41,7 @@ const ITEMS_PER_PAGE = 20;
 export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }: InvoicesListProps) {
   const currentUser = useQuery(api.auth.loggedInUser);
   const markAsPaid = useMutation(api.invoices.markAsPaid);
+  const markAsSent = useMutation(api.invoices.markAsSent);
   const [reminderModal, setReminderModal] = useState<{ invoice: any; status: InvoiceStatus } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -70,6 +78,15 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
 
   const handleSendReminder = (invoice: any) => {
     setReminderModal({ invoice, status: invoice.status });
+  };
+
+  const handleMarkAsSent = async (invoiceId: Id<"invoices">) => {
+    try {
+      await markAsSent({ invoiceId });
+      toast.success("Facture marquée comme envoyée");
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de la mise à jour");
+    }
   };
 
   if (invoices.length === 0) {
@@ -139,9 +156,9 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
             <tbody className="bg-white divide-y divide-gray-200">
               {paginatedInvoices.map((invoice) => {
                 const statusDisplay = getStatusDisplay(invoice);
-                // ✅ V2 : Calculer le solde dû
-                const outstandingBalance = invoice.outstandingBalance ?? invoice.amountTTC - (invoice.paidAmount || 0);
-                const isPartiallyPaid = invoice.status === "partial_payment" || (invoice.paidAmount && invoice.paidAmount > 0 && invoice.paidAmount < invoice.amountTTC);
+                // ✅ V2 : Solde dû vient du backend
+                const outstandingBalance = invoice.outstandingBalance ?? 0;
+                const isPartiallyPaid = invoice.hasPartialPayment || false;
 
                 return (
                   <tr key={invoice._id} className="hover:bg-gray-50">
@@ -160,11 +177,11 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
                     {/* ✅ V2 : Colonne Solde dû */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <span className={
-                        invoice.status === "paid"
+                        invoice.paymentStatus === "paid"
                           ? "text-green-700"
                           : isPartiallyPaid
                             ? "text-orange-700"
-                            : (invoice.daysOverdue ?? 0) > 0
+                            : invoice.isOverdue
                               ? "text-red-700"
                               : "text-gray-900"
                       }>
@@ -173,26 +190,22 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
                     </td>
                     {/* ✅ V2 : Colonne Échéance avec complément */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{formatDate(invoice.dueDate)}</div>
-                      {statusDisplay.complement && (
-                        <div className={`text-sm ${
-                          invoice.status === "paid" || isPartiallyPaid
-                            ? "text-gray-500"
-                            : invoice.status === "litigation" || (invoice.daysOverdue ?? 0) > 0
-                              ? "text-red-600"
-                              : "text-blue-600"
-                        }`}>
-                          {statusDisplay.complement}
+                      <div className="text-sm text-gray-900">
+                        {formatDate(invoice.dueDate)}
+                      </div>
+                      {invoice.isOverdue && invoice.paymentStatus !== "paid" && invoice.daysPastDue > 0 && (
+                        <div className="text-sm text-red-700">
+                          En retard de {invoice.daysPastDue} jour{invoice.daysPastDue > 1 ? "s" : ""}
                         </div>
                       )}
                     </td>
                     {/* ✅ V2 : Colonne Statut avec juste le badge */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold leading-5 rounded-full ${statusDisplay.colorClass}`}
+                      <Badge variant="outline"
+                        className={`${statusDisplay.colorClass}`}
                       >
                         {statusDisplay.badgeLabel}
-                      </span>
+                      </Badge>
                     </td>
                     {isAdmin && (
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
@@ -200,7 +213,24 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
                       </td>
                     )}
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <a href="#" className="text-indigo-600 hover:text-indigo-900">Voir</a>
+                      <div className="flex items-center justify-end gap-2">
+                        <a href="#" className="text-indigo-600 hover:text-indigo-900">Voir</a>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="p-1 hover:bg-gray-100 rounded-md transition-colors">
+                              <MoreVertical className="h-4 w-4 text-gray-500" />
+                              <span className="sr-only">Actions</span>
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {invoice.sendStatus === "pending" && (
+                              <DropdownMenuItem onClick={() => void handleMarkAsSent(invoice._id)}>
+                                Marquer comme envoyée
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -214,9 +244,9 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
       <div className="block md:hidden space-y-3">
         {paginatedInvoices.map((invoice) => {
           const statusDisplay = getStatusDisplay(invoice);
-          // ✅ V2 : Calculer le solde dû
-          const outstandingBalance = invoice.outstandingBalance ?? invoice.amountTTC - (invoice.paidAmount || 0);
-          const isPartiallyPaid = invoice.status === "partial_payment" || (invoice.paidAmount && invoice.paidAmount > 0 && invoice.paidAmount < invoice.amountTTC);
+          // ✅ V2 : Solde dû vient du backend
+          const outstandingBalance = invoice.outstandingBalance ?? 0;
+          const isPartiallyPaid = invoice.hasPartialPayment || false;
 
           return (
             <div key={invoice._id} className="bg-white rounded-lg border p-4 space-y-3">
@@ -250,7 +280,7 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
                 <div className="flex justify-between">
                   <span className="text-gray-500">Solde dû:</span>
                   <span className={`font-semibold ${
-                    invoice.status === "paid"
+                    invoice.paymentStatus === "paid"
                       ? "text-green-600"
                       : isPartiallyPaid
                         ? "text-orange-600"
@@ -261,7 +291,16 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Échéance:</span>
-                  <span className="text-gray-900">{formatDate(invoice.dueDate)}</span>
+                  <div className="text-right">
+                    <div className="font-medium">
+                      {formatDate(invoice.dueDate)}
+                    </div>
+                    {invoice.isOverdue && invoice.paymentStatus !== "paid" && invoice.daysPastDue > 0 && (
+                      <div className="text-xs text-red-600">
+                        En retard de {invoice.daysPastDue} jour{invoice.daysPastDue > 1 ? "s" : ""}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {isAdmin && (
                   <div className="flex justify-between">
