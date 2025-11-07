@@ -215,11 +215,35 @@ export const markReminderSent = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    // Récupérer la relance pour créer l'événement
+    const reminder = await ctx.db.get(args.reminderId);
+    if (!reminder) {
+      throw new Error("Relance introuvable");
+    }
+
+    // Récupérer la facture pour les détails de l'événement
+    const invoice = await ctx.db.get(reminder.invoiceId);
+    if (!invoice) {
+      throw new Error("Facture associée introuvable");
+    }
+
     await ctx.db.patch(args.reminderId, {
       sendStatus: "sent",
       sentAt: args.sentAt,
       lastSendAttempt: args.sentAt,
       sendError: undefined,
+    });
+
+    // ✅ V2 Phase 2.8 : Créer un événement "Relance envoyée"
+    await ctx.scheduler.runAfter(0, internal.events.createReminderSentEvent, {
+      organizationId: reminder.organizationId,
+      userId: reminder.userId,
+      invoiceId: reminder.invoiceId,
+      reminderId: args.reminderId,
+      invoiceNumber: invoice.invoiceNumber,
+      clientName: invoice.clientName,
+      reminderType: reminder.reminderStatus,
+      isAutomatic: reminder.generatedByCron ?? false,
     });
   },
 });

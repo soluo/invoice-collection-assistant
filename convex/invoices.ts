@@ -11,6 +11,7 @@ import {
 } from "./permissions";
 import { Doc } from "./_generated/dataModel";
 import { QueryCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 async function getLoggedInUser(ctx: any) {
   const userId = await getAuthUserId(ctx);
@@ -328,13 +329,24 @@ export const create = mutation({
 
     const { assignToUserId, ...invoiceData } = args;
 
-    return await ctx.db.insert("invoices", {
+    const invoiceId = await ctx.db.insert("invoices", {
       userId: createdBy, // Pour compatibilité avec l'ancien code
       organizationId: user.organizationId,
       createdBy,
       ...invoiceData,
       status: "sent",
     });
+
+    // ✅ V2 Phase 2.8 : Créer un événement "Facture importée"
+    await ctx.scheduler.runAfter(0, internal.events.createInvoiceImportedEvent, {
+      organizationId: user.organizationId,
+      userId: createdBy,
+      invoiceId,
+      invoiceNumber: args.invoiceNumber,
+      clientName: args.clientName,
+    });
+
+    return invoiceId;
   },
 });
 
@@ -367,6 +379,7 @@ export const updateStatus = mutation({
     // Vérifier les permissions avec l'helper
     assertCanUpdateInvoiceStatus(user, invoice);
 
+    const previousStatus = invoice.status;
     const updateData: any = { status: args.status };
 
     if (args.status === "paid") {
@@ -377,7 +390,28 @@ export const updateStatus = mutation({
       updateData.lastReminderDate = new Date().toISOString().split("T")[0];
     }
 
-    return await ctx.db.patch(args.invoiceId, updateData);
+    await ctx.db.patch(args.invoiceId, updateData);
+
+    // ✅ V2 Phase 2.8 : Créer un événement selon le nouveau statut
+    if (args.status === "sent") {
+      await ctx.scheduler.runAfter(0, internal.events.createInvoiceMarkedSentEvent, {
+        organizationId: user.organizationId,
+        userId: user.userId,
+        invoiceId: args.invoiceId,
+        invoiceNumber: invoice.invoiceNumber,
+        clientName: invoice.clientName,
+        previousStatus,
+      });
+    } else if (args.status === "paid") {
+      await ctx.scheduler.runAfter(0, internal.events.createInvoiceMarkedPaidEvent, {
+        organizationId: user.organizationId,
+        userId: user.userId,
+        invoiceId: args.invoiceId,
+        invoiceNumber: invoice.invoiceNumber,
+        clientName: invoice.clientName,
+        previousStatus,
+      });
+    }
   },
 });
 
@@ -401,9 +435,21 @@ export const markAsPaid = mutation({
     // Vérifier les permissions
     assertCanUpdateInvoiceStatus(user, invoice);
 
-    return await ctx.db.patch(args.invoiceId, {
+    const previousStatus = invoice.status;
+
+    await ctx.db.patch(args.invoiceId, {
       status: "paid",
       paidDate: new Date().toISOString().split("T")[0],
+    });
+
+    // ✅ V2 Phase 2.8 : Créer un événement "Facture marquée payée"
+    await ctx.scheduler.runAfter(0, internal.events.createInvoiceMarkedPaidEvent, {
+      organizationId: user.organizationId,
+      userId: user.userId,
+      invoiceId: args.invoiceId,
+      invoiceNumber: invoice.invoiceNumber,
+      clientName: invoice.clientName,
+      previousStatus,
     });
   },
 });

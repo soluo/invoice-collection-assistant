@@ -120,12 +120,49 @@ const applicationTables = {
     sendError: v.optional(v.string()),
     lastSendAttempt: v.optional(v.number()),
     generatedByCron: v.optional(v.boolean()),
+    isPaused: v.optional(v.boolean()), // ✅ V2 Phase 2.8 : pour mettre en pause une relance planifiée
   })
     .index("by_invoice", ["invoiceId"])
     .index("by_user", ["userId"])
     .index("by_organization", ["organizationId"])
     .index("by_sendStatus", ["sendStatus"])
     .index("by_organization_and_status", ["organizationId", "sendStatus"]),
+
+  // ✅ V2 Phase 2.8 : Table des événements pour l'historique de l'agenda
+  events: defineTable({
+    organizationId: v.id("organizations"),
+    userId: v.id("users"), // Créateur de l'événement
+    invoiceId: v.optional(v.id("invoices")), // Lié à une facture
+    reminderId: v.optional(v.id("reminders")), // Lié à une relance (pour les events d'envoi)
+
+    eventType: v.union(
+      v.literal("invoice_imported"), // Facture importée
+      v.literal("invoice_marked_sent"), // Facture marquée envoyée
+      v.literal("invoice_sent"), // Facture envoyée (email)
+      v.literal("payment_registered"), // Paiement enregistré sur la facture
+      v.literal("invoice_marked_paid"), // Facture marquée payée
+      v.literal("reminder_sent") // Email de relance envoyé (auto ou manuel)
+    ),
+
+    eventDate: v.number(), // timestamp
+
+    // Métadonnées spécifiques selon le type
+    metadata: v.optional(
+      v.object({
+        amount: v.optional(v.number()), // Pour payment_registered
+        reminderType: v.optional(v.string()), // Pour reminder_sent (first/second/third)
+        isAutomatic: v.optional(v.boolean()), // Pour reminder_sent (auto vs manuel)
+        previousStatus: v.optional(v.string()), // Pour invoice_marked_*
+        newStatus: v.optional(v.string()), // Pour invoice_marked_*
+      })
+    ),
+
+    description: v.optional(v.string()), // Description lisible de l'événement
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_invoice", ["invoiceId"])
+    .index("by_organization_and_date", ["organizationId", "eventDate"])
+    .index("by_user", ["userId"]),
 };
 
 export default defineSchema({
