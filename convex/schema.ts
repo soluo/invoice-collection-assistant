@@ -9,17 +9,22 @@ const applicationTables = {
     name: v.string(), // Nom de la société
     senderEmail: v.string(), // Email expéditeur pour les relances
     createdAt: v.number(),
-    // Paramètres de relances centralisés
-    firstReminderDelay: v.number(),
-    secondReminderDelay: v.number(),
-    thirdReminderDelay: v.number(),
-    litigationDelay: v.number(),
-    firstReminderTemplate: v.string(),
-    secondReminderTemplate: v.string(),
-    thirdReminderTemplate: v.string(),
-    signature: v.string(),
+
+    // ✅ V2 Phase 2.8 : Configuration flexible des relances
+    reminderConfig: v.array(
+      v.object({
+        reminderNumber: v.number(), // 1, 2, 3, 4...
+        delayDays: v.number(), // Jours après échéance (7, 14, 21...)
+        emailTemplate: v.string(), // Template de l'email
+        subject: v.optional(v.string()), // Sujet personnalisé
+      })
+    ),
+    signature: v.string(), // Signature commune à toutes les relances
+    manualFollowupDelay: v.optional(v.number()), // Délai avant passage en suivi manuel (après dernière relance)
+
     // Paramètres d'envoi automatique (Phase 3)
     autoSendReminders: v.optional(v.boolean()), // Par défaut : false
+
     // Connexion email OAuth (Phase 3)
     emailProvider: v.optional(
       v.union(
@@ -62,55 +67,75 @@ const applicationTables = {
   // === INVOICE TABLES ===
 
   invoices: defineTable({
-    userId: v.id("users"),
-    organizationId: v.id("organizations"), // ✅ Phase 2 : maintenant obligatoire
-    createdBy: v.id("users"), // ✅ Phase 2 : maintenant obligatoire
+    userId: v.id("users"), // Pour compatibilité ancienne logique
+    organizationId: v.id("organizations"),
+    createdBy: v.id("users"),
+
+    // Informations client
     clientName: v.string(),
     contactName: v.optional(v.string()), // ✅ V2 Phase 2.6 : Nom du contact
-    contactEmail: v.optional(v.string()), // ✅ V2 Phase 2.6 : Email du contact (renommé de clientEmail)
+    contactEmail: v.optional(v.string()), // ✅ V2 Phase 2.6 : Email du contact
     contactPhone: v.optional(v.string()), // ✅ V2 Phase 2.6 : Téléphone du contact
-    clientEmail: v.optional(v.string()), // 🔴 OBSOLETE - Use contactEmail instead (temporary for backward compatibility)
+
+    // Informations facture
     invoiceNumber: v.string(),
     amountTTC: v.number(),
-    invoiceDate: v.string(),
-    dueDate: v.string(),
-    status: v.union(
-      v.literal("sent"),
-      v.literal("pending"), // ✅ V2 : nouveau statut "En attente"
-      v.literal("overdue"),
-      v.literal("first_reminder"),
-      v.literal("second_reminder"),
-      v.literal("third_reminder"),
-      v.literal("partial_payment"), // ✅ V2 : nouveau statut "Paiement partiel"
-      v.literal("litigation"),
-      v.literal("paid")
-    ),
+    invoiceDate: v.string(), // Format: "YYYY-MM-DD"
+    dueDate: v.string(), // Format: "YYYY-MM-DD"
     pdfStorageId: v.optional(v.id("_storage")),
-    lastReminderDate: v.optional(v.string()),
-    paidDate: v.optional(v.string()),
-    paidAmount: v.optional(v.number()), // ✅ V2 : montant déjà payé (pour paiements partiels)
+
+    // ✅ V2 Phase 2.8 : 3 dimensions d'états (indépendantes)
+
+    // DIMENSION 1 : État d'envoi
+    sendStatus: v.union(
+      v.literal("pending"), // En attente d'envoi
+      v.literal("sent") // Envoyée au client
+    ),
+    sentDate: v.optional(v.string()), // Date d'envoi effective
+
+    // DIMENSION 2 : État de paiement
+    paymentStatus: v.union(
+      v.literal("unpaid"), // Pas encore payée
+      v.literal("partial"), // Paiement partiel reçu
+      v.literal("paid") // Entièrement payée
+    ),
+    paidAmount: v.optional(v.number()), // Montant déjà payé (pour paiements partiels)
+    paidDate: v.optional(v.string()), // Date de paiement complet
+
+    // DIMENSION 3 : État de relance
+    reminderStatus: v.union(
+      v.literal("none"), // Pas de relance
+      v.literal("reminder_1"), // Première relance
+      v.literal("reminder_2"), // Deuxième relance
+      v.literal("reminder_3"), // Troisième relance
+      v.literal("reminder_4"), // Quatrième relance (si configuré)
+      v.literal("manual_followup") // Fin des relances auto → suivi manuel
+    ),
+    lastReminderDate: v.optional(v.string()), // Date de dernière relance envoyée
   })
     .index("by_user", ["userId"])
-    .index("by_user_and_status", ["userId", "status"])
     .index("by_due_date", ["dueDate"])
     .index("by_organization", ["organizationId"])
     .index("by_organization_and_creator", ["organizationId", "createdBy"])
-    .index("by_organization_and_status", ["organizationId", "status"]),
-
-  // Table reminderSettings supprimée - paramètres déplacés vers organizations
+    .index("by_organization_and_payment", ["organizationId", "paymentStatus"])
+    .index("by_organization_and_reminder", ["organizationId", "reminderStatus"]),
 
   reminders: defineTable({
     userId: v.id("users"),
-    organizationId: v.id("organizations"), // ✅ Phase 2 : maintenant obligatoire
+    organizationId: v.id("organizations"),
     invoiceId: v.id("invoices"),
+
     reminderDate: v.string(), // "2025-09-26 00:36:00"
     reminderStatus: v.union(
-      v.literal("first_reminder"),
-      v.literal("second_reminder"),
-      v.literal("third_reminder")
+      v.literal("reminder_1"),
+      v.literal("reminder_2"),
+      v.literal("reminder_3"),
+      v.literal("reminder_4")
     ),
+
     emailSubject: v.string(),
     emailContent: v.string(),
+
     sendStatus: v.optional(
       v.union(v.literal("pending"), v.literal("sent"), v.literal("failed"))
     ),
@@ -136,11 +161,11 @@ const applicationTables = {
     reminderId: v.optional(v.id("reminders")), // Lié à une relance (pour les events d'envoi)
 
     eventType: v.union(
-      v.literal("invoice_imported"), // Facture importée
-      v.literal("invoice_marked_sent"), // Facture marquée envoyée
-      v.literal("invoice_sent"), // Facture envoyée (email)
-      v.literal("payment_registered"), // Paiement enregistré sur la facture
-      v.literal("invoice_marked_paid"), // Facture marquée payée
+      v.literal("invoice_imported"), // Facture importée (sendStatus: pending)
+      v.literal("invoice_marked_sent"), // Facture marquée envoyée (sendStatus: sent)
+      v.literal("invoice_sent"), // Facture envoyée par email (auto)
+      v.literal("payment_registered"), // Paiement enregistré (paymentStatus: partial)
+      v.literal("invoice_marked_paid"), // Facture marquée payée (paymentStatus: paid)
       v.literal("reminder_sent") // Email de relance envoyé (auto ou manuel)
     ),
 
@@ -150,10 +175,10 @@ const applicationTables = {
     metadata: v.optional(
       v.object({
         amount: v.optional(v.number()), // Pour payment_registered
-        reminderType: v.optional(v.string()), // Pour reminder_sent (first/second/third)
+        reminderNumber: v.optional(v.number()), // Pour reminder_sent (1, 2, 3, 4...)
         isAutomatic: v.optional(v.boolean()), // Pour reminder_sent (auto vs manuel)
-        previousStatus: v.optional(v.string()), // Pour invoice_marked_*
-        newStatus: v.optional(v.string()), // Pour invoice_marked_*
+        previousSendStatus: v.optional(v.string()), // Pour invoice_marked_sent
+        previousPaymentStatus: v.optional(v.string()), // Pour invoice_marked_paid, payment_registered
       })
     ),
 

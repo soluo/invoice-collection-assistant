@@ -24,7 +24,9 @@ export const getUpcomingReminders = query({
           contactEmail: v.optional(v.string()),
           amountTTC: v.number(),
           dueDate: v.string(),
-          status: v.string(),
+          sendStatus: v.string(),
+          paymentStatus: v.string(),
+          reminderStatus: v.string(),
         }),
         v.null()
       ),
@@ -81,7 +83,9 @@ export const getUpcomingReminders = query({
                   contactEmail: invoice.contactEmail,
                   amountTTC: invoice.amountTTC,
                   dueDate: invoice.dueDate,
-                  status: invoice.status,
+                  sendStatus: invoice.sendStatus,
+                  paymentStatus: invoice.paymentStatus,
+                  reminderStatus: invoice.reminderStatus,
                 }
               : null,
             daysOverdue,

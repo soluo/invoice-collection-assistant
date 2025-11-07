@@ -24,10 +24,10 @@ export const createEvent = internalMutation({
     metadata: v.optional(
       v.object({
         amount: v.optional(v.number()),
-        reminderType: v.optional(v.string()),
+        reminderNumber: v.optional(v.number()),
         isAutomatic: v.optional(v.boolean()),
-        previousStatus: v.optional(v.string()),
-        newStatus: v.optional(v.string()),
+        previousSendStatus: v.optional(v.string()),
+        previousPaymentStatus: v.optional(v.string()),
       })
     ),
     description: v.optional(v.string()),
@@ -72,7 +72,7 @@ export const createInvoiceMarkedSentEvent = internalMutation({
     invoiceId: v.id("invoices"),
     invoiceNumber: v.string(),
     clientName: v.string(),
-    previousStatus: v.string(),
+    previousSendStatus: v.string(),
   },
   returns: v.id("events"),
   handler: async (ctx, args) => {
@@ -83,8 +83,7 @@ export const createInvoiceMarkedSentEvent = internalMutation({
       eventType: "invoice_marked_sent",
       eventDate: Date.now(),
       metadata: {
-        previousStatus: args.previousStatus,
-        newStatus: "sent",
+        previousSendStatus: args.previousSendStatus,
       },
       description: `Facture ${args.invoiceNumber} (${args.clientName}) marquée comme envoyée`,
     });
@@ -126,6 +125,7 @@ export const createPaymentRegisteredEvent = internalMutation({
     invoiceNumber: v.string(),
     clientName: v.string(),
     amount: v.number(),
+    previousPaymentStatus: v.string(),
   },
   returns: v.id("events"),
   handler: async (ctx, args) => {
@@ -137,6 +137,7 @@ export const createPaymentRegisteredEvent = internalMutation({
       eventDate: Date.now(),
       metadata: {
         amount: args.amount,
+        previousPaymentStatus: args.previousPaymentStatus,
       },
       description: `Paiement de ${args.amount.toFixed(2)}€ enregistré pour facture ${args.invoiceNumber} (${args.clientName})`,
     });
@@ -153,7 +154,7 @@ export const createInvoiceMarkedPaidEvent = internalMutation({
     invoiceId: v.id("invoices"),
     invoiceNumber: v.string(),
     clientName: v.string(),
-    previousStatus: v.string(),
+    previousPaymentStatus: v.string(),
   },
   returns: v.id("events"),
   handler: async (ctx, args) => {
@@ -164,8 +165,7 @@ export const createInvoiceMarkedPaidEvent = internalMutation({
       eventType: "invoice_marked_paid",
       eventDate: Date.now(),
       metadata: {
-        previousStatus: args.previousStatus,
-        newStatus: "paid",
+        previousPaymentStatus: args.previousPaymentStatus,
       },
       description: `Facture ${args.invoiceNumber} (${args.clientName}) marquée comme payée`,
     });
@@ -183,18 +183,12 @@ export const createReminderSentEvent = internalMutation({
     reminderId: v.id("reminders"),
     invoiceNumber: v.string(),
     clientName: v.string(),
-    reminderType: v.string(), // "first_reminder", "second_reminder", "third_reminder"
+    reminderNumber: v.number(), // 1, 2, 3, 4...
     isAutomatic: v.boolean(),
   },
   returns: v.id("events"),
   handler: async (ctx, args) => {
-    const reminderLabels: Record<string, string> = {
-      first_reminder: "1ère relance",
-      second_reminder: "2ème relance",
-      third_reminder: "3ème relance",
-    };
-
-    const label = reminderLabels[args.reminderType] || args.reminderType;
+    const label = `${args.reminderNumber}${args.reminderNumber === 1 ? "ère" : "ème"} relance`;
     const mode = args.isAutomatic ? "automatique" : "manuelle";
 
     return await ctx.db.insert("events", {
@@ -205,7 +199,7 @@ export const createReminderSentEvent = internalMutation({
       eventType: "reminder_sent",
       eventDate: Date.now(),
       metadata: {
-        reminderType: args.reminderType,
+        reminderNumber: args.reminderNumber,
         isAutomatic: args.isAutomatic,
       },
       description: `${label} ${mode} envoyée pour facture ${args.invoiceNumber} (${args.clientName})`,
@@ -219,7 +213,7 @@ export const createReminderSentEvent = internalMutation({
  */
 export const getEventHistory = query({
   args: {
-    limit: v.optional(v.number()), // Limite optionnelle (par défaut : tous)
+    limit: v.optional(v.number()),
   },
   returns: v.array(
     v.object({
@@ -230,10 +224,10 @@ export const getEventHistory = query({
       metadata: v.optional(
         v.object({
           amount: v.optional(v.number()),
-          reminderType: v.optional(v.string()),
+          reminderNumber: v.optional(v.number()),
           isAutomatic: v.optional(v.boolean()),
-          previousStatus: v.optional(v.string()),
-          newStatus: v.optional(v.string()),
+          previousSendStatus: v.optional(v.string()),
+          previousPaymentStatus: v.optional(v.string()),
         })
       ),
       invoice: v.union(
@@ -258,16 +252,14 @@ export const getEventHistory = query({
   handler: async (ctx, args) => {
     const user = await getUserWithOrg(ctx);
 
-    // Récupérer les événements de l'organisation
     const events = await ctx.db
       .query("events")
       .withIndex("by_organization_and_date", (q) =>
         q.eq("organizationId", user.organizationId)
       )
       .order("desc")
-      .take(args.limit || 1000); // Par défaut : 1000 derniers événements
+      .take(args.limit || 1000);
 
-    // Enrichir avec les données de factures et utilisateurs
     const enrichedEvents = await Promise.all(
       events.map(async (event) => {
         const invoice = event.invoiceId ? await ctx.db.get(event.invoiceId) : null;

@@ -28,23 +28,35 @@ export const createOrganizationWithAdmin = mutation({
       throw new Error("Vous appartenez déjà à une organisation");
     }
 
-    // Créer l'organisation avec les paramètres de relances par défaut
+    // ✅ V2 Phase 2.8 : Créer l'organisation avec reminderConfig flexible
     const organizationId = await ctx.db.insert("organizations", {
       name: args.organizationName,
       senderEmail: existingUser?.email || "",
       createdAt: Date.now(),
-      // Paramètres de relances par défaut (en jours)
-      firstReminderDelay: 7,
-      secondReminderDelay: 15,
-      thirdReminderDelay: 30,
-      litigationDelay: 45,
-      // Templates par défaut
-      firstReminderTemplate: `Bonjour,\n\nNous constatons que notre facture n°{numero_facture} d'un montant de {montant}€ TTC émise le {date_facture} est arrivée à échéance le {date_echeance}.\n\nPourriez-vous nous confirmer la réception de cette facture et nous indiquer la date de règlement prévue ?\n\nCordialement,`,
-      secondReminderTemplate: `Bonjour,\n\nMalgré notre première relance, nous constatons que notre facture n°{numero_facture} d'un montant de {montant}€ TTC reste impayée (échue depuis {jours_retard} jours).\n\nNous vous remercions de procéder au règlement dans les plus brefs délais.\n\nCordialement,`,
-      thirdReminderTemplate: `Bonjour,\n\nNous vous informons que notre facture n°{numero_facture} d'un montant de {montant}€ TTC demeure impayée malgré nos précédentes relances ({jours_retard} jours de retard).\n\nSans règlement sous 7 jours, nous serons contraints d'engager une procédure de recouvrement.\n\nCordialement,`,
+      // Configuration des 3 relances par défaut
+      reminderConfig: [
+        {
+          reminderNumber: 1,
+          delayDays: 7,
+          subject: "Rappel - Facture {numero_facture}",
+          emailTemplate: `Bonjour,\n\nNous constatons que notre facture n°{numero_facture} d'un montant de {montant}€ TTC émise le {date_facture} est arrivée à échéance le {date_echeance}.\n\nPourriez-vous nous confirmer la réception de cette facture et nous indiquer la date de règlement prévue ?\n\nCordialement,`,
+        },
+        {
+          reminderNumber: 2,
+          delayDays: 15,
+          subject: "2ème relance - Facture {numero_facture}",
+          emailTemplate: `Bonjour,\n\nMalgré notre première relance, nous constatons que notre facture n°{numero_facture} d'un montant de {montant}€ TTC reste impayée (échue depuis {jours_retard} jours).\n\nNous vous remercions de procéder au règlement dans les plus brefs délais.\n\nCordialement,`,
+        },
+        {
+          reminderNumber: 3,
+          delayDays: 30,
+          subject: "Dernière relance - Facture {numero_facture}",
+          emailTemplate: `Bonjour,\n\nNous vous informons que notre facture n°{numero_facture} d'un montant de {montant}€ TTC demeure impayée malgré nos précédentes relances ({jours_retard} jours de retard).\n\nSans règlement sous 7 jours, nous serons contraints d'engager une procédure de recouvrement.\n\nCordialement,`,
+        },
+      ],
       signature: `L'équipe ${args.organizationName}`,
-      // Paramètres d'envoi automatique (Phase 3)
-      autoSendReminders: false, // Par défaut : nécessite approbation manuelle
+      manualFollowupDelay: 45, // Passage en suivi manuel après 45 jours
+      autoSendReminders: false,
     });
 
     // Mettre à jour l'utilisateur avec le rôle admin et l'organisation
@@ -355,14 +367,16 @@ export const getCurrentOrganization = query({
       _id: v.id("organizations"),
       name: v.string(),
       senderEmail: v.string(),
-      firstReminderDelay: v.number(),
-      secondReminderDelay: v.number(),
-      thirdReminderDelay: v.number(),
-      litigationDelay: v.number(),
-      firstReminderTemplate: v.string(),
-      secondReminderTemplate: v.string(),
-      thirdReminderTemplate: v.string(),
+      reminderConfig: v.array(
+        v.object({
+          reminderNumber: v.number(),
+          delayDays: v.number(),
+          emailTemplate: v.string(),
+          subject: v.optional(v.string()),
+        })
+      ),
       signature: v.string(),
+      manualFollowupDelay: v.optional(v.number()),
       autoSendReminders: v.optional(v.boolean()),
       emailProvider: v.optional(
         v.union(
@@ -398,18 +412,14 @@ export const getCurrentOrganization = query({
       return null;
     }
 
+    // ✅ V2 Phase 2.8 : Retourner la nouvelle structure reminderConfig
     return {
       _id: organization._id,
       name: organization.name,
       senderEmail: organization.senderEmail,
-      firstReminderDelay: organization.firstReminderDelay,
-      secondReminderDelay: organization.secondReminderDelay,
-      thirdReminderDelay: organization.thirdReminderDelay,
-      litigationDelay: organization.litigationDelay,
-      firstReminderTemplate: organization.firstReminderTemplate,
-      secondReminderTemplate: organization.secondReminderTemplate,
-      thirdReminderTemplate: organization.thirdReminderTemplate,
+      reminderConfig: organization.reminderConfig,
       signature: organization.signature,
+      manualFollowupDelay: organization.manualFollowupDelay,
       autoSendReminders: organization.autoSendReminders,
       emailProvider: organization.emailProvider,
       emailConnectedAt: organization.emailConnectedAt,

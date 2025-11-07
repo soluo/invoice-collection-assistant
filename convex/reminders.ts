@@ -10,13 +10,18 @@ import { getUserWithOrg, assertCanAccessInvoice, isAdmin } from "./permissions";
 import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 
+/**
+ * ✅ V2 Phase 2.8 : Créer une relance
+ * Note: Cette fonction est peu utilisée car les relances sont généralement créées via invoices.sendReminder
+ */
 export const create = mutation({
   args: {
     invoiceId: v.id("invoices"),
     reminderStatus: v.union(
-      v.literal("first_reminder"),
-      v.literal("second_reminder"),
-      v.literal("third_reminder")
+      v.literal("reminder_1"),
+      v.literal("reminder_2"),
+      v.literal("reminder_3"),
+      v.literal("reminder_4")
     ),
     emailSubject: v.string(),
     emailContent: v.string(),
@@ -24,18 +29,15 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const user = await getUserWithOrg(ctx);
 
-    // Vérifier que la facture appartient à l'organisation
     const invoice = await ctx.db.get(args.invoiceId);
     if (!invoice) {
       throw new Error("Facture introuvable");
     }
 
-    // Vérifier les permissions
     assertCanAccessInvoice(user, invoice);
 
-    // Créer l'enregistrement de relance
     const now = new Date();
-    const reminderDate = now.toISOString().slice(0, 19).replace("T", " "); // "2025-09-26 00:36:00"
+    const reminderDate = now.toISOString().slice(0, 19).replace("T", " ");
 
     return await ctx.db.insert("reminders", {
       userId: user.userId,
@@ -131,10 +133,12 @@ export const listForOrganization = query({
                 _id: invoice._id,
                 invoiceNumber: invoice.invoiceNumber,
                 clientName: invoice.clientName,
-                contactEmail: invoice.contactEmail ?? null, // ✅ V2 Phase 2.6 : Renommé de clientEmail
+                contactEmail: invoice.contactEmail ?? null,
                 amountTTC: invoice.amountTTC,
                 dueDate: invoice.dueDate,
-                status: invoice.status,
+                sendStatus: invoice.sendStatus,
+                paymentStatus: invoice.paymentStatus,
+                reminderStatus: invoice.reminderStatus,
               }
             : null,
           creator: creator
@@ -235,6 +239,9 @@ export const markReminderSent = internalMutation({
     });
 
     // ✅ V2 Phase 2.8 : Créer un événement "Relance envoyée"
+    // Extraire le numéro de relance depuis "reminder_X"
+    const reminderNumber = parseInt(reminder.reminderStatus.split("_")[1], 10);
+
     await ctx.scheduler.runAfter(0, internal.events.createReminderSentEvent, {
       organizationId: reminder.organizationId,
       userId: reminder.userId,
@@ -242,7 +249,7 @@ export const markReminderSent = internalMutation({
       reminderId: args.reminderId,
       invoiceNumber: invoice.invoiceNumber,
       clientName: invoice.clientName,
-      reminderType: reminder.reminderStatus,
+      reminderNumber,
       isAutomatic: reminder.generatedByCron ?? false,
     });
   },

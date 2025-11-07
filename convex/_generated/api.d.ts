@@ -10,10 +10,11 @@
 
 import type * as agenda from "../agenda.js";
 import type * as auth from "../auth.js";
-import type * as dashboard from "../dashboard.js";
+import type * as dev from "../dev.js";
 import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as invoices from "../invoices.js";
+import type * as lib_invoiceStatus from "../lib/invoiceStatus.js";
 import type * as oauth from "../oauth.js";
 import type * as organizations from "../organizations.js";
 import type * as pdfExtractionAI from "../pdfExtractionAI.js";
@@ -39,10 +40,11 @@ import type {
 declare const fullApi: ApiFromModules<{
   agenda: typeof agenda;
   auth: typeof auth;
-  dashboard: typeof dashboard;
+  dev: typeof dev;
   events: typeof events;
   http: typeof http;
   invoices: typeof invoices;
+  "lib/invoiceStatus": typeof lib_invoiceStatus;
   oauth: typeof oauth;
   organizations: typeof organizations;
   pdfExtractionAI: typeof pdfExtractionAI;
