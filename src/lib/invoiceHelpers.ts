@@ -3,7 +3,7 @@
  * Conditions : facture non payée ET échéance dépassée
  */
 export function canSendReminder(invoice: any): boolean {
-  return invoice.status !== "paid" && new Date(invoice.dueDate) < new Date();
+  return invoice.paymentStatus !== "paid" && new Date(invoice.dueDate) < new Date();
 }
 
 /**
@@ -11,5 +11,5 @@ export function canSendReminder(invoice: any): boolean {
  * Condition : facture non encore payée
  */
 export function canMarkAsPaid(invoice: any): boolean {
-  return invoice.status !== "paid";
+  return invoice.paymentStatus !== "paid";
 }

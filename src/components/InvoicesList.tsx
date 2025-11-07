@@ -223,11 +223,18 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
                             </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            {invoice.sendStatus === "pending" && (
-                              <DropdownMenuItem onClick={() => void handleMarkAsSent(invoice._id)}>
-                                Marquer comme envoyée
-                              </DropdownMenuItem>
-                            )}
+                            <DropdownMenuItem
+                              onClick={() => void handleMarkAsSent(invoice._id)}
+                              disabled={invoice.sendStatus !== "pending"}
+                            >
+                              Marquer comme envoyée
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => void handleMarkAsPaid(invoice._id)}
+                              disabled={!canMarkAsPaid(invoice)}
+                            >
+                              Marquer comme payée
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
