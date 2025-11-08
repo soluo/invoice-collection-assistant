@@ -34,6 +34,12 @@ export async function getUserWithOrg(
     throw new Error("Non authentifié");
   }
 
+  // Validate userId format before attempting db.get
+  // Convex IDs should be longer than 7 characters
+  if (typeof userId === 'string' && userId.length < 10) {
+    throw new Error("Session invalide - veuillez vous reconnecter");
+  }
+
   const user = await ctx.db.get(userId);
   if (!user) {
     throw new Error("Utilisateur introuvable");

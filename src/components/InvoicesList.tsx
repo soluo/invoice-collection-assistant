@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { ReminderModal } from "./ReminderModal";
+import { MarkAsSentModal } from "./MarkAsSentModal";
 import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { getStatusDisplay, type InvoiceStatus } from "@/lib/invoiceStatus";
@@ -43,6 +44,7 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
   const markAsPaid = useMutation(api.invoices.markAsPaid);
   const markAsSent = useMutation(api.invoices.markAsSent);
   const [reminderModal, setReminderModal] = useState<{ invoice: any; status: InvoiceStatus } | null>(null);
+  const [markAsSentModal, setMarkAsSentModal] = useState<{ invoice: any } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   const isAdmin = currentUser?.role === "admin";
@@ -80,10 +82,20 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
     setReminderModal({ invoice, status: invoice.status });
   };
 
-  const handleMarkAsSent = async (invoiceId: Id<"invoices">) => {
+  const handleMarkAsSent = (invoice: any) => {
+    setMarkAsSentModal({ invoice });
+  };
+
+  const handleConfirmMarkAsSent = async (sentDate: string) => {
+    if (!markAsSentModal) return;
+
     try {
-      await markAsSent({ invoiceId });
+      await markAsSent({
+        invoiceId: markAsSentModal.invoice._id,
+        sentDate
+      });
       toast.success("Facture marquée comme envoyée");
+      setMarkAsSentModal(null);
     } catch (error: any) {
       toast.error(error.message || "Erreur lors de la mise à jour");
     }
@@ -224,7 +236,7 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
-                              onClick={() => void handleMarkAsSent(invoice._id)}
+                              onClick={() => handleMarkAsSent(invoice)}
                               disabled={invoice.sendStatus !== "pending"}
                             >
                               Marquer comme envoyée
@@ -405,6 +417,16 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
           invoice={reminderModal.invoice}
           currentStatus={reminderModal.status}
           onClose={() => setReminderModal(null)}
+        />
+      )}
+
+      {/* Modal "Marquer comme envoyée" */}
+      {markAsSentModal && (
+        <MarkAsSentModal
+          isOpen={true}
+          onClose={() => setMarkAsSentModal(null)}
+          onConfirm={handleConfirmMarkAsSent}
+          defaultDate={markAsSentModal.invoice.invoiceDate}
         />
       )}
     </>

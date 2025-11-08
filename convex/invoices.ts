@@ -313,6 +313,7 @@ export const create = mutation({
 export const markAsSent = mutation({
   args: {
     invoiceId: v.id("invoices"),
+    sentDate: v.optional(v.string()), // Format: "YYYY-MM-DD"
   },
   handler: async (ctx, args) => {
     const user = await getUserWithOrg(ctx);
@@ -328,7 +329,7 @@ export const markAsSent = mutation({
 
     await ctx.db.patch(args.invoiceId, {
       sendStatus: "sent",
-      sentDate: new Date().toISOString().split("T")[0],
+      sentDate: args.sentDate ?? new Date().toISOString().split("T")[0],
     });
 
     // ✅ Créer événement invoice_marked_sent
