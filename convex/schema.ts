@@ -97,6 +97,7 @@ const applicationTables = {
     paymentStatus: v.union(
       v.literal("unpaid"), // Pas encore payée
       v.literal("partial"), // Paiement partiel reçu
+      v.literal("pending_payment"), // Chèque(s) en attente d'encaissement
       v.literal("paid") // Entièrement payée
     ),
     paidAmount: v.optional(v.number()), // Montant déjà payé (pour paiements partiels)
@@ -188,6 +189,34 @@ const applicationTables = {
     .index("by_invoice", ["invoiceId"])
     .index("by_organization_and_date", ["organizationId", "eventDate"])
     .index("by_user", ["userId"]),
+
+  // ✅ V2 Phase 2.7 : Table des paiements
+  payments: defineTable({
+    organizationId: v.id("organizations"),
+    invoiceId: v.id("invoices"),
+    userId: v.id("users"), // Qui a enregistré le paiement
+
+    type: v.union(v.literal("bank_transfer"), v.literal("check")),
+    amount: v.number(),
+    status: v.union(v.literal("received"), v.literal("pending")),
+
+    // Dates
+    recordedDate: v.string(), // Date d'enregistrement du paiement (YYYY-MM-DD)
+    receivedDate: v.optional(v.string()), // Date réelle d'encaissement (pour status: received)
+    expectedDepositDate: v.optional(v.string()), // Date souhaitée d'encaissement (pour checks pending)
+
+    // Métadonnées
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_invoice", ["invoiceId"])
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_expected_deposit", [
+      "organizationId",
+      "status",
+      "expectedDepositDate",
+    ]),
 };
 
 export default defineSchema({

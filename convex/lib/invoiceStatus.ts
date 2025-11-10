@@ -6,7 +6,7 @@
  */
 
 export type SendStatus = "pending" | "sent";
-export type PaymentStatus = "unpaid" | "partial" | "paid";
+export type PaymentStatus = "unpaid" | "partial" | "pending_payment" | "paid";
 export type ReminderStatus =
   | "none"
   | "reminder_1"
@@ -24,6 +24,7 @@ export type MainStatus =
   | "reminder_3" // Troisième relance
   | "reminder_4" // Quatrième relance (si configuré)
   | "manual_followup" // Suivi manuel / contentieux
+  | "pending_payment" // Chèque(s) en attente d'encaissement
   | "paid"; // Payée (statut final)
 
 export interface InvoiceDisplayInfo {
@@ -60,7 +61,8 @@ export function getInvoiceDisplayInfo(
   now: Date = new Date()
 ): InvoiceDisplayInfo {
   const dueDate = new Date(invoice.dueDate);
-  const isOverdue = dueDate < now && invoice.paymentStatus !== "paid";
+  // ✅ Les factures avec paymentStatus "pending_payment" ne sont pas considérées en retard
+  const isOverdue = dueDate < now && invoice.paymentStatus !== "paid" && invoice.paymentStatus !== "pending_payment";
   const daysPastDue = isOverdue
     ? Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
     : 0;
@@ -75,6 +77,9 @@ export function getInvoiceDisplayInfo(
   if (invoice.paymentStatus === "paid") {
     // Statut final : facture payée
     mainStatus = "paid";
+  } else if (invoice.paymentStatus === "pending_payment") {
+    // Chèque(s) en attente d'encaissement - prioritaire sur tout sauf "paid"
+    mainStatus = "pending_payment";
   } else if (invoice.reminderStatus === "manual_followup") {
     // Fin des relances automatiques → suivi manuel
     mainStatus = "manual_followup";
@@ -153,6 +158,7 @@ export const MAIN_STATUS_LABELS: Record<MainStatus, string> = {
   reminder_3: "Relance 3",
   reminder_4: "Relance 4",
   manual_followup: "Suivi manuel",
+  pending_payment: "Chèque(s) en attente",
   paid: "Payée",
 };
 
@@ -168,5 +174,6 @@ export const MAIN_STATUS_COLORS: Record<MainStatus, string> = {
   reminder_3: "bg-red-100 text-red-800",
   reminder_4: "bg-red-100 text-red-800",
   manual_followup: "bg-purple-100 text-purple-800",
+  pending_payment: "bg-cyan-100 text-cyan-800",
   paid: "bg-green-100 text-green-800",
 };

@@ -12,6 +12,7 @@ export type MainStatus =
   | "reminder_3"
   | "reminder_4"
   | "manual_followup"
+  | "pending_payment"
   | "paid";
 
 // Keep old InvoiceStatus type for backward compatibility
@@ -74,6 +75,7 @@ const MAIN_STATUS_LABELS: Record<MainStatus, string> = {
   reminder_3: "Relance 3",
   reminder_4: "Relance 4",
   manual_followup: "Suivi manuel",
+  pending_payment: "Chèque(s) en attente",
   paid: "Payée",
 };
 
@@ -89,6 +91,7 @@ const MAIN_STATUS_COLORS: Record<MainStatus, string> = {
   reminder_3: "bg-red-100 text-red-800",
   reminder_4: "bg-red-100 text-red-800",
   manual_followup: "bg-purple-100 text-purple-800",
+  pending_payment: "bg-cyan-100 text-cyan-800",
   paid: "bg-green-100 text-green-800",
 };
 

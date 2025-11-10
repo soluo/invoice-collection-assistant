@@ -17,6 +17,7 @@ import type * as invoices from "../invoices.js";
 import type * as lib_invoiceStatus from "../lib/invoiceStatus.js";
 import type * as oauth from "../oauth.js";
 import type * as organizations from "../organizations.js";
+import type * as payments from "../payments.js";
 import type * as pdfExtractionAI from "../pdfExtractionAI.js";
 import type * as permissions from "../permissions.js";
 import type * as reminders from "../reminders.js";
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   "lib/invoiceStatus": typeof lib_invoiceStatus;
   oauth: typeof oauth;
   organizations: typeof organizations;
+  payments: typeof payments;
   pdfExtractionAI: typeof pdfExtractionAI;
   permissions: typeof permissions;
   reminders: typeof reminders;

@@ -5,6 +5,7 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { ReminderModal } from "./ReminderModal";
 import { MarkAsSentModal } from "./MarkAsSentModal";
+import { PaymentRecordModal } from "./PaymentRecordModal";
 import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { getStatusDisplay, type InvoiceStatus } from "@/lib/invoiceStatus";
@@ -43,8 +44,10 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
   const currentUser = useQuery(api.auth.loggedInUser);
   const markAsPaid = useMutation(api.invoices.markAsPaid);
   const markAsSent = useMutation(api.invoices.markAsSent);
+  const recordPayment = useMutation(api.payments.recordPayment);
   const [reminderModal, setReminderModal] = useState<{ invoice: any; status: InvoiceStatus } | null>(null);
   const [markAsSentModal, setMarkAsSentModal] = useState<{ invoice: any } | null>(null);
+  const [paymentModal, setPaymentModal] = useState<{ invoice: any } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   const isAdmin = currentUser?.role === "admin";
@@ -98,6 +101,31 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
       setMarkAsSentModal(null);
     } catch (error: any) {
       toast.error(error.message || "Erreur lors de la mise à jour");
+    }
+  };
+
+  const handleRecordPayment = (invoice: any) => {
+    setPaymentModal({ invoice });
+  };
+
+  const handleConfirmPayment = async (payments: Array<{
+    type: "bank_transfer" | "check";
+    amount: number;
+    receivedDate?: string;
+    expectedDepositDate?: string;
+    notes?: string;
+  }>) => {
+    if (!paymentModal) return;
+
+    try {
+      await recordPayment({
+        invoiceId: paymentModal.invoice._id,
+        payments,
+      });
+      toast.success("Paiement enregistré avec succès");
+      setPaymentModal(null);
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de l'enregistrement du paiement");
     }
   };
 
@@ -240,6 +268,12 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
                               disabled={invoice.sendStatus !== "pending"}
                             >
                               Marquer comme envoyée
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleRecordPayment(invoice)}
+                              disabled={invoice.paymentStatus === "paid"}
+                            >
+                              Enregistrer un paiement
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => void handleMarkAsPaid(invoice._id)}
@@ -427,6 +461,16 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
           onClose={() => setMarkAsSentModal(null)}
           onConfirm={handleConfirmMarkAsSent}
           defaultDate={markAsSentModal.invoice.invoiceDate}
+        />
+      )}
+
+      {/* Modal "Enregistrer un paiement" */}
+      {paymentModal && (
+        <PaymentRecordModal
+          isOpen={true}
+          onClose={() => setPaymentModal(null)}
+          invoice={paymentModal.invoice}
+          onConfirm={handleConfirmPayment}
         />
       )}
     </>
