@@ -1,12 +1,8 @@
 import React from 'react'
 import { NavLink, useMatch, useResolvedPath } from "react-router-dom";
 import {
-  Home,
   FileText,
-  Users,
   Phone,
-  Upload,
-  CreditCard,
   Calendar,
   Settings,
   User,
@@ -32,13 +28,9 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { name: "Tableau de bord", path: "/", icon: Home },
-  { name: "Import Facture", path: "/upload", icon: Upload },
-  /*{ name: "Clients", path: "/clients", icon: Users },*/
-  { name: "Clients à appeler", path: "/call-plan", icon: Phone },
-  { name: "Rapprochement", path: "/reconciliation", icon: CreditCard },
   { name: "Factures", path: "/invoices", icon: FileText },
-  { name: "Agenda", path: "/agenda", icon: Calendar },
+  { name: "Plan d'appels", path: "/call-plan", icon: Phone },
+  { name: "Activité", path: "/agenda", icon: Calendar },
 ];
 
 const bottomNavItems: NavItem[] = [
@@ -49,7 +41,7 @@ const bottomNavItems: NavItem[] = [
 function NavItem({ item, onClick }: { item: NavItem; onClick: () => void }) {
   const Icon = item.icon;
   const resolved = useResolvedPath(item.path);
-  const match = useMatch({ path: resolved.pathname, end: item.path === "/" });
+  const match = useMatch({ path: resolved.pathname, end: true });
   const isActive = !!match;
 
   return (
@@ -68,7 +60,7 @@ export function Sidebar() {
   const { setOpenMobile } = useSidebar();
 
   return (
-    <SidebarComp>
+    <SidebarComp className="md:hidden">
       {/* Header avec logo */}
       <SidebarHeader>
         <div className="flex items-center gap-2">

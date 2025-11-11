@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { LogOut } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { LogOut, FileText, Phone, Calendar, Settings, User } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 import type { Doc } from "../../../convex/_generated/dataModel";
 
 type MaybeUser = Doc<"users"> | null | undefined;
@@ -28,6 +30,7 @@ function getUserInitials(user: MaybeUser) {
 
 export function Topbar() {
   const { signOut } = useAuthActions();
+  const navigate = useNavigate();
   const loggedInUser = useQuery(api.auth.loggedInUser);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -35,6 +38,11 @@ export function Topbar() {
   const handleSignOut = () => {
     setIsMenuOpen(false);
     void signOut();
+  };
+
+  const handleNavigate = (path: string) => {
+    setIsMenuOpen(false);
+    navigate(path);
   };
 
   // Close menu on click outside
@@ -62,62 +70,106 @@ export function Topbar() {
 
   const initials = getUserInitials(loggedInUser);
   const displayName = loggedInUser?.name || "Utilisateur";
-  const greeting = getGreeting();
+
+  const navItems = [
+    { name: "Factures", path: "/invoices", icon: FileText },
+    { name: "Plan d'appels", path: "/call-plan", icon: Phone },
+    { name: "Activité", path: "/agenda", icon: Calendar },
+  ];
 
   return (
-    <header className="sticky top-0 z-20 bg-white border-b border-gray-200 h-16 px-4 md:px-6 flex items-center gap-4">
-      {/* Mobile hamburger trigger */}
-      <SidebarTrigger className="md:hidden" />
+    <header className="sticky top-0 z-20 bg-white border-b border-gray-200">
+      <div className="max-w-6xl mx-auto h-16 px-4 md:px-6 flex items-center gap-6">
+        {/* Mobile hamburger trigger */}
+        <SidebarTrigger className="md:hidden" />
 
-      {/* Greeting (hidden on small screens) */}
-      <div className="hidden sm:block flex-1">
-        <p className="text-sm text-gray-600">
-          {greeting}, <span className="font-medium text-gray-900">{displayName}</span>
-        </p>
-      </div>
-
-      {/* Right side: User avatar with dropdown */}
-      <div className="relative ml-auto" ref={menuRef}>
-        <button
-          type="button"
-          onClick={() => setIsMenuOpen((prev) => !prev)}
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-          aria-haspopup="true"
-          aria-expanded={isMenuOpen}
-        >
-          <Avatar className="h-10 w-10 bg-primary text-white">
-            <AvatarFallback className="bg-primary text-white font-semibold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-        </button>
-
-        {/* Dropdown menu */}
-        {isMenuOpen && (
-          <div className="absolute right-0 z-30 mt-3 w-60 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
-            <div className="px-4 py-3">
-              <p className="text-sm font-medium text-gray-900">{displayName}</p>
-              {loggedInUser?.email && (
-                <p className="mt-1 text-sm text-gray-500">{loggedInUser.email}</p>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-3 text-left text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
-            >
-              <LogOut size={18} />
-              Se déconnecter
-            </button>
+        {/* Logo (desktop only) */}
+        <div className="hidden md:flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
+            Z
           </div>
-        )}
+          <h1 className="text-lg font-bold text-foreground">ZenRelance</h1>
+        </div>
+
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center justify-center gap-1 flex-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  cn(
+                    "flex flex-col items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-colors",
+                    isActive
+                      ? "text-primary"
+                      : "text-gray-500 hover:text-gray-900"
+                  )
+                }
+              >
+                <Icon className="size-5" />
+                <span>{item.name}</span>
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {/* Right side: User avatar with dropdown */}
+        <div className="relative ml-auto" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen((prev) => !prev)}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            aria-haspopup="true"
+            aria-expanded={isMenuOpen}
+          >
+            <Avatar className="h-10 w-10 bg-primary text-white">
+              <AvatarFallback className="bg-primary text-white font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+
+          {/* Dropdown menu */}
+          {isMenuOpen && (
+            <div className="absolute right-0 z-30 mt-3 w-60 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+              <div className="px-4 py-3 border-b border-gray-100">
+                <p className="text-sm font-medium text-gray-900">{displayName}</p>
+                {loggedInUser?.email && (
+                  <p className="mt-1 text-sm text-gray-500">{loggedInUser.email}</p>
+                )}
+              </div>
+              <div className="py-1">
+                <button
+                  type="button"
+                  onClick={() => handleNavigate("/settings")}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                >
+                  <Settings size={18} />
+                  Réglages
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate("/account")}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                >
+                  <User size={18} />
+                  Mon Compte
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-3 text-left text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+              >
+                <LogOut size={18} />
+                Se déconnecter
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );
-}
-
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 18) return "Bonjour";
-  return "Bonsoir";
 }

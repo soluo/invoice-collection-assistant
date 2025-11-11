@@ -14,12 +14,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full">
-        {/* Sidebar */}
+        {/* Sidebar (mobile only - overlay) */}
         <Sidebar />
 
-        {/* Main content area */}
-        <SidebarInset className="bg-gray-50">
-          {/* Topbar */}
+        {/* Main content area (full width on desktop) */}
+        <SidebarInset className="bg-gray-50 w-full">
+          {/* Topbar with logo and nav on desktop */}
           <Topbar />
 
           {/* Page content */}
