@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
-import { Building2, Mail, Check, X, ExternalLink, Clock } from "lucide-react";
+import { Settings as SettingsIcon, Mail, Check, X, ExternalLink, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
 
@@ -155,7 +155,7 @@ export function OrganizationSettings() {
         signature: formData.signature,
         autoSendReminders: formData.autoSendReminders,
       });
-      toast.success("Paramètres de l'organisation sauvegardés");
+      toast.success("Réglages du compte sauvegardés");
     } catch (error: any) {
       console.error("Erreur lors de la sauvegarde:", error);
       toast.error(error.message || "Erreur lors de la sauvegarde");
@@ -217,11 +217,11 @@ export function OrganizationSettings() {
       : "Expiration imminente";
 
   return (
-    <div className="space-y-8 pt-6">
+    <div className="max-w-6xl mx-auto px-4 md:px-6 space-y-8 pt-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Building2 size={24} />
-          Paramètres de l'organisation
+          <SettingsIcon size={24} />
+          Réglages du compte
         </h2>
         <p className="text-gray-600 mt-1">
           Configurez les paramètres de votre organisation, les délais de relance et les templates d'emails.

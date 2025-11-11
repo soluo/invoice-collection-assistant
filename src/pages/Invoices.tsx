@@ -93,7 +93,7 @@ export function Invoices() {
   }
 
   return (
-    <div className="space-y-6 pt-6">
+    <div className="max-w-6xl mx-auto space-y-6 pt-6">
       {/* Header avec titre */}
       <div className="flex justify-between items-start">
         <div>
@@ -116,7 +116,7 @@ export function Invoices() {
       <div className="bg-white rounded-lg border p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Recherche N° facture ou client */}
-          <div className="lg:col-span-2">
+          <div>
             <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
               Rechercher
             </label>
@@ -151,6 +151,41 @@ export function Invoices() {
                 className="pl-10"
               />
             </div>
+          </div>
+
+          <div>
+            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
+              Montant (±5%)
+            </label>
+            <Input
+              key={`amount-${amount}`}
+              id="amount"
+              type="number"
+              placeholder="Ex: 1500"
+              defaultValue={amount}
+              onBlur={(e) => {
+                const params = Object.fromEntries(searchParams);
+                if (e.target.value) {
+                  params.amount = e.target.value;
+                } else {
+                  delete params.amount;
+                }
+                setSearchParams(params);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const params = Object.fromEntries(searchParams);
+                  if (e.currentTarget.value) {
+                    params.amount = e.currentTarget.value;
+                  } else {
+                    delete params.amount;
+                  }
+                  setSearchParams(params);
+                }
+              }}
+              step="0.01"
+              min="0"
+            />
           </div>
 
           {/* Filtre Statut */}
@@ -218,44 +253,6 @@ export function Invoices() {
           ) : (
             <div /> // Placeholder pour maintenir la grille
           )}
-        </div>
-
-        {/* Deuxième ligne : Montant */}
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div>
-            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
-              Montant (±5%)
-            </label>
-            <Input
-              key={`amount-${amount}`}
-              id="amount"
-              type="number"
-              placeholder="Ex: 1500"
-              defaultValue={amount}
-              onBlur={(e) => {
-                const params = Object.fromEntries(searchParams);
-                if (e.target.value) {
-                  params.amount = e.target.value;
-                } else {
-                  delete params.amount;
-                }
-                setSearchParams(params);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  const params = Object.fromEntries(searchParams);
-                  if (e.currentTarget.value) {
-                    params.amount = e.currentTarget.value;
-                  } else {
-                    delete params.amount;
-                  }
-                  setSearchParams(params);
-                }
-              }}
-              step="0.01"
-              min="0"
-            />
-          </div>
         </div>
       </div>
 
