@@ -850,7 +850,6 @@ export const updateOrganizationSettings = mutation({
     secondReminderTemplate: v.optional(v.string()),
     thirdReminderTemplate: v.optional(v.string()),
     signature: v.optional(v.string()),
-    autoSendReminders: v.optional(v.boolean()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -887,8 +886,6 @@ export const updateOrganizationSettings = mutation({
     if (args.thirdReminderTemplate !== undefined)
       updates.thirdReminderTemplate = args.thirdReminderTemplate;
     if (args.signature !== undefined) updates.signature = args.signature;
-    if (args.autoSendReminders !== undefined)
-      updates.autoSendReminders = args.autoSendReminders;
 
     await ctx.db.patch(user.organizationId, updates);
 

@@ -55,8 +55,6 @@ Le système de gestion des factures utilise **3 dimensions d'états indépendant
 
 **Champs associés** : `lastReminderDate`
 
-**Note** : Le nombre de relances est configurable via `organizations.reminderConfig` (2, 3, 4+).
-
 ---
 
 ## 🧮 États Calculés (Temps Réel)
@@ -185,36 +183,57 @@ Chaque action utilisateur crée un événement dans la table `events` :
 
 ## ⚙️ Configuration Flexible des Relances
 
-**Table `organizations.reminderConfig`** (array) :
+**Table `organizations.reminderSteps`** (array) :
 
 ```json
 [
   {
-    "reminderNumber": 1,
-    "delayDays": 7,
-    "subject": "Rappel - Facture {numero_facture}",
+    "id": "uuid-1",
+    "delay": 7,
+    "type": "email",
+    "name": "Relance amicale",
+    "emailSubject": "Rappel - Facture {numero_facture}",
     "emailTemplate": "Bonjour,\n\n..."
   },
   {
-    "reminderNumber": 2,
-    "delayDays": 15,
-    "subject": "2ème relance ...",
+    "id": "uuid-2",
+    "delay": 14,
+    "type": "email",
+    "name": "Relance ferme",
+    "emailSubject": "2ème relance - Facture {numero_facture}",
     "emailTemplate": "..."
   },
   {
-    "reminderNumber": 3,
-    "delayDays": 30,
-    "subject": "Dernière relance ...",
+    "id": "uuid-3",
+    "delay": 21,
+    "type": "phone",
+    "name": "Appel téléphonique"
+  },
+  {
+    "id": "uuid-4",
+    "delay": 30,
+    "type": "email",
+    "name": "Mise en demeure",
+    "emailSubject": "Dernière relance - Facture {numero_facture}",
     "emailTemplate": "..."
   }
 ]
 ```
 
-- **Nombre de relances** : Flexible (2, 3, 4+) selon la taille de l'array
-- **Délais** : Configurables indépendamment par relance
-- **Templates** : Personnalisables par organisation
+**Structure d'une étape** :
+- `id` (string) : UUID unique pour chaque étape
+- `delay` (number) : Jours après l'échéance (7, 14, 21, 30...)
+- `type` (union) : `"email"` ou `"phone"`
+- `name` (string) : Nom descriptif de l'étape (ex: "Relance amicale")
+- `emailSubject` (optional string) : Objet de l'email (si type = email)
+- `emailTemplate` (optional string) : Contenu de l'email (si type = email)
 
-**Champ associé** : `manualFollowupDelay` (ex: 45 jours après dernière relance)
+**Caractéristiques** :
+- **Nombre de relances** : Flexible (2, 3, 4+) selon la taille de l'array
+- **Délais** : Configurables indépendamment par étape
+- **Types mixtes** : Support des relances email ET téléphone
+- **Templates** : Personnalisables par organisation
+- **Signature commune** : Champ `organizations.signature` ajouté automatiquement aux emails
 
 ---
 
@@ -302,10 +321,33 @@ Construit `"reminder_X"` depuis `number`
 ### `reminders`
 ```typescript
 {
-  // ... champs existants ...
+  userId: Id<"users">,
+  organizationId: Id<"organizations">,
+  invoiceId: Id<"invoices">,
+  reminderDate: string, // "YYYY-MM-DD HH:mm:ss"
   reminderStatus: "reminder_1" | "reminder_2" | "reminder_3" | "reminder_4",
-  sendStatus?: "pending" | "sent" | "failed",
-  isPaused?: boolean // ✅ V2 Phase 2.8
+  reminderType: "email" | "phone",
+
+  // Statut de complétion générique (email ET téléphone)
+  completionStatus?: "pending" | "completed" | "failed",
+  completedAt?: number,
+
+  // Métadonnées
+  generatedByCron?: boolean,
+  isPaused?: boolean, // ✅ V2 Phase 2.8
+
+  // Données spécifiques par type
+  data?: {
+    // Email
+    emailSubject?: string,
+    emailContent?: string,
+    sendError?: string,
+    lastSendAttempt?: number,
+
+    // Téléphone
+    phoneCallNotes?: string,
+    phoneCallOutcome?: "completed" | "no_answer" | "voicemail" | "will_pay" | "dispute"
+  }
 }
 ```
 

@@ -26,11 +26,9 @@ const applicationTables = {
     signature: v.string(), // Signature commune à toutes les relances email
 
     // Paramètres d'envoi automatique (Phase 3)
-    autoSendEnabled: v.optional(v.boolean()), // Par défaut : false (remplace autoSendReminders)
+    autoSendEnabled: v.optional(v.boolean()), // Par défaut : false
 
     // Anciens champs (à supprimer après migration)
-    autoSendReminders: v.optional(v.boolean()),
-    reminderConfig: v.optional(v.array(v.any())),
     manualFollowupDelay: v.optional(v.number()),
     firstReminderDelay: v.optional(v.number()),
     secondReminderDelay: v.optional(v.number()),
