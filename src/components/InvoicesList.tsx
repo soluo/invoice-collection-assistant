@@ -219,11 +219,9 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
                       <span className={
                         invoice.paymentStatus === "paid"
                           ? "text-green-700"
-                          : isPartiallyPaid
-                            ? "text-orange-700"
-                            : invoice.isOverdue
-                              ? "text-red-700"
-                              : "text-gray-900"
+                          : invoice.isOverdue
+                            ? "text-red-700"
+                            : "text-gray-900"
                       }>
                         {formatCurrency(outstandingBalance)}
                       </span>
