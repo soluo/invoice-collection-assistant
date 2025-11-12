@@ -20,6 +20,7 @@ import type * as organizations from "../organizations.js";
 import type * as payments from "../payments.js";
 import type * as pdfExtractionAI from "../pdfExtractionAI.js";
 import type * as permissions from "../permissions.js";
+import type * as reminderDefaults from "../reminderDefaults.js";
 import type * as reminders from "../reminders.js";
 import type * as router from "../router.js";
 import type * as utils from "../utils.js";
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   payments: typeof payments;
   pdfExtractionAI: typeof pdfExtractionAI;
   permissions: typeof permissions;
+  reminderDefaults: typeof reminderDefaults;
   reminders: typeof reminders;
   router: typeof router;
   utils: typeof utils;

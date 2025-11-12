@@ -10,20 +10,35 @@ const applicationTables = {
     senderEmail: v.string(), // Email expéditeur pour les relances
     createdAt: v.number(),
 
-    // ✅ V2 Phase 2.8 : Configuration flexible des relances
-    reminderConfig: v.array(
-      v.object({
-        reminderNumber: v.number(), // 1, 2, 3, 4...
-        delayDays: v.number(), // Jours après échéance (7, 14, 21...)
-        emailTemplate: v.string(), // Template de l'email
-        subject: v.optional(v.string()), // Sujet personnalisé
-      })
+    // ✅ V2 Phase 2.9 : Configuration flexible des relances avec support téléphone
+    reminderSteps: v.optional(
+      v.array(
+        v.object({
+          id: v.string(), // UUID unique pour chaque étape
+          delay: v.number(), // Jours après échéance (7, 14, 30...)
+          type: v.union(v.literal("email"), v.literal("phone")), // Type d'action
+          name: v.string(), // Nom de l'étape (ex: "Relance amicale")
+          emailSubject: v.optional(v.string()), // Objet de l'email (si type = email)
+          emailTemplate: v.optional(v.string()), // Contenu de l'email (si type = email)
+        })
+      )
     ),
-    signature: v.string(), // Signature commune à toutes les relances
-    manualFollowupDelay: v.optional(v.number()), // Délai avant passage en suivi manuel (après dernière relance)
+    signature: v.string(), // Signature commune à toutes les relances email
 
     // Paramètres d'envoi automatique (Phase 3)
-    autoSendReminders: v.optional(v.boolean()), // Par défaut : false
+    autoSendEnabled: v.optional(v.boolean()), // Par défaut : false (remplace autoSendReminders)
+
+    // Anciens champs (à supprimer après migration)
+    autoSendReminders: v.optional(v.boolean()),
+    reminderConfig: v.optional(v.array(v.any())),
+    manualFollowupDelay: v.optional(v.number()),
+    firstReminderDelay: v.optional(v.number()),
+    secondReminderDelay: v.optional(v.number()),
+    thirdReminderDelay: v.optional(v.number()),
+    litigationDelay: v.optional(v.number()),
+    firstReminderTemplate: v.optional(v.string()),
+    secondReminderTemplate: v.optional(v.string()),
+    thirdReminderTemplate: v.optional(v.string()),
 
     // Connexion email OAuth (Phase 3)
     emailProvider: v.optional(
@@ -44,6 +59,7 @@ const applicationTables = {
         name: v.string(),
       })
     ),
+    senderName: v.optional(v.string()), // Nom d'affichage pour l'expéditeur (si supporté par le provider)
   }),
 
   invitations: defineTable({

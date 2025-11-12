@@ -682,9 +682,11 @@ export const sendReminder = mutation({
       return { success: true, status: "manual_followup" };
     }
 
-    // Vérifier que la relance existe dans la config
-    const reminderConfig = org.reminderConfig.find((r) => r.reminderNumber === nextReminderNumber);
-    if (!reminderConfig) {
+    // TODO: Adapter cette logique avec reminderSteps (V2 Phase 2.9)
+    // Pour l'instant, on vérifie juste s'il y a assez d'étapes
+    const currentSteps = org.reminderSteps || [];
+    const emailSteps = currentSteps.filter((s: any) => s.type === "email");
+    if (nextReminderNumber > emailSteps.length) {
       // Pas de config pour cette relance → passer en manual_followup
       await ctx.db.patch(args.invoiceId, {
         reminderStatus: "manual_followup",

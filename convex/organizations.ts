@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { normalizeEmail } from "./utils";
+import { getDefaultReminderSteps } from "./reminderDefaults";
 
 /**
  * Mutation pour créer une organisation et son premier utilisateur admin
@@ -28,35 +29,15 @@ export const createOrganizationWithAdmin = mutation({
       throw new Error("Vous appartenez déjà à une organisation");
     }
 
-    // ✅ V2 Phase 2.8 : Créer l'organisation avec reminderConfig flexible
+    // ✅ V2 Phase 2.9 : Créer l'organisation avec reminderSteps flexible
     const organizationId = await ctx.db.insert("organizations", {
       name: args.organizationName,
       senderEmail: existingUser?.email || "",
       createdAt: Date.now(),
-      // Configuration des 3 relances par défaut
-      reminderConfig: [
-        {
-          reminderNumber: 1,
-          delayDays: 7,
-          subject: "Rappel - Facture {numero_facture}",
-          emailTemplate: `Bonjour,\n\nNous constatons que notre facture n°{numero_facture} d'un montant de {montant}€ TTC émise le {date_facture} est arrivée à échéance le {date_echeance}.\n\nPourriez-vous nous confirmer la réception de cette facture et nous indiquer la date de règlement prévue ?\n\nCordialement,`,
-        },
-        {
-          reminderNumber: 2,
-          delayDays: 15,
-          subject: "2ème relance - Facture {numero_facture}",
-          emailTemplate: `Bonjour,\n\nMalgré notre première relance, nous constatons que notre facture n°{numero_facture} d'un montant de {montant}€ TTC reste impayée (échue depuis {jours_retard} jours).\n\nNous vous remercions de procéder au règlement dans les plus brefs délais.\n\nCordialement,`,
-        },
-        {
-          reminderNumber: 3,
-          delayDays: 30,
-          subject: "Dernière relance - Facture {numero_facture}",
-          emailTemplate: `Bonjour,\n\nNous vous informons que notre facture n°{numero_facture} d'un montant de {montant}€ TTC demeure impayée malgré nos précédentes relances ({jours_retard} jours de retard).\n\nSans règlement sous 7 jours, nous serons contraints d'engager une procédure de recouvrement.\n\nCordialement,`,
-        },
-      ],
+      // Configuration des 3 étapes de relance par défaut (2 emails + 1 téléphone)
+      reminderSteps: getDefaultReminderSteps(),
       signature: `L'équipe ${args.organizationName}`,
-      manualFollowupDelay: 45, // Passage en suivi manuel après 45 jours
-      autoSendReminders: false,
+      autoSendEnabled: false,
     });
 
     // Mettre à jour l'utilisateur avec le rôle admin et l'organisation
@@ -367,17 +348,18 @@ export const getCurrentOrganization = query({
       _id: v.id("organizations"),
       name: v.string(),
       senderEmail: v.string(),
-      reminderConfig: v.array(
+      reminderSteps: v.array(
         v.object({
-          reminderNumber: v.number(),
-          delayDays: v.number(),
-          emailTemplate: v.string(),
-          subject: v.optional(v.string()),
+          id: v.string(),
+          delay: v.number(),
+          type: v.union(v.literal("email"), v.literal("phone")),
+          name: v.string(),
+          emailSubject: v.optional(v.string()),
+          emailTemplate: v.optional(v.string()),
         })
       ),
       signature: v.string(),
-      manualFollowupDelay: v.optional(v.number()),
-      autoSendReminders: v.optional(v.boolean()),
+      autoSendEnabled: v.optional(v.boolean()),
       emailProvider: v.optional(
         v.union(
           v.literal("microsoft"),
@@ -391,6 +373,62 @@ export const getCurrentOrganization = query({
         v.object({
           email: v.string(),
           name: v.string(),
+        })
+      ),
+      senderName: v.optional(v.string()),
+    }),
+    v.null()
+  ),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      return null;
+    }
+
+    const organization = await ctx.db.get(user.organizationId);
+    if (!organization) {
+      return null;
+    }
+
+    // ✅ V2 Phase 2.9 : Retourner la nouvelle structure reminderSteps
+    // Si pas de reminderSteps (ancienne data), utiliser les valeurs par défaut
+    return {
+      _id: organization._id,
+      name: organization.name,
+      senderEmail: organization.senderEmail,
+      reminderSteps: organization.reminderSteps || [],
+      signature: organization.signature,
+      autoSendEnabled: organization.autoSendEnabled,
+      emailProvider: organization.emailProvider,
+      emailConnectedAt: organization.emailConnectedAt,
+      emailTokenExpiresAt: organization.emailTokenExpiresAt,
+      emailAccountInfo: organization.emailAccountInfo,
+      senderName: organization.senderName,
+    };
+  },
+});
+
+/**
+ * Query pour récupérer uniquement les paramètres de relance
+ */
+export const getReminderSettings = query({
+  args: {},
+  returns: v.union(
+    v.object({
+      autoSendEnabled: v.boolean(),
+      reminderSteps: v.array(
+        v.object({
+          id: v.string(),
+          delay: v.number(),
+          type: v.union(v.literal("email"), v.literal("phone")),
+          name: v.string(),
+          emailSubject: v.optional(v.string()),
+          emailTemplate: v.optional(v.string()),
         })
       ),
     }),
@@ -412,25 +450,393 @@ export const getCurrentOrganization = query({
       return null;
     }
 
-    // ✅ V2 Phase 2.8 : Retourner la nouvelle structure reminderConfig
     return {
-      _id: organization._id,
-      name: organization.name,
-      senderEmail: organization.senderEmail,
-      reminderConfig: organization.reminderConfig,
-      signature: organization.signature,
-      manualFollowupDelay: organization.manualFollowupDelay,
-      autoSendReminders: organization.autoSendReminders,
-      emailProvider: organization.emailProvider,
-      emailConnectedAt: organization.emailConnectedAt,
-      emailTokenExpiresAt: organization.emailTokenExpiresAt,
-      emailAccountInfo: organization.emailAccountInfo,
+      autoSendEnabled: organization.autoSendEnabled ?? false,
+      reminderSteps: organization.reminderSteps || [],
     };
   },
 });
 
 /**
+ * Mutation pour mettre à jour le nom de l'organisation
+ */
+export const updateOrganizationName = mutation({
+  args: {
+    name: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+
+    if (user.role !== "admin") {
+      throw new Error("Seuls les admins peuvent modifier le nom de l'organisation");
+    }
+
+    await ctx.db.patch(user.organizationId, { name: args.name });
+
+    return null;
+  },
+});
+
+/**
+ * Mutation pour mettre à jour le toggle d'envoi automatique
+ */
+export const updateAutoSendEnabled = mutation({
+  args: {
+    enabled: v.boolean(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+
+    if (user.role !== "admin") {
+      throw new Error("Seuls les admins peuvent modifier ce paramètre");
+    }
+
+    await ctx.db.patch(user.organizationId, { autoSendEnabled: args.enabled });
+
+    return null;
+  },
+});
+
+/**
+ * Mutation pour remplacer complètement le tableau des étapes de relance
+ */
+export const updateReminderSteps = mutation({
+  args: {
+    steps: v.array(
+      v.object({
+        id: v.string(),
+        delay: v.number(),
+        type: v.union(v.literal("email"), v.literal("phone")),
+        name: v.string(),
+        emailSubject: v.optional(v.string()),
+        emailTemplate: v.optional(v.string()),
+      })
+    ),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+
+    if (user.role !== "admin") {
+      throw new Error("Seuls les admins peuvent modifier les étapes de relance");
+    }
+
+    // Validation: Vérifier que les délais sont positifs
+    for (const step of args.steps) {
+      if (step.delay <= 0) {
+        throw new Error("Les délais doivent être supérieurs à 0");
+      }
+    }
+
+    // Validation: Vérifier que les délais sont uniques
+    const delays = args.steps.map((s) => s.delay);
+    const uniqueDelays = new Set(delays);
+    if (delays.length !== uniqueDelays.size) {
+      throw new Error("Chaque étape doit avoir un délai unique");
+    }
+
+    // Validation: Vérifier que les étapes email ont un sujet et un template
+    for (const step of args.steps) {
+      if (step.type === "email") {
+        if (!step.emailSubject || !step.emailTemplate) {
+          throw new Error("Les étapes de type email doivent avoir un sujet et un contenu");
+        }
+      }
+    }
+
+    // Tri automatique par délai croissant
+    const sortedSteps = [...args.steps].sort((a, b) => a.delay - b.delay);
+
+    await ctx.db.patch(user.organizationId, { reminderSteps: sortedSteps });
+
+    return null;
+  },
+});
+
+/**
+ * Mutation pour ajouter une nouvelle étape de relance
+ */
+export const addReminderStep = mutation({
+  args: {
+    delay: v.number(),
+    type: v.union(v.literal("email"), v.literal("phone")),
+    name: v.string(),
+    emailSubject: v.optional(v.string()),
+    emailTemplate: v.optional(v.string()),
+  },
+  returns: v.array(
+    v.object({
+      id: v.string(),
+      delay: v.number(),
+      type: v.union(v.literal("email"), v.literal("phone")),
+      name: v.string(),
+      emailSubject: v.optional(v.string()),
+      emailTemplate: v.optional(v.string()),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+
+    if (user.role !== "admin") {
+      throw new Error("Seuls les admins peuvent ajouter des étapes de relance");
+    }
+
+    const organization = await ctx.db.get(user.organizationId);
+    if (!organization) {
+      throw new Error("Organisation introuvable");
+    }
+
+    // Validation: Délai positif
+    if (args.delay <= 0) {
+      throw new Error("Le délai doit être supérieur à 0");
+    }
+
+    // Validation: Délai unique
+    const currentSteps = organization.reminderSteps || [];
+    const existingDelays = currentSteps.map((s) => s.delay);
+    if (existingDelays.includes(args.delay)) {
+      throw new Error("Une étape existe déjà pour ce délai");
+    }
+
+    // Validation: Email doit avoir sujet et template
+    if (args.type === "email") {
+      if (!args.emailSubject || !args.emailTemplate) {
+        throw new Error("Les étapes de type email doivent avoir un sujet et un contenu");
+      }
+    }
+
+    // Créer la nouvelle étape avec un UUID
+    const newStep = {
+      id: crypto.randomUUID(),
+      delay: args.delay,
+      type: args.type,
+      name: args.name,
+      emailSubject: args.emailSubject,
+      emailTemplate: args.emailTemplate,
+    };
+
+    // Ajouter et trier
+    const updatedSteps = [...currentSteps, newStep].sort(
+      (a, b) => a.delay - b.delay
+    );
+
+    await ctx.db.patch(user.organizationId, { reminderSteps: updatedSteps });
+
+    return updatedSteps;
+  },
+});
+
+/**
+ * Mutation pour mettre à jour une étape de relance existante
+ */
+export const updateReminderStep = mutation({
+  args: {
+    stepId: v.string(),
+    delay: v.optional(v.number()),
+    type: v.optional(v.union(v.literal("email"), v.literal("phone"))),
+    name: v.optional(v.string()),
+    emailSubject: v.optional(v.string()),
+    emailTemplate: v.optional(v.string()),
+  },
+  returns: v.array(
+    v.object({
+      id: v.string(),
+      delay: v.number(),
+      type: v.union(v.literal("email"), v.literal("phone")),
+      name: v.string(),
+      emailSubject: v.optional(v.string()),
+      emailTemplate: v.optional(v.string()),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+
+    if (user.role !== "admin") {
+      throw new Error("Seuls les admins peuvent modifier les étapes de relance");
+    }
+
+    const organization = await ctx.db.get(user.organizationId);
+    if (!organization) {
+      throw new Error("Organisation introuvable");
+    }
+
+    // Trouver l'étape à modifier
+    const currentSteps = organization.reminderSteps || [];
+    const stepIndex = currentSteps.findIndex((s) => s.id === args.stepId);
+    if (stepIndex === -1) {
+      throw new Error("Étape introuvable");
+    }
+
+    const existingStep = currentSteps[stepIndex];
+
+    // Créer l'étape mise à jour
+    const updatedStep = {
+      id: existingStep.id,
+      delay: args.delay ?? existingStep.delay,
+      type: args.type ?? existingStep.type,
+      name: args.name ?? existingStep.name,
+      emailSubject: args.emailSubject ?? existingStep.emailSubject,
+      emailTemplate: args.emailTemplate ?? existingStep.emailTemplate,
+    };
+
+    // Validation: Délai positif
+    if (updatedStep.delay <= 0) {
+      throw new Error("Le délai doit être supérieur à 0");
+    }
+
+    // Validation: Délai unique (sauf si c'est le même délai)
+    const otherSteps = currentSteps.filter((s) => s.id !== args.stepId);
+    const existingDelays = otherSteps.map((s) => s.delay);
+    if (existingDelays.includes(updatedStep.delay)) {
+      throw new Error("Une autre étape existe déjà pour ce délai");
+    }
+
+    // Validation: Email doit avoir sujet et template
+    if (updatedStep.type === "email") {
+      if (!updatedStep.emailSubject || !updatedStep.emailTemplate) {
+        throw new Error("Les étapes de type email doivent avoir un sujet et un contenu");
+      }
+    }
+
+    // Remplacer l'étape et trier
+    const updatedSteps = [
+      ...otherSteps,
+      updatedStep,
+    ].sort((a, b) => a.delay - b.delay);
+
+    await ctx.db.patch(user.organizationId, { reminderSteps: updatedSteps });
+
+    return updatedSteps;
+  },
+});
+
+/**
+ * Mutation pour supprimer une étape de relance
+ */
+export const deleteReminderStep = mutation({
+  args: {
+    stepId: v.string(),
+  },
+  returns: v.array(
+    v.object({
+      id: v.string(),
+      delay: v.number(),
+      type: v.union(v.literal("email"), v.literal("phone")),
+      name: v.string(),
+      emailSubject: v.optional(v.string()),
+      emailTemplate: v.optional(v.string()),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+
+    if (user.role !== "admin") {
+      throw new Error("Seuls les admins peuvent supprimer des étapes de relance");
+    }
+
+    const organization = await ctx.db.get(user.organizationId);
+    if (!organization) {
+      throw new Error("Organisation introuvable");
+    }
+
+    // Vérifier que l'étape existe
+    const currentSteps = organization.reminderSteps || [];
+    const stepExists = currentSteps.some((s) => s.id === args.stepId);
+    if (!stepExists) {
+      throw new Error("Étape introuvable");
+    }
+
+    // Filtrer l'étape à supprimer
+    const updatedSteps = currentSteps.filter((s) => s.id !== args.stepId);
+
+    await ctx.db.patch(user.organizationId, { reminderSteps: updatedSteps });
+
+    return updatedSteps;
+  },
+});
+
+/**
+ * Mutation pour mettre à jour le nom d'affichage de l'expéditeur
+ */
+export const updateSenderName = mutation({
+  args: {
+    senderName: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+
+    if (user.role !== "admin") {
+      throw new Error("Seuls les admins peuvent modifier ce paramètre");
+    }
+
+    await ctx.db.patch(user.organizationId, { senderName: args.senderName });
+
+    return null;
+  },
+});
+
+/**
  * Mutation pour mettre à jour les paramètres de l'organisation
+ * @deprecated Utiliser les nouvelles mutations spécifiques à la place
  */
 export const updateOrganizationSettings = mutation({
   args: {

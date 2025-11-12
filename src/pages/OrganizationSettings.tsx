@@ -1,38 +1,47 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
-import { Settings as SettingsIcon, Mail, Check, X, ExternalLink, Clock } from "lucide-react";
+import { Settings as SettingsIcon, Mail, Phone, Trash2, Edit, Plus, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Card } from "@/components/ui/card";
+import { ReminderStepModal, type ReminderStep } from "@/components/ReminderStepModal";
 
 const TOKEN_REFRESH_THRESHOLD_MS = 10 * 60 * 1000;
 
 export function OrganizationSettings() {
   const organization = useQuery(api.organizations.getCurrentOrganization);
-  const updateSettings = useMutation(api.organizations.updateOrganizationSettings);
+  const updateOrganizationName = useMutation(api.organizations.updateOrganizationName);
+  const updateAutoSendEnabled = useMutation(api.organizations.updateAutoSendEnabled);
+  const addReminderStep = useMutation(api.organizations.addReminderStep);
+  const updateReminderStep = useMutation(api.organizations.updateReminderStep);
+  const deleteReminderStep = useMutation(api.organizations.deleteReminderStep);
+  const updateSenderName = useMutation(api.organizations.updateSenderName);
   const getOAuthUrl = useQuery(api.oauth.getOAuthUrl);
   const disconnectEmail = useMutation(api.oauth.disconnectEmailProvider);
   const refreshTokenIfNeeded = useAction(api.oauth.refreshTokenIfNeeded);
 
-  const [formData, setFormData] = useState({
-    organizationName: "",
-    senderEmail: "",
-    firstReminderDelay: 7,
-    secondReminderDelay: 15,
-    thirdReminderDelay: 30,
-    litigationDelay: 45,
-    firstReminderTemplate: "",
-    secondReminderTemplate: "",
-    thirdReminderTemplate: "",
-    signature: "",
-    autoSendReminders: false,
-  });
+  // Block 1: Organization name
+  const [organizationName, setOrganizationName] = useState("");
+  const [savingName, setSavingName] = useState(false);
 
-  const [submitting, setSubmitting] = useState(false);
+  // Block 2: Email connection
+  const [senderDisplayName, setSenderDisplayName] = useState("");
+  const [savingSenderName, setSavingSenderName] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [refreshingToken, setRefreshingToken] = useState(false);
   const hasAttemptedAutoRefresh = useRef(false);
 
-  // Gérer les messages OAuth (success/error) depuis les query params
+  // Block 3: Reminder settings
+  const [autoSendEnabled, setAutoSendEnabled] = useState(false);
+  const [reminderSteps, setReminderSteps] = useState<ReminderStep[]>([]);
+  const [stepModalOpen, setStepModalOpen] = useState(false);
+  const [editingStep, setEditingStep] = useState<ReminderStep | null>(null);
+
+  // Handle OAuth messages
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const oauthStatus = params.get("oauth");
@@ -40,33 +49,24 @@ export function OrganizationSettings() {
 
     if (oauthStatus === "success") {
       toast.success("Compte Outlook connecté avec succès !");
-      // Nettoyer les query params
-      window.history.replaceState({}, "", window.location.pathname + "?tab=organization");
+      window.history.replaceState({}, "", window.location.pathname);
     } else if (oauthStatus === "error") {
       toast.error(`Erreur de connexion : ${message || "Une erreur est survenue"}`);
-      window.history.replaceState({}, "", window.location.pathname + "?tab=organization");
+      window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
 
-  // Mettre à jour le formulaire quand les données arrivent
+  // Initialize form data
   useEffect(() => {
     if (organization) {
-      setFormData({
-        organizationName: organization.name,
-        senderEmail: organization.senderEmail,
-        firstReminderDelay: organization.firstReminderDelay,
-        secondReminderDelay: organization.secondReminderDelay,
-        thirdReminderDelay: organization.thirdReminderDelay,
-        litigationDelay: organization.litigationDelay,
-        firstReminderTemplate: organization.firstReminderTemplate,
-        secondReminderTemplate: organization.secondReminderTemplate,
-        thirdReminderTemplate: organization.thirdReminderTemplate,
-        signature: organization.signature,
-        autoSendReminders: organization.autoSendReminders ?? false,
-      });
+      setOrganizationName(organization.name);
+      setSenderDisplayName(organization.senderName || "");
+      setAutoSendEnabled(organization.autoSendEnabled ?? false);
+      setReminderSteps(organization.reminderSteps || []);
     }
   }, [organization]);
 
+  // Token refresh logic
   useEffect(() => {
     if (!organization) {
       hasAttemptedAutoRefresh.current = false;
@@ -100,495 +100,418 @@ export function OrganizationSettings() {
     const renewToken = async () => {
       try {
         setRefreshingToken(true);
-        const result = await refreshTokenIfNeeded({});
-        if (result?.refreshed) {
-          toast.success("Token Outlook renouvelé automatiquement");
-        }
+        await refreshTokenIfNeeded({});
       } catch (error: any) {
         console.error("Erreur lors du renouvellement du token:", error);
-        toast.error(
-          error.message ||
-            "Impossible de renouveler automatiquement le token Outlook"
-        );
-        hasAttemptedAutoRefresh.current = false;
+        toast.error("Impossible de renouveler le token. Veuillez reconnecter votre compte.");
       } finally {
         setRefreshingToken(false);
       }
     };
 
-    void renewToken();
+    renewToken();
   }, [organization, refreshTokenIfNeeded]);
 
-  if (organization === undefined) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  // Block 1 handlers
+  const handleSaveOrganizationName = async () => {
+    if (!organizationName.trim()) {
+      toast.error("Le nom de l'organisation ne peut pas être vide");
+      return;
+    }
 
-  if (!organization) {
-    return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-        <p className="text-yellow-800">
-          Vous n'appartenez à aucune organisation.
-        </p>
-      </div>
-    );
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-
+    setSavingName(true);
     try {
-      await updateSettings({
-        name: formData.organizationName,
-        senderEmail: formData.senderEmail,
-        firstReminderDelay: formData.firstReminderDelay,
-        secondReminderDelay: formData.secondReminderDelay,
-        thirdReminderDelay: formData.thirdReminderDelay,
-        litigationDelay: formData.litigationDelay,
-        firstReminderTemplate: formData.firstReminderTemplate,
-        secondReminderTemplate: formData.secondReminderTemplate,
-        thirdReminderTemplate: formData.thirdReminderTemplate,
-        signature: formData.signature,
-        autoSendReminders: formData.autoSendReminders,
-      });
-      toast.success("Réglages du compte sauvegardés");
+      await updateOrganizationName({ name: organizationName.trim() });
+      toast.success("Nom de l'organisation enregistré");
     } catch (error: any) {
-      console.error("Erreur lors de la sauvegarde:", error);
-      toast.error(error.message || "Erreur lors de la sauvegarde");
+      toast.error(error.message || "Erreur lors de l'enregistrement");
     } finally {
-      setSubmitting(false);
+      setSavingName(false);
     }
   };
 
+  // Block 2 handlers
   const handleConnectOutlook = () => {
     if (getOAuthUrl) {
-      // Redirection complète vers l'URL OAuth (pas de popup)
       window.location.href = getOAuthUrl;
+    } else {
+      toast.error("URL OAuth non disponible");
     }
   };
 
-  const handleDisconnect = async () => {
-    if (!confirm("Êtes-vous sûr de vouloir déconnecter votre compte Outlook ?")) {
+  const handleDisconnectEmail = async () => {
+    if (!confirm("Êtes-vous sûr de vouloir déconnecter votre compte email ?")) {
       return;
     }
 
     setDisconnecting(true);
     try {
-      await disconnectEmail();
-      toast.success("Compte Outlook déconnecté");
+      await disconnectEmail({});
+      toast.success("Compte email déconnecté");
     } catch (error: any) {
-      console.error("Erreur lors de la déconnexion:", error);
       toast.error(error.message || "Erreur lors de la déconnexion");
     } finally {
       setDisconnecting(false);
     }
   };
 
-  const tokenExpirationTimestamp = organization?.emailTokenExpiresAt ?? null;
-  const timeUntilExpiration =
-    tokenExpirationTimestamp !== null ? tokenExpirationTimestamp - Date.now() : null;
-  const isTokenExpired =
-    timeUntilExpiration !== null ? timeUntilExpiration <= 0 : false;
-  const isTokenExpiringSoon =
-    timeUntilExpiration !== null &&
-    timeUntilExpiration > 0 &&
-    timeUntilExpiration <= TOKEN_REFRESH_THRESHOLD_MS;
-  const expirationLabel =
-    tokenExpirationTimestamp !== null
-      ? new Date(tokenExpirationTimestamp).toLocaleString("fr-FR", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : "Date inconnue";
-  const minutesUntilExpiration =
-    timeUntilExpiration !== null
-      ? Math.max(0, Math.floor(timeUntilExpiration / (60 * 1000)))
-      : null;
-  const minutesUntilExpirationLabel =
-    minutesUntilExpiration !== null
-      ? `Expire dans environ ${minutesUntilExpiration} min`
-      : "Expiration imminente";
+  const handleSaveSenderName = async () => {
+    setSavingSenderName(true);
+    try {
+      await updateSenderName({ senderName: senderDisplayName.trim() || undefined });
+      toast.success("Nom d'affichage enregistré");
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de l'enregistrement");
+    } finally {
+      setSavingSenderName(false);
+    }
+  };
+
+  // Block 3 handlers
+  const handleToggleAutoSend = async (checked: boolean) => {
+    try {
+      await updateAutoSendEnabled({ enabled: checked });
+      setAutoSendEnabled(checked);
+      toast.success(
+        checked
+          ? "Envoi automatique activé"
+          : "Envoi automatique désactivé"
+      );
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de la mise à jour");
+    }
+  };
+
+  const handleAddStep = () => {
+    setEditingStep(null);
+    setStepModalOpen(true);
+  };
+
+  const handleEditStep = (step: ReminderStep) => {
+    setEditingStep(step);
+    setStepModalOpen(true);
+  };
+
+  const handleDeleteStep = async (stepId: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cette étape ?")) {
+      return;
+    }
+
+    try {
+      const updatedSteps = await deleteReminderStep({ stepId });
+      setReminderSteps(updatedSteps);
+      toast.success("Étape supprimée");
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de la suppression");
+    }
+  };
+
+  const handleSaveStep = async (stepData: Omit<ReminderStep, "id"> & { id?: string }) => {
+    try {
+      if (stepData.id) {
+        // Update existing step
+        const updatedSteps = await updateReminderStep({
+          stepId: stepData.id,
+          delay: stepData.delay,
+          type: stepData.type,
+          name: stepData.name,
+          emailSubject: stepData.emailSubject,
+          emailTemplate: stepData.emailTemplate,
+        });
+        setReminderSteps(updatedSteps);
+        toast.success("Étape mise à jour");
+      } else {
+        // Add new step
+        const updatedSteps = await addReminderStep({
+          delay: stepData.delay,
+          type: stepData.type,
+          name: stepData.name,
+          emailSubject: stepData.emailSubject,
+          emailTemplate: stepData.emailTemplate,
+        });
+        setReminderSteps(updatedSteps);
+        toast.success("Étape ajoutée");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de l'enregistrement");
+    }
+  };
+
+  const sortedSteps = [...reminderSteps].sort((a, b) => a.delay - b.delay);
+  const existingDelays = reminderSteps.map((s) => s.delay);
+
+  if (!organization) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-4"></div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 md:px-6 space-y-8 pt-6">
+    <div className="container mx-auto max-w-4xl p-6 space-y-8">
+      {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <SettingsIcon size={24} />
-          Réglages du compte
-        </h2>
-        <p className="text-gray-600 mt-1">
-          Configurez les paramètres de votre organisation, les délais de relance et les templates d'emails.
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <SettingsIcon className="h-8 w-8" />
+          Réglages
+        </h1>
+        <p className="mt-2 text-lg text-gray-600">
+          Gérez votre profil, vos connexions et vos scénarios de relance.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Nom de l'organisation */}
-        <div className="bg-white rounded-lg border p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Nom de l'organisation</h3>
+      {/* Block 1: Organization Profile */}
+      <fieldset className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+        <legend className="text-lg font-semibold text-gray-900 px-2">
+          Profil de l'entreprise
+        </legend>
+        <div className="space-y-4 mt-4">
           <div>
-            <label
-              htmlFor="organizationName"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Nom
-            </label>
-            <input
+            <Label htmlFor="organizationName">Nom de l'entreprise</Label>
+            <Input
               id="organizationName"
-              type="text"
-              value={formData.organizationName}
-              onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Mon entreprise"
-              required
+              value={organizationName}
+              onChange={(e) => setOrganizationName(e.target.value)}
+              className="mt-1"
             />
           </div>
-        </div>
-
-        {/* Email expéditeur */}
-        <div className="bg-white rounded-lg border p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Email expéditeur</h3>
-          <div>
-            <label
-              htmlFor="senderEmail"
-              className="block text-sm font-medium text-gray-700 mb-1"
+          <div className="flex justify-end">
+            <Button
+              onClick={handleSaveOrganizationName}
+              disabled={savingName || !organizationName.trim()}
             >
-              Adresse email
-            </label>
-            <input
-              id="senderEmail"
-              type="email"
-              value={formData.senderEmail}
-              onChange={(e) => setFormData({ ...formData, senderEmail: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="contact@monentreprise.fr"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Cette adresse sera utilisée comme expéditeur pour les relances automatiques
-            </p>
+              {savingName ? "Enregistrement..." : "Enregistrer"}
+            </Button>
           </div>
         </div>
+      </fieldset>
 
-        {/* Envoi automatique */}
-        <div className="bg-white rounded-lg border p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Envoi automatique des relances
-          </h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Choisissez si les relances générées doivent être envoyées automatiquement ou nécessiter une approbation manuelle.
+      {/* Block 2: Email Connection */}
+      <fieldset className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+        <legend className="text-lg font-semibold text-gray-900 px-2">
+          Connexion du compte email
+        </legend>
+        <div className="space-y-4 mt-4">
+          <p className="text-sm text-gray-600">
+            Connectez votre boîte mail pour envoyer les relances directement depuis votre adresse email.
           </p>
-          <label className="flex items-start gap-3">
-            <input
-              id="autoSendReminders"
-              type="checkbox"
-              checked={formData.autoSendReminders}
-              onChange={(e) =>
-                setFormData({ ...formData, autoSendReminders: e.target.checked })
-              }
-              className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <div>
-              <span className="text-sm font-medium text-gray-900">
-                Envoyer automatiquement les relances générées
-              </span>
-              <p className="text-xs text-gray-600 mt-1">
-                Désactivez cette option pour valider manuellement chaque relance avant envoi (recommandé lors de la phase de test).
-              </p>
-            </div>
-          </label>
-        </div>
 
-        {/* Connexion Email OAuth */}
-        <div className="bg-white rounded-lg border p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                <Mail size={20} />
-                Connexion Email (Outlook)
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Connectez votre compte Outlook pour envoyer automatiquement des relances
-              </p>
-            </div>
-          </div>
-
-          {organization.emailProvider === "microsoft" && organization.emailAccountInfo ? (
-            // Compte connecté
-            <div className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          {organization.emailProvider && organization.emailAccountInfo ? (
+            <Card className="p-4 border-green-200 bg-green-50">
+              <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 mt-0.5">
-                    <Check className="text-green-600" size={20} />
+                  <div className="p-2 bg-green-100 rounded-full">
+                    <Check className="h-5 w-5 text-green-600" />
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div>
                     <p className="font-medium text-green-900">
-                      Connecté en tant que {organization.emailAccountInfo.name}
+                      Compte connecté
                     </p>
                     <p className="text-sm text-green-700 mt-1">
                       {organization.emailAccountInfo.email}
                     </p>
-                    <p className="text-xs text-green-600 mt-2">
-                      Connecté le{" "}
-                      {organization.emailConnectedAt
-                        ? new Date(organization.emailConnectedAt).toLocaleDateString("fr-FR", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "Date inconnue"}
+                    <p className="text-sm text-gray-600 mt-1">
+                      Provider: {organization.emailProvider === "microsoft" ? "Outlook" : organization.emailProvider}
                     </p>
                   </div>
                 </div>
-
-                {/* Statut du token */}
-                <div className="mt-4 flex items-center gap-2">
-                  {refreshingToken ? (
-                    <>
-                      <span className="h-3 w-3 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-                      <span className="text-sm font-medium text-blue-600">
-                        Renouvellement du token en cours...
-                      </span>
-                    </>
-                  ) : isTokenExpired ? (
-                    <>
-                      <div className="flex items-center gap-2 text-orange-600">
-                        <X size={16} />
-                        <span className="text-sm font-medium">Token expiré</span>
-                      </div>
-                      <span className="text-xs text-gray-500">
-                        (Une nouvelle tentative sera effectuée automatiquement lors du prochain envoi)
-                      </span>
-                    </>
-                  ) : isTokenExpiringSoon ? (
-                    <>
-                      <div className="flex items-center gap-2 text-amber-600">
-                        <Clock size={16} />
-                        <span className="text-sm font-medium">Token expirant bientôt</span>
-                      </div>
-                      <span className="text-xs text-gray-500">
-                        ({minutesUntilExpirationLabel}, renouvellement automatique en préparation)
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-2 text-green-600">
-                        <Check size={16} />
-                        <span className="text-sm font-medium">Token actif</span>
-                      </div>
-                      <span className="text-xs text-gray-500">
-                        (Expire le {expirationLabel})
-                      </span>
-                    </>
-                  )}
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDisconnectEmail}
+                  disabled={disconnecting}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  {disconnecting ? "Déconnexion..." : "Déconnecter"}
+                </Button>
               </div>
 
-              {/* Bouton déconnecter */}
-              <button
-                type="button"
-                onClick={handleDisconnect}
-                disabled={disconnecting || refreshingToken}
-                className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <X size={16} />
-                {disconnecting ? "Déconnexion..." : "Déconnecter le compte"}
-              </button>
-            </div>
-          ) : (
-            // Pas de compte connecté
-            <div className="space-y-4">
-              {getOAuthUrl === null ? (
-                // Configuration OAuth manquante
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <p className="text-sm font-medium text-yellow-800 mb-2">
-                    ⚠️ Configuration OAuth manquante
-                  </p>
-                  <p className="text-sm text-yellow-700 mb-3">
-                    Les variables d'environnement OAuth ne sont pas configurées dans Convex.
-                  </p>
-                  <p className="text-xs text-yellow-600">
-                    Consultez <code className="bg-yellow-100 px-1 py-0.5 rounded">OAUTH_SETUP.md</code> pour les instructions de configuration.
-                  </p>
-                </div>
-              ) : (
-                // Configuration OK mais pas connecté
-                <>
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <p className="text-sm text-gray-700">
-                      Aucun compte email connecté. Vous devez connecter un compte Outlook pour pouvoir
-                      envoyer des relances automatiques.
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleConnectOutlook}
-                    disabled={!getOAuthUrl}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              {/* Sender display name */}
+              <div className="mt-4 space-y-2">
+                <Label htmlFor="senderDisplayName">
+                  Nom d'affichage pour l'expéditeur (optionnel)
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="senderDisplayName"
+                    value={senderDisplayName}
+                    onChange={(e) => setSenderDisplayName(e.target.value)}
+                    placeholder={organization.emailAccountInfo.name}
+                  />
+                  <Button
+                    onClick={handleSaveSenderName}
+                    disabled={savingSenderName}
+                    size="sm"
                   >
-                    <ExternalLink size={16} />
-                    Connecter Outlook
-                  </button>
-                </>
+                    {savingSenderName ? "..." : "Enregistrer"}
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-500">
+                  Personnalisez le nom qui apparaît comme expéditeur de vos emails
+                </p>
+              </div>
+
+              {refreshingToken && (
+                <div className="mt-3 flex items-center gap-2 text-sm text-blue-600">
+                  <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span>Renouvellement du token d'accès...</span>
+                </div>
               )}
+            </Card>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <Button
+                variant="outline"
+                className="h-auto py-4 flex items-center justify-center gap-3"
+                disabled
+              >
+                <div className="w-6 h-6 rounded bg-gray-300"></div>
+                <div className="text-left">
+                  <div className="font-medium text-gray-400">Google</div>
+                  <div className="text-xs text-gray-400">Bientôt disponible</div>
+                </div>
+              </Button>
+
+              <Button
+                variant="outline"
+                className="h-auto py-4 flex items-center justify-center gap-3 hover:bg-blue-50"
+                onClick={handleConnectOutlook}
+              >
+                <Mail className="h-6 w-6 text-blue-600" />
+                <div className="text-left">
+                  <div className="font-medium">Outlook</div>
+                  <div className="text-xs text-gray-600">Connecter avec Microsoft</div>
+                </div>
+              </Button>
             </div>
           )}
         </div>
+      </fieldset>
 
-        {/* Délais de relance */}
-        <div className="bg-white rounded-lg border p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Délais de relance</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Configurez les délais (en jours après la date d'échéance) pour chaque type de relance
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                1ère relance (jours)
-              </label>
-              <input
-                type="number"
-                value={formData.firstReminderDelay}
-                onChange={(e) =>
-                  setFormData({ ...formData, firstReminderDelay: parseInt(e.target.value) || 1 })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                min="1"
-              />
+      {/* Block 3: Reminder Management */}
+      <fieldset className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+        <legend className="text-lg font-semibold text-gray-900 px-2">
+          Gestion des relances
+        </legend>
+        <div className="space-y-6 mt-4">
+          {/* Auto-send toggle */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex-1">
+              <Label htmlFor="autoSend" className="text-base font-medium cursor-pointer">
+                Activer l'envoi automatique des emails de relance
+              </Label>
+              <p className="text-sm text-gray-600 mt-1">
+                Les reminders seront toujours créés, mais les emails ne seront envoyés que si cette option est activée
+              </p>
+            </div>
+            <Switch
+              id="autoSend"
+              checked={autoSendEnabled}
+              onCheckedChange={handleToggleAutoSend}
+            />
+          </div>
+
+          {/* Reminder steps sequence */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-gray-900">
+                Séquence de relance
+              </h3>
+              <Button
+                onClick={handleAddStep}
+                size="sm"
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Ajouter une étape
+              </Button>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                2ème relance (jours)
-              </label>
-              <input
-                type="number"
-                value={formData.secondReminderDelay}
-                onChange={(e) =>
-                  setFormData({ ...formData, secondReminderDelay: parseInt(e.target.value) || 1 })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                min="1"
-              />
-            </div>
+            {sortedSteps.length === 0 ? (
+              <Card className="p-8 text-center border-dashed">
+                <p className="text-gray-500">
+                  Aucune étape de relance configurée. Cliquez sur "Ajouter une étape" pour commencer.
+                </p>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {sortedSteps.map((step, index) => (
+                  <Card
+                    key={step.id}
+                    className="p-4 hover:border-gray-400 transition-colors cursor-pointer"
+                    onClick={() => handleEditStep(step)}
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Delay badge */}
+                      <div className="flex-shrink-0 w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                        <span className="font-semibold text-gray-700">J+{step.delay}</span>
+                      </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                3ème relance (jours)
-              </label>
-              <input
-                type="number"
-                value={formData.thirdReminderDelay}
-                onChange={(e) =>
-                  setFormData({ ...formData, thirdReminderDelay: parseInt(e.target.value) || 1 })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                min="1"
-              />
-            </div>
+                      {/* Step info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          {step.type === "email" ? (
+                            <Mail className="h-4 w-4 text-blue-600" />
+                          ) : (
+                            <Phone className="h-4 w-4 text-orange-600" />
+                          )}
+                          <span className="text-sm text-gray-500">
+                            {step.type === "email" ? "Email automatique" : "Appel manuel"}
+                          </span>
+                        </div>
+                        <p className="font-semibold text-gray-900">{step.name}</p>
+                        {step.type === "email" && step.emailSubject && (
+                          <p className="text-sm text-gray-600 mt-1 truncate">
+                            {step.emailSubject}
+                          </p>
+                        )}
+                      </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Contentieux (jours)
-              </label>
-              <input
-                type="number"
-                value={formData.litigationDelay}
-                onChange={(e) =>
-                  setFormData({ ...formData, litigationDelay: parseInt(e.target.value) || 1 })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                min="1"
-              />
-            </div>
+                      {/* Actions */}
+                      <div className="flex-shrink-0 flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditStep(step);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteStep(step.id);
+                          }}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </div>
+      </fieldset>
 
-        {/* Templates d'emails */}
-        <div className="bg-white rounded-lg border p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Templates d'emails</h3>
-          <p className="text-sm text-gray-600 mb-6">
-            Variables disponibles : {"{numero_facture}"}, {"{nom_client}"}, {"{montant}"}, {"{date_facture}"}, {"{date_echeance}"}, {"{jours_retard}"}
-          </p>
-
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Template 1ère relance
-              </label>
-              <textarea
-                value={formData.firstReminderTemplate}
-                onChange={(e) =>
-                  setFormData({ ...formData, firstReminderTemplate: e.target.value })
-                }
-                rows={6}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Votre message de première relance..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Template 2ème relance
-              </label>
-              <textarea
-                value={formData.secondReminderTemplate}
-                onChange={(e) =>
-                  setFormData({ ...formData, secondReminderTemplate: e.target.value })
-                }
-                rows={6}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Votre message de deuxième relance..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Template 3ème relance
-              </label>
-              <textarea
-                value={formData.thirdReminderTemplate}
-                onChange={(e) =>
-                  setFormData({ ...formData, thirdReminderTemplate: e.target.value })
-                }
-                rows={6}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Votre message de troisième relance..."
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Signature */}
-        <div className="bg-white rounded-lg border p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Signature</h3>
-          <textarea
-            value={formData.signature}
-            onChange={(e) => setFormData({ ...formData, signature: e.target.value })}
-            rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Votre signature (nom, téléphone, email...)"
-          />
-        </div>
-
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="bg-blue-600 text-white px-6 py-2 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitting ? "Sauvegarde..." : "Sauvegarder les paramètres"}
-          </button>
-        </div>
-      </form>
+      {/* Step Modal */}
+      <ReminderStepModal
+        open={stepModalOpen}
+        onClose={() => setStepModalOpen(false)}
+        onSave={handleSaveStep}
+        step={editingStep}
+        existingDelays={existingDelays}
+      />
     </div>
   );
 }
