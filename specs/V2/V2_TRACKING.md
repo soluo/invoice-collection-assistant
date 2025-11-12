@@ -1,8 +1,8 @@
 # Suivi Développement V2 - ZenRelance
 
 **Date de création :** 2025-11-05
-**Dernière mise à jour :** 2025-11-06
-**Statut global :** 🟡 En cours (Phase 1.1-1.2-1.3.2 + Phase 2.2 + Phase 2.6 complétées)
+**Dernière mise à jour :** 2025-11-12
+**Statut global :** 🟡 En cours (Phase 1.1-1.2-1.3.2 + Phase 2.2 + Phase 2.5 + Phase 2.6 + Phase 2.8 complétées)
 **Version cible :** 2.0.0
 
 ---
@@ -32,7 +32,7 @@ Sois concis, contente toi de cocher les cases et d'ajouter un récap à la parti
 
 ### Progression globale
 - Phase 1 (Design System) : 11/16 ✅✅✅✅✅✅✅✅✅✅✅⬜⬜⬜⬜⬜
-- Phase 2 (Écrans) : 13/45 ✅✅✅✅✅✅✅⬜⬜⬜
+- Phase 2 (Écrans) : 15/45 ✅✅✅✅✅✅✅✅⬜⬜
 - Phase 3 (Intégrations) : 0/12 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜
 
 ---
@@ -156,7 +156,7 @@ Sois concis, contente toi de cocher les cases et d'ajouter un récap à la parti
 
 ## PHASE 2 : Implémentation Écrans 🖥️
 
-**Statut** : 🟡 En cours (2.2 et 2.6 complétés)
+**Statut** : 🟡 En cours (2.2, 2.5, 2.6, 2.8 complétés/en cours)
 **Prérequis** : Phase 1 complétée
 
 **Note** : Les specs détaillées de chaque écran sont maintenant dans des fichiers séparés :
@@ -181,10 +181,10 @@ Sois concis, contente toi de cocher les cases et d'ajouter un récap à la parti
   - Maquette : `specs/V2/mockups/clients.html`
   - Statut : 🔴 Non commencé
 
-- [ ] **2.5** Clients à Appeler ⭐ NOUVEAU → [`SCREENS/2.5_CallPlan.md`](./SCREENS/2.5_CallPlan.md)
-  - Fichier : `src/pages/CallPlan.tsx` (à créer)
+- [x] **2.5** Clients à Appeler ⭐ NOUVEAU → [`SCREENS/2.5_CallPlan.md`](./SCREENS/2.5_CallPlan.md)
+  - Fichier : `src/pages/CallPlan.tsx` (structure créée)
   - Maquette : `specs/V2/mockups/plan_appels.html`
-  - Statut : 🔴 Non commencé
+  - Statut : 🟡 Structure de base créée
 
 - [x] **2.6** Import Facture → [`SCREENS/2.6_InvoiceUpload.md`](./SCREENS/2.6_InvoiceUpload.md)
   - Fichier : `src/pages/InvoiceUpload.tsx` (refonte)
@@ -196,10 +196,10 @@ Sois concis, contente toi de cocher les cases et d'ajouter un récap à la parti
   - Maquette : `specs/V2/mockups/rapprochement.html`
   - Statut : 🔴 Non commencé
 
-- [ ] **2.8** Agenda des Relances ⭐ NOUVEAU → [`SCREENS/2.8_RemindersAgenda.md`](./SCREENS/2.8_RemindersAgenda.md)
-  - Fichier : `src/pages/RemindersAgenda.tsx` (à créer)
+- [x] **2.8** Agenda des Relances ⭐ NOUVEAU → [`SCREENS/2.8_RemindersAgenda.md`](./SCREENS/2.8_RemindersAgenda.md)
+  - Fichier : `src/pages/Agenda.tsx` (structure créée)
   - Maquette : `specs/V2/mockups/agenda.html`
-  - Statut : 🔴 Non commencé
+  - Statut : 🟡 Structure de base créée
 
 - [ ] **2.9** Réglages → [`SCREENS/2.9_Settings.md`](./SCREENS/2.9_Settings.md)
   - Fichier : `src/pages/Settings.tsx` (refonte)
@@ -321,6 +321,25 @@ Via MCP :
 
 ## 📝 Changelog
 
+### 2025-11-12
+
+**Phase 2.5 & 2.8 : Structure pages Agenda et Plan d'appels** ✅
+- Créées pages vides : `src/pages/Agenda.tsx`, `src/pages/CallPlan.tsx`
+- Routes ajoutées dans `App.tsx` : `/agenda`, `/call-plan`
+- Navigation fonctionnelle (liens déjà présents dans Sidebar/Topbar)
+
+**Améliorations écran Factures** ✅
+- Ajout dropdown actions par facture (marquer envoyée, payée, ajouter paiement)
+- Sélection date d'envoi avec DatePicker
+- Ajout paiements partiels avec gestion multi-paiements (chèques)
+- Workflow états factures amélioré : draft → sent → paid
+- Badge statut "Mega" avec logique prioritaire
+
+**Backend** ✅
+- Schema événements (`events` table) pour tracking actions utilisateurs
+- Mutations paiements : `addPayment`, `markAsPaid`, `markAsSent`
+- Calcul `outstandingBalance` automatique
+
 ### 2025-11-06
 
 **Phase 1.3.8-1.3.9 : Composants shadcn Input, Textarea, Select** ✅
@@ -375,4 +394,4 @@ Via MCP :
 
 ---
 
-**Dernière mise à jour** : 2025-11-06
+**Dernière mise à jour** : 2025-11-12
