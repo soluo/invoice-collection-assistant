@@ -73,8 +73,8 @@ export function Topbar() {
 
   const navItems = [
     { name: "Factures", path: "/invoices", icon: FileText },
+    { name: "Relances", path: "/follow-up", icon: Calendar },
     { name: "Plan d'appels", path: "/call-plan", icon: Phone },
-    { name: "Activité", path: "/follow-up", icon: Calendar },
   ];
 
   return (

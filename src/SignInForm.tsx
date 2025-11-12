@@ -1,18 +1,27 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function SignInForm() {
   const { signIn } = useAuthActions();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   return (
-    <div className="w-full">
-      <form
-        className="flex flex-col gap-4 form-field"
-        onSubmit={async (e) => {
+    <Card>
+      <CardHeader>
+        <CardTitle>Connexion</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={async (e) => {
           e.preventDefault();
           setSubmitting(true);
           setErrorMessage(null);
@@ -50,6 +59,8 @@ export function SignInForm() {
 
           if (signedIn) {
             setSubmitting(false);
+            const returnTo = searchParams.get("returnTo") || "/follow-up";
+            navigate(returnTo);
             return;
           }
 
@@ -58,38 +69,45 @@ export function SignInForm() {
           setSubmitting(false);
         }}
       >
-        <input
-          className="auth-input-field"
-          type="email"
-          name="email"
-          placeholder="Email"
-          required
-        />
-        <input
-          className="auth-input-field"
-          type="password"
-          name="password"
-          placeholder="Mot de passe"
-          required
-        />
-        {errorMessage && (
-          <p className="text-sm text-red-600">{errorMessage}</p>
-        )}
-        <button className="auth-button" type="submit" disabled={submitting}>
-          Se connecter
-        </button>
-        <div className="text-center text-sm text-secondary">
-          <span>Vous n'avez pas de compte ? </span>
-          <button
-            type="button"
-            className="text-primary hover:text-primary-hover hover:underline font-medium cursor-pointer"
-            onClick={() => navigate("/signup")}
-          >
-            Créer une organisation
-          </button>
-        </div>
-      </form>
-    </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              name="email"
+              placeholder="nom@exemple.fr"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Mot de passe</Label>
+            <Input
+              id="password"
+              type="password"
+              name="password"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          {errorMessage && (
+            <p className="text-sm text-red-600">{errorMessage}</p>
+          )}
+          <Button type="submit" disabled={submitting} className="w-full">
+            {submitting ? "Connexion en cours..." : "Se connecter"}
+          </Button>
+          <div className="text-center text-sm text-gray-600">
+            <span>Vous n'avez pas de compte ? </span>
+            <button
+              type="button"
+              className="text-blue-600 hover:text-blue-700 hover:underline font-medium cursor-pointer"
+              onClick={() => navigate("/signup")}
+            >
+              Créer une organisation
+            </button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 

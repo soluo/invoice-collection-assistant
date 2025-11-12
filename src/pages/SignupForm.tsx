@@ -2,6 +2,10 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function SignupForm() {
   const { signIn } = useAuthActions();
@@ -35,7 +39,8 @@ export function SignupForm() {
 
       await signIn("password", signInFormData);
 
-      // La redirection et la création de l'organisation sont gérées dans App.tsx
+      // La création de l'organisation et la redirection sont gérées dans App.tsx
+      // via le useEffect qui détecte pendingOrgData
     } catch (error: any) {
       console.error("Erreur lors de l'inscription:", error);
       toast.error(error.message || "Erreur lors de l'inscription");
@@ -47,105 +52,78 @@ export function SignupForm() {
   return (
     <div className="max-w-md mx-auto mt-20">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          Créer votre organisation
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          RelanceFactures
         </h1>
-        <p className="text-gray-600">
-          Commencez à gérer vos factures en créant votre organisation
-        </p>
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Créez votre compte</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="organizationName">Nom de la société</Label>
+              <Input
+                id="organizationName"
+                type="text"
+                name="organizationName"
+                placeholder="Mon Entreprise SARL"
+                required
+              />
+            </div>
 
-      <div className="bg-white rounded-lg border p-8">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
-            <label
-              htmlFor="organizationName"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Nom de la société
-            </label>
-            <input
-              id="organizationName"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              type="text"
-              name="organizationName"
-              placeholder="Mon Entreprise SARL"
-              required
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="userName">Votre nom</Label>
+              <Input
+                id="userName"
+                type="text"
+                name="userName"
+                placeholder="Alexandre Dupont"
+                required
+              />
+            </div>
 
-          <div>
-            <label
-              htmlFor="userName"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Votre nom
-            </label>
-            <input
-              id="userName"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              type="text"
-              name="userName"
-              placeholder="Alexandre Dupont"
-              required
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                name="email"
+                placeholder="alexandre@monentreprise.fr"
+                required
+              />
+            </div>
 
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              type="email"
-              name="email"
-              placeholder="alexandre@monentreprise.fr"
-              required
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Mot de passe</Label>
+              <Input
+                id="password"
+                type="password"
+                name="password"
+                placeholder="••••••••"
+                required
+                minLength={6}
+              />
+            </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Mot de passe
-            </label>
-            <input
-              id="password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              type="password"
-              name="password"
-              placeholder="••••••••"
-              required
-              minLength={6}
-            />
-          </div>
+            <Button type="submit" disabled={submitting} className="w-full">
+              {submitting ? "Création en cours..." : "Créer mon organisation"}
+            </Button>
 
-          <button
-            className="w-full bg-blue-600 text-white px-6 py-2 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            type="submit"
-            disabled={submitting}
-          >
-            {submitting ? "Création en cours..." : "Créer mon organisation"}
-          </button>
-
-          <div className="text-center text-sm text-gray-600">
-            <span>Vous avez déjà un compte ? </span>
-            <button
-              type="button"
-              className="text-blue-600 hover:text-blue-700 hover:underline font-medium"
-              onClick={() => navigate("/login")}
-            >
-              Se connecter
-            </button>
-          </div>
-        </form>
-      </div>
+            <div className="text-center text-sm text-gray-600">
+              <span>Vous avez déjà un compte ? </span>
+              <button
+                type="button"
+                className="text-blue-600 hover:text-blue-700 hover:underline font-medium cursor-pointer"
+                onClick={() => navigate("/login")}
+              >
+                Se connecter
+              </button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

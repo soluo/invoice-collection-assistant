@@ -5,7 +5,7 @@ import { SignupForm } from "@pages/SignupForm";
 import { AcceptInvitation } from "@pages/AcceptInvitation";
 import { Toaster } from "sonner";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { BrowserRouter, Routes, Route, useNavigate, Navigate, useSearchParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, Navigate, useSearchParams, useLocation } from "react-router-dom";
 import { Dashboard } from "@pages/Dashboard";
 import { OngoingInvoices } from "@pages/OngoingInvoices";
 import { PaidInvoices } from "@pages/PaidInvoices";
@@ -36,6 +36,8 @@ function Content() {
   const createOrganization = useMutation(api.organizations.createOrganizationWithAdmin);
   const acceptInvitation = useMutation(api.organizations.acceptInvitation);
   const { signOut } = useAuthActions();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [orgSetupError, setOrgSetupError] = useState<string | null>(null);
   const [isCreatingOrg, setIsCreatingOrg] = useState(false);
 
@@ -52,6 +54,8 @@ function Content() {
           sessionStorage.removeItem("pendingOrgData");
           setOrgSetupError(null);
           setIsCreatingOrg(false);
+          // Rediriger vers /follow-up après la création de l'organisation
+          void navigate("/follow-up");
         } catch (error: any) {
           console.error("Erreur lors de la création de l'organisation:", error);
           const errorMessage = error.message || "Erreur lors de la création de l'organisation";
@@ -84,6 +88,8 @@ function Content() {
           sessionStorage.removeItem("pendingInvitationData");
           setOrgSetupError(null);
           setIsCreatingOrg(false);
+          // Rediriger vers /follow-up après l'acceptation de l'invitation
+          void navigate("/follow-up");
         } catch (error: any) {
           console.error("Erreur lors de l'acceptation de l'invitation:", error);
           const errorMessage = error.message || "Erreur lors de l'acceptation de l'invitation";
@@ -97,7 +103,16 @@ function Content() {
       };
       void acceptInv();
     }
-  }, [loggedInUser, createOrganization, acceptInvitation, signOut]);
+  }, [loggedInUser, createOrganization, acceptInvitation, signOut, navigate]);
+
+  // Rediriger automatiquement vers /follow-up si l'utilisateur est déjà connecté
+  // et se trouve sur /login ou /signup
+  useEffect(() => {
+    if (loggedInUser && loggedInUser.organizationId &&
+        (location.pathname === "/login" || location.pathname === "/signup")) {
+      void navigate("/follow-up");
+    }
+  }, [loggedInUser, location.pathname, navigate]);
 
   if (loggedInUser === undefined || isCreatingOrg) {
     return (
@@ -158,16 +173,11 @@ function SignInPage() {
   return (
     <div className="max-w-md mx-auto mt-20">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          Gestion de Factures
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          RelanceFactures
         </h1>
-        <p className="text-gray-600">
-          Connectez-vous pour gérer vos factures et relances
-        </p>
       </div>
-      <div className="bg-white rounded-lg border p-8">
-        <SignInForm />
-      </div>
+      <SignInForm />
     </div>
   );
 }
@@ -178,7 +188,7 @@ function InvoiceUploadPage() {
 
   const handleSuccess = () => {
     const returnTo = searchParams.get("returnTo") || "/";
-    navigate(returnTo);
+    void navigate(returnTo);
   };
 
   return <InvoiceUpload onSuccess={handleSuccess} />;

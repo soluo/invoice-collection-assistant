@@ -2,8 +2,8 @@ import React from 'react'
 import { NavLink, useMatch, useResolvedPath } from "react-router-dom";
 import {
   FileText,
+  Calendar,
   Phone,
-  BellRing,
   Settings,
   User,
 } from "lucide-react";
@@ -29,8 +29,8 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { name: "Factures", path: "/invoices", icon: FileText },
+  { name: "Relances", path: "/follow-up", icon: Calendar },
   { name: "Plan d'appels", path: "/call-plan", icon: Phone },
-  { name: "Relances", path: "/follow-up", icon: BellRing },
 ];
 
 const bottomNavItems: NavItem[] = [
