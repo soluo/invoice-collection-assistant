@@ -82,7 +82,6 @@ export function Reminders() {
   const previewOrganization = organization
     ? {
         name: organization.name,
-        senderEmail: organization.senderEmail,
         emailAccountInfo: organization.emailAccountInfo ?? undefined,
       }
     : null;
@@ -316,7 +315,6 @@ function ReminderPreviewModal({ reminder, organization, onClose }: ReminderPrevi
     "Organisation";
   const senderEmail =
     organization?.emailAccountInfo?.email ??
-    organization?.senderEmail ??
     "Email expéditeur non configuré";
 
   return (

@@ -32,7 +32,6 @@ export const createOrganizationWithAdmin = mutation({
     // ✅ V2 Phase 2.9 : Créer l'organisation avec reminderSteps flexible
     const organizationId = await ctx.db.insert("organizations", {
       name: args.organizationName,
-      senderEmail: existingUser?.email || "",
       createdAt: Date.now(),
       // Configuration des 3 étapes de relance par défaut (2 emails + 1 téléphone)
       reminderSteps: getDefaultReminderSteps(),
@@ -347,7 +346,6 @@ export const getCurrentOrganization = query({
     v.object({
       _id: v.id("organizations"),
       name: v.string(),
-      senderEmail: v.string(),
       reminderSteps: v.array(
         v.object({
           id: v.string(),
@@ -400,7 +398,6 @@ export const getCurrentOrganization = query({
     return {
       _id: organization._id,
       name: organization.name,
-      senderEmail: organization.senderEmail,
       reminderSteps: organization.reminderSteps || [],
       signature: organization.signature,
       autoSendEnabled: organization.autoSendEnabled,

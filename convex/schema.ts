@@ -7,7 +7,6 @@ const applicationTables = {
 
   organizations: defineTable({
     name: v.string(), // Nom de la société
-    senderEmail: v.string(), // Email expéditeur pour les relances
     createdAt: v.number(),
 
     // ✅ V2 Phase 2.9 : Configuration flexible des relances avec support téléphone
