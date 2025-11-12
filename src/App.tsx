@@ -14,7 +14,7 @@ import { TeamManagement } from "@pages/TeamManagement";
 import { OrganizationSettings } from "@pages/OrganizationSettings";
 import { Invoices } from "@pages/Invoices";
 import { Reminders } from "@pages/Reminders";
-import { Agenda } from "@pages/Agenda";
+import { FollowUp } from "@pages/FollowUp";
 import { CallPlan } from "@pages/CallPlan";
 import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
@@ -125,7 +125,7 @@ function Content() {
         <>
           <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
           <Route path="/invoices" element={<AppLayout><Invoices /></AppLayout>} />
-          <Route path="/agenda" element={<AppLayout><Agenda /></AppLayout>} />
+          <Route path="/follow-up" element={<AppLayout><FollowUp /></AppLayout>} />
           <Route path="/call-plan" element={<AppLayout><CallPlan /></AppLayout>} />
           <Route path="/reminders" element={<AppLayout><Reminders /></AppLayout>} />
           <Route path="/ongoing" element={<AppLayout><OngoingInvoices /></AppLayout>} />

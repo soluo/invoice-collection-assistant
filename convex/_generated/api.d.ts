@@ -8,10 +8,10 @@
  * @module
  */
 
-import type * as agenda from "../agenda.js";
 import type * as auth from "../auth.js";
 import type * as dev from "../dev.js";
 import type * as events from "../events.js";
+import type * as followUp from "../followUp.js";
 import type * as http from "../http.js";
 import type * as invoices from "../invoices.js";
 import type * as lib_invoiceStatus from "../lib/invoiceStatus.js";
@@ -39,10 +39,10 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
-  agenda: typeof agenda;
   auth: typeof auth;
   dev: typeof dev;
   events: typeof events;
+  followUp: typeof followUp;
   http: typeof http;
   invoices: typeof invoices;
   "lib/invoiceStatus": typeof lib_invoiceStatus;

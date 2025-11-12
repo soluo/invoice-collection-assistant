@@ -45,10 +45,13 @@ export const create = mutation({
       invoiceId: args.invoiceId,
       reminderDate,
       reminderStatus: args.reminderStatus,
-      emailSubject: args.emailSubject,
-      emailContent: args.emailContent,
-      sendStatus: "pending",
+      reminderType: "email", // Relance par email
+      completionStatus: "pending",
       generatedByCron: false,
+      data: {
+        emailSubject: args.emailSubject,
+        emailContent: args.emailContent,
+      },
     });
   },
 });
@@ -122,11 +125,10 @@ export const listForOrganization = query({
           _id: reminder._id,
           reminderDate: reminder.reminderDate,
           reminderStatus: reminder.reminderStatus,
-          sendStatus: reminder.sendStatus ?? "pending",
-          emailSubject: reminder.emailSubject,
-          emailContent: reminder.emailContent,
-          sentAt: reminder.sentAt ?? null,
-          sendError: reminder.sendError ?? null,
+          reminderType: reminder.reminderType,
+          completionStatus: reminder.completionStatus ?? "pending",
+          completedAt: reminder.completedAt ?? null,
+          data: reminder.data ?? null,
           generatedByCron: reminder.generatedByCron ?? false,
           invoice: invoice
             ? {
@@ -164,17 +166,21 @@ export const getReminderForSending = internalQuery({
         userId: v.id("users"),
         organizationId: v.id("organizations"),
         invoiceId: v.id("invoices"),
-        emailSubject: v.string(),
-        emailContent: v.string(),
-        sendStatus: v.optional(
-          v.union(v.literal("pending"), v.literal("sent"), v.literal("failed"))
+        data: v.optional(
+          v.object({
+            emailSubject: v.optional(v.string()),
+            emailContent: v.optional(v.string()),
+          })
+        ),
+        completionStatus: v.optional(
+          v.union(v.literal("pending"), v.literal("completed"), v.literal("failed"))
         ),
       }),
       invoice: v.union(
         v.object({
           _id: v.id("invoices"),
           clientName: v.string(),
-          contactEmail: v.optional(v.string()), // ✅ V2 Phase 2.6 : Renommé de clientEmail
+          contactEmail: v.optional(v.string()),
           createdBy: v.id("users"),
         }),
         v.null()
@@ -196,15 +202,14 @@ export const getReminderForSending = internalQuery({
         userId: reminder.userId,
         organizationId: reminder.organizationId,
         invoiceId: reminder.invoiceId,
-        emailSubject: reminder.emailSubject,
-        emailContent: reminder.emailContent,
-        sendStatus: reminder.sendStatus,
+        data: reminder.data,
+        completionStatus: reminder.completionStatus,
       },
       invoice: invoice
         ? {
             _id: invoice._id,
             clientName: invoice.clientName,
-            contactEmail: invoice.contactEmail, // ✅ V2 Phase 2.6 : Renommé de clientEmail
+            contactEmail: invoice.contactEmail,
             createdBy: invoice.createdBy,
           }
         : null,
@@ -215,7 +220,7 @@ export const getReminderForSending = internalQuery({
 export const markReminderSent = internalMutation({
   args: {
     reminderId: v.id("reminders"),
-    sentAt: v.number(),
+    completedAt: v.number(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -231,11 +236,16 @@ export const markReminderSent = internalMutation({
       throw new Error("Facture associée introuvable");
     }
 
+    // Mettre à jour les données
+    const currentData = reminder.data || {};
     await ctx.db.patch(args.reminderId, {
-      sendStatus: "sent",
-      sentAt: args.sentAt,
-      lastSendAttempt: args.sentAt,
-      sendError: undefined,
+      completionStatus: "completed",
+      completedAt: args.completedAt,
+      data: {
+        ...currentData,
+        lastSendAttempt: args.completedAt,
+        sendError: undefined,
+      },
     });
 
     // ✅ V2 Phase 2.8 : Créer un événement "Relance envoyée"
@@ -263,10 +273,16 @@ export const markReminderFailed = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const reminder = await ctx.db.get(args.reminderId);
+    const currentData = reminder?.data || {};
+
     await ctx.db.patch(args.reminderId, {
-      sendStatus: "failed",
-      lastSendAttempt: args.attemptedAt,
-      sendError: args.error,
+      completionStatus: "failed",
+      data: {
+        ...currentData,
+        lastSendAttempt: args.attemptedAt,
+        sendError: args.error,
+      },
     });
   },
 });
@@ -313,7 +329,7 @@ export const sendReminderEmail = action({
       throw new Error("Accès refusé à cette relance");
     }
 
-    if (context.reminder.sendStatus === "sent") {
+    if (context.reminder.completionStatus === "completed") {
       throw new Error("Cette relance a déjà été envoyée");
     }
 
@@ -393,10 +409,10 @@ export const sendReminderEmail = action({
       },
       body: JSON.stringify({
         message: {
-          subject: context.reminder.emailSubject,
+          subject: context.reminder.data?.emailSubject || "Relance",
           body: {
             contentType: "Text",
-            content: context.reminder.emailContent,
+            content: context.reminder.data?.emailContent || "",
           },
           toRecipients: [
             {
@@ -425,7 +441,7 @@ export const sendReminderEmail = action({
 
     await ctx.runMutation(internal.reminders.markReminderSent, {
       reminderId: args.reminderId,
-      sentAt: attemptTime,
+      completedAt: attemptTime,
     });
 
     return {

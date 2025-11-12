@@ -710,10 +710,13 @@ export const sendReminder = mutation({
       invoiceId: args.invoiceId,
       reminderDate,
       reminderStatus: newReminderStatus,
-      emailSubject: args.emailSubject,
-      emailContent: args.emailContent,
-      sendStatus: "pending",
+      reminderType: "email", // Relance par email
+      completionStatus: "pending",
       generatedByCron: false,
+      data: {
+        emailSubject: args.emailSubject,
+        emailContent: args.emailContent,
+      },
     });
 
     return { success: true, reminderNumber: nextReminderNumber };

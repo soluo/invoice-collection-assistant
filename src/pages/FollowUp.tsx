@@ -1,0 +1,392 @@
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Mail,
+  Phone,
+  Pause,
+  Play,
+  Calendar,
+  Edit,
+  FileText,
+  Check,
+  Bell,
+  FileUp
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
+import { useState } from "react";
+
+export function FollowUp() {
+  const upcomingReminders = useQuery(api.followUp.getUpcomingReminders);
+  const reminderHistory = useQuery(api.followUp.getReminderHistory);
+
+  // Group upcoming reminders by date
+  const groupedReminders = groupRemindersByDate(upcomingReminders || []);
+
+  return (
+    <div className="container mx-auto max-w-6xl py-6">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Relances</h1>
+        <p className="mt-2 text-lg text-gray-600">
+          Suivez ce que le système fait pour vous et ce qui a été fait.
+        </p>
+      </div>
+
+      {/* Tabs */}
+      <Tabs defaultValue="upcoming" className="w-full">
+        <TabsList className="border-b border-gray-200 w-full justify-start rounded-none h-auto p-0 bg-transparent">
+          <TabsTrigger
+            value="upcoming"
+            className="border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 rounded-none px-4 py-3"
+          >
+            À Venir
+            {upcomingReminders && upcomingReminders.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {upcomingReminders.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger
+            value="history"
+            className="border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 rounded-none px-4 py-3"
+          >
+            Historique
+          </TabsTrigger>
+        </TabsList>
+
+        {/* À Venir Tab Content */}
+        <TabsContent value="upcoming" className="mt-6">
+          {upcomingReminders === undefined ? (
+            <div className="text-center py-8 text-gray-500">Chargement...</div>
+          ) : upcomingReminders.length === 0 ? (
+            <div className="text-center py-12">
+              <Bell className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                Aucune relance à venir
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Toutes vos relances sont à jour.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {groupedReminders.today.length > 0 && (
+                <ReminderGroup title="Aujourd'hui" reminders={groupedReminders.today} />
+              )}
+              {groupedReminders.tomorrow.length > 0 && (
+                <ReminderGroup title="Demain" reminders={groupedReminders.tomorrow} />
+              )}
+              {groupedReminders.later.length > 0 && (
+                <ReminderGroup title="Plus tard" reminders={groupedReminders.later} />
+              )}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Historique Tab Content */}
+        <TabsContent value="history" className="mt-6">
+          {reminderHistory === undefined ? (
+            <div className="text-center py-8 text-gray-500">Chargement...</div>
+          ) : reminderHistory.length === 0 ? (
+            <div className="text-center py-12">
+              <FileText className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                Aucun historique
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                L'historique des événements apparaîtra ici.
+              </p>
+            </div>
+          ) : (
+            <EventTimeline events={reminderHistory} />
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// Helper function to group reminders by date
+function groupRemindersByDate(reminders: any[]) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const dayAfterTomorrow = new Date(today);
+  dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+
+  return {
+    today: reminders.filter((r) => {
+      const reminderDate = new Date(r.reminderDate.replace(" ", "T"));
+      reminderDate.setHours(0, 0, 0, 0);
+      return reminderDate.getTime() === today.getTime();
+    }),
+    tomorrow: reminders.filter((r) => {
+      const reminderDate = new Date(r.reminderDate.replace(" ", "T"));
+      reminderDate.setHours(0, 0, 0, 0);
+      return reminderDate.getTime() === tomorrow.getTime();
+    }),
+    later: reminders.filter((r) => {
+      const reminderDate = new Date(r.reminderDate.replace(" ", "T"));
+      reminderDate.setHours(0, 0, 0, 0);
+      return reminderDate.getTime() >= dayAfterTomorrow.getTime();
+    }),
+  };
+}
+
+// Component for a group of reminders
+function ReminderGroup({ title, reminders }: { title: string; reminders: any[] }) {
+  return (
+    <div>
+      <h2 className="text-lg font-semibold text-gray-900 mb-3">{title}</h2>
+      <div className="space-y-4">
+        {reminders.map((reminder) => (
+          <ReminderCard key={reminder._id} reminder={reminder} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Component for a single reminder card
+function ReminderCard({ reminder }: { reminder: any }) {
+  const isEmail = reminder.reminderType === "email";
+  const isPhone = reminder.reminderType === "phone";
+
+  // Color coding based on reminder status
+  const getStatusColor = () => {
+    if (reminder.reminderStatus === "reminder_1") return "blue";
+    if (reminder.reminderStatus === "reminder_2") return "orange";
+    if (reminder.reminderStatus === "reminder_3" || reminder.reminderStatus === "reminder_4") return "red";
+    return "blue";
+  };
+
+  const statusColor = getStatusColor();
+  const bgColor = statusColor === "blue" ? "bg-blue-100" : statusColor === "orange" ? "bg-orange-100" : "bg-red-100";
+  const textColor = statusColor === "blue" ? "text-blue-600" : statusColor === "orange" ? "text-orange-600" : "text-red-600";
+  const badgeColor = statusColor === "blue" ? "text-blue-700" : statusColor === "orange" ? "text-orange-700" : "text-red-700";
+
+  const reminderDate = new Date(reminder.reminderDate.replace(" ", "T"));
+  const formattedDate = reminderDate.toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center gap-4">
+        <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${bgColor} ${textColor}`}>
+          {isEmail && <Mail className="h-5 w-5" />}
+          {isPhone && <Phone className="h-5 w-5" />}
+        </div>
+        <div>
+          <p className="font-semibold text-gray-900">
+            {reminder.invoice?.clientName || "Client inconnu"} ({reminder.invoice?.invoiceNumber || "N/A"})
+          </p>
+          <p className="text-sm text-gray-500">
+            {isEmail && (
+              <>
+                Envoi Email{" "}
+                <span className={`font-medium ${badgeColor}`}>
+                  "{reminder.data?.emailSubject || "Sans objet"}"
+                </span>
+              </>
+            )}
+            {isPhone && (
+              <>
+                Appel téléphonique{" "}
+                <span className={`font-medium ${badgeColor}`}>
+                  {reminder.reminderStatus === "reminder_1" && "Amical"}
+                  {reminder.reminderStatus === "reminder_2" && "Sérieux"}
+                  {(reminder.reminderStatus === "reminder_3" || reminder.reminderStatus === "reminder_4") && "Urgent"}
+                </span>
+              </>
+            )}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">{formattedDate}</p>
+        </div>
+      </div>
+      <div className="flex-shrink-0 text-right">
+        <p className="text-base font-semibold text-gray-900">
+          {reminder.invoice?.amountTTC.toFixed(2)} €
+        </p>
+        {reminder.daysOverdue !== undefined && reminder.daysOverdue > 0 && (
+          <p className="text-sm text-red-600">Retard {reminder.daysOverdue} j</p>
+        )}
+        <div className="mt-2 flex gap-2 justify-end">
+          {isEmail && (
+            <Button variant="ghost" size="sm">
+              <Edit className="h-4 w-4 mr-1" />
+              Modifier
+            </Button>
+          )}
+          {isPhone && (
+            <Button variant="ghost" size="sm">
+              <Check className="h-4 w-4 mr-1" />
+              Marquer fait
+            </Button>
+          )}
+          <Button variant="ghost" size="sm">
+            <Pause className="h-4 w-4 mr-1" />
+            Pause
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Component for event timeline
+function EventTimeline({ events }: { events: any[] }) {
+  // Group events by date
+  const groupedEvents = groupEventsByDate(events);
+
+  return (
+    <div className="flow-root">
+      <ul role="list" className="-mb-8">
+        {Object.entries(groupedEvents).map(([date, dateEvents], dateIndex) => (
+          <li key={date}>
+            <div className="relative pb-8">
+              {dateIndex !== Object.keys(groupedEvents).length - 1 && (
+                <span
+                  className="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200"
+                  aria-hidden="true"
+                />
+              )}
+              <div className="relative flex items-start space-x-3">
+                <div>
+                  <div className="relative px-1">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 ring-8 ring-white">
+                      <span className="text-xs font-semibold text-gray-700">
+                        {formatEventDate(date)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="min-w-0 flex-1 py-1.5">
+                  <div className="space-y-3">
+                    {dateEvents.map((event: any) => (
+                      <EventCard key={event._id} event={event} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// Helper to group events by date
+function groupEventsByDate(events: any[]) {
+  const grouped: Record<string, any[]> = {};
+
+  events.forEach((event) => {
+    const date = new Date(event.eventDate);
+    const dateKey = date.toISOString().split("T")[0];
+
+    if (!grouped[dateKey]) {
+      grouped[dateKey] = [];
+    }
+    grouped[dateKey].push(event);
+  });
+
+  return grouped;
+}
+
+// Format date for timeline
+function formatEventDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }).toUpperCase();
+}
+
+// Component for a single event card
+function EventCard({ event }: { event: any }) {
+  const getEventIcon = () => {
+    switch (event.eventType) {
+      case "invoice_imported":
+        return <FileUp className="h-4 w-4" />;
+      case "invoice_sent":
+      case "invoice_marked_sent":
+        return <Mail className="h-4 w-4" />;
+      case "reminder_sent":
+        return event.metadata?.reminderType === "phone" ? (
+          <Phone className="h-4 w-4" />
+        ) : (
+          <Bell className="h-4 w-4" />
+        );
+      case "payment_registered":
+      case "invoice_marked_paid":
+        return <Check className="h-4 w-4" />;
+      default:
+        return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  const getEventColor = () => {
+    switch (event.eventType) {
+      case "payment_registered":
+      case "invoice_marked_paid":
+        return "bg-green-100 text-green-600";
+      case "reminder_sent":
+        if (event.metadata?.reminderType === "phone") {
+          return "bg-purple-100 text-purple-600";
+        }
+        return "bg-blue-100 text-blue-600";
+      case "invoice_sent":
+      case "invoice_marked_sent":
+        return "bg-blue-100 text-blue-600";
+      default:
+        return "bg-gray-100 text-gray-600";
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+      <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${getEventColor()}`}>
+        {getEventIcon()}
+      </div>
+      <p className="text-sm text-gray-700">
+        {event.description || getDefaultEventDescription(event)}
+      </p>
+    </div>
+  );
+}
+
+// Get default description for event
+function getDefaultEventDescription(event: any) {
+  const invoiceInfo = event.invoice
+    ? `${event.invoice.clientName} (${event.invoice.invoiceNumber})`
+    : "";
+  const amount = event.metadata?.amount ? ` pour ${event.metadata.amount.toFixed(2)} €` : "";
+
+  switch (event.eventType) {
+    case "invoice_imported":
+      return `Facture ${invoiceInfo} importée${amount}`;
+    case "invoice_sent":
+      return `Facture ${invoiceInfo} envoyée${amount}`;
+    case "invoice_marked_sent":
+      return `Facture ${invoiceInfo} marquée comme envoyée${amount}`;
+    case "reminder_sent":
+      if (event.metadata?.reminderType === "phone") {
+        return `Appel téléphonique effectué pour ${invoiceInfo}${amount}`;
+      }
+      return `Relance email envoyée à ${invoiceInfo}${amount}`;
+    case "payment_registered":
+      return `Paiement enregistré pour ${invoiceInfo}${amount}`;
+    case "invoice_marked_paid":
+      return `Facture ${invoiceInfo} marquée comme payée${amount}`;
+    default:
+      return event.eventType;
+  }
+}

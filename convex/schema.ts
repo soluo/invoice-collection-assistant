@@ -134,25 +134,48 @@ const applicationTables = {
       v.literal("reminder_4")
     ),
 
-    emailSubject: v.string(),
-    emailContent: v.string(),
+    // Type de relance : email ou téléphone
+    reminderType: v.union(v.literal("email"), v.literal("phone")),
 
-    sendStatus: v.optional(
-      v.union(v.literal("pending"), v.literal("sent"), v.literal("failed"))
+    // Statut de complétion (générique pour email ET téléphone)
+    completionStatus: v.optional(
+      v.union(v.literal("pending"), v.literal("completed"), v.literal("failed"))
     ),
-    approvedBy: v.optional(v.id("users")),
-    approvedAt: v.optional(v.number()),
-    sentAt: v.optional(v.number()),
-    sendError: v.optional(v.string()),
-    lastSendAttempt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+
+    // Métadonnées
     generatedByCron: v.optional(v.boolean()),
-    isPaused: v.optional(v.boolean()), // ✅ V2 Phase 2.8 : pour mettre en pause une relance planifiée
+    isPaused: v.optional(v.boolean()),
+
+    // Données spécifiques par type (flexible, non indexé)
+    data: v.optional(
+      v.object({
+        // Champs spécifiques email
+        emailSubject: v.optional(v.string()),
+        emailContent: v.optional(v.string()),
+        sendError: v.optional(v.string()),
+        lastSendAttempt: v.optional(v.number()),
+
+        // Champs spécifiques téléphone
+        phoneCallNotes: v.optional(v.string()),
+        phoneCallOutcome: v.optional(
+          v.union(
+            v.literal("completed"), // Contact établi avec succès
+            v.literal("no_answer"), // Pas de réponse
+            v.literal("voicemail"), // Messagerie
+            v.literal("will_pay"), // Client promet de payer
+            v.literal("dispute") // Litige/contestation
+          )
+        ),
+      })
+    ),
   })
     .index("by_invoice", ["invoiceId"])
     .index("by_user", ["userId"])
     .index("by_organization", ["organizationId"])
-    .index("by_sendStatus", ["sendStatus"])
-    .index("by_organization_and_status", ["organizationId", "sendStatus"]),
+    .index("by_completionStatus", ["completionStatus"])
+    .index("by_organization_and_status", ["organizationId", "completionStatus"])
+    .index("by_organization_and_type", ["organizationId", "reminderType"]),
 
   // ✅ V2 Phase 2.8 : Table des événements pour l'historique de l'agenda
   events: defineTable({
@@ -177,6 +200,7 @@ const applicationTables = {
       v.object({
         amount: v.optional(v.number()), // Pour payment_registered
         reminderNumber: v.optional(v.number()), // Pour reminder_sent (1, 2, 3, 4...)
+        reminderType: v.optional(v.string()), // Pour reminder_sent (email ou phone)
         isAutomatic: v.optional(v.boolean()), // Pour reminder_sent (auto vs manuel)
         previousSendStatus: v.optional(v.string()), // Pour invoice_marked_sent
         previousPaymentStatus: v.optional(v.string()), // Pour invoice_marked_paid, payment_registered

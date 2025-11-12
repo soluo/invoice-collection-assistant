@@ -3,8 +3,9 @@ import { v } from "convex/values";
 import { getUserWithOrg, isAdmin } from "./permissions";
 
 /**
- * ✅ V2 Phase 2.8 : Query pour l'onglet "À Venir" de l'agenda
- * Récupère les relances planifiées (sendStatus='pending') non mises en pause
+ * ✅ V2 : Query pour l'onglet "À Venir" de la page Relances
+ * Récupère les relances planifiées (completionStatus='pending') non mises en pause
+ * Supporte les relances email ET téléphone
  */
 export const getUpcomingReminders = query({
   args: {},
@@ -13,15 +14,24 @@ export const getUpcomingReminders = query({
       _id: v.id("reminders"),
       reminderDate: v.string(),
       reminderStatus: v.string(),
-      emailSubject: v.string(),
-      sendStatus: v.optional(v.string()),
+      reminderType: v.string(),
+      completionStatus: v.optional(v.string()),
       isPaused: v.optional(v.boolean()),
+      data: v.optional(
+        v.object({
+          emailSubject: v.optional(v.string()),
+          emailContent: v.optional(v.string()),
+          phoneCallNotes: v.optional(v.string()),
+          phoneCallOutcome: v.optional(v.string()),
+        })
+      ),
       invoice: v.union(
         v.object({
           _id: v.id("invoices"),
           invoiceNumber: v.string(),
           clientName: v.string(),
           contactEmail: v.optional(v.string()),
+          contactPhone: v.optional(v.string()),
           amountTTC: v.number(),
           dueDate: v.string(),
           sendStatus: v.string(),
@@ -41,13 +51,13 @@ export const getUpcomingReminders = query({
       ? await ctx.db
           .query("reminders")
           .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", user.organizationId).eq("sendStatus", "pending")
+            q.eq("organizationId", user.organizationId).eq("completionStatus", "pending")
           )
           .collect()
       : await ctx.db
           .query("reminders")
           .withIndex("by_user", (q) => q.eq("userId", user.userId))
-          .filter((q) => q.eq(q.field("sendStatus"), "pending"))
+          .filter((q) => q.eq(q.field("completionStatus"), "pending"))
           .collect();
 
     // Filtrer les relances non mises en pause et enrichir avec les données de factures
@@ -72,15 +82,17 @@ export const getUpcomingReminders = query({
             _id: reminder._id,
             reminderDate: reminder.reminderDate,
             reminderStatus: reminder.reminderStatus,
-            emailSubject: reminder.emailSubject,
-            sendStatus: reminder.sendStatus,
+            reminderType: reminder.reminderType,
+            completionStatus: reminder.completionStatus,
             isPaused: reminder.isPaused,
+            data: reminder.data,
             invoice: invoice
               ? {
                   _id: invoice._id,
                   invoiceNumber: invoice.invoiceNumber,
                   clientName: invoice.clientName,
                   contactEmail: invoice.contactEmail,
+                  contactPhone: invoice.contactPhone,
                   amountTTC: invoice.amountTTC,
                   dueDate: invoice.dueDate,
                   sendStatus: invoice.sendStatus,
@@ -103,8 +115,8 @@ export const getUpcomingReminders = query({
 });
 
 /**
- * ✅ V2 Phase 2.8 : Query pour l'onglet "Historique" de l'agenda
- * Récupère les événements passés (wrapper vers events.getEventHistory)
+ * ✅ V2 : Query pour l'onglet "Historique" de la page Relances
+ * Récupère les événements passés
  */
 export const getReminderHistory = query({
   args: {
@@ -119,10 +131,11 @@ export const getReminderHistory = query({
       metadata: v.optional(
         v.object({
           amount: v.optional(v.number()),
+          reminderNumber: v.optional(v.number()),
           reminderType: v.optional(v.string()),
           isAutomatic: v.optional(v.boolean()),
-          previousStatus: v.optional(v.string()),
-          newStatus: v.optional(v.string()),
+          previousSendStatus: v.optional(v.string()),
+          previousPaymentStatus: v.optional(v.string()),
         })
       ),
       invoice: v.union(
@@ -192,7 +205,7 @@ export const getReminderHistory = query({
 });
 
 /**
- * ✅ V2 Phase 2.8 : Mutation pour mettre en pause une relance planifiée
+ * ✅ V2 : Mutation pour mettre en pause une relance planifiée
  */
 export const pauseReminder = mutation({
   args: {
@@ -220,7 +233,7 @@ export const pauseReminder = mutation({
     }
 
     // Vérifier que la relance est bien en attente
-    if (reminder.sendStatus !== "pending") {
+    if (reminder.completionStatus !== "pending") {
       throw new Error("Seules les relances en attente peuvent être mises en pause");
     }
 
@@ -234,7 +247,7 @@ export const pauseReminder = mutation({
 });
 
 /**
- * ✅ V2 Phase 2.8 : Mutation pour réactiver une relance mise en pause
+ * ✅ V2 : Mutation pour réactiver une relance mise en pause
  */
 export const resumeReminder = mutation({
   args: {
@@ -264,6 +277,180 @@ export const resumeReminder = mutation({
     // Réactiver
     await ctx.db.patch(args.reminderId, {
       isPaused: false,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * ✅ V2 : Mutation pour modifier une relance email
+ */
+export const updateReminder = mutation({
+  args: {
+    reminderId: v.id("reminders"),
+    emailSubject: v.optional(v.string()),
+    emailContent: v.optional(v.string()),
+    phoneCallNotes: v.optional(v.string()),
+  },
+  returns: v.object({
+    success: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const user = await getUserWithOrg(ctx);
+
+    const reminder = await ctx.db.get(args.reminderId);
+    if (!reminder) {
+      throw new Error("Relance introuvable");
+    }
+
+    // Vérifier que la relance appartient à l'organisation
+    if (reminder.organizationId !== user.organizationId) {
+      throw new Error("Accès refusé à cette relance");
+    }
+
+    // Vérifier les permissions
+    if (!isAdmin(user) && reminder.userId !== user.userId) {
+      throw new Error("Vous ne pouvez modifier que vos propres relances");
+    }
+
+    // Vérifier que la relance est bien en attente
+    if (reminder.completionStatus !== "pending") {
+      throw new Error("Seules les relances en attente peuvent être modifiées");
+    }
+
+    // Préparer les données à mettre à jour
+    const currentData = reminder.data || {};
+    const updatedData = { ...currentData };
+
+    if (args.emailSubject !== undefined) updatedData.emailSubject = args.emailSubject;
+    if (args.emailContent !== undefined) updatedData.emailContent = args.emailContent;
+    if (args.phoneCallNotes !== undefined) updatedData.phoneCallNotes = args.phoneCallNotes;
+
+    // Mettre à jour
+    await ctx.db.patch(args.reminderId, { data: updatedData });
+
+    return { success: true };
+  },
+});
+
+/**
+ * ✅ V2 : Mutation pour reprogrammer une relance
+ */
+export const rescheduleReminder = mutation({
+  args: {
+    reminderId: v.id("reminders"),
+    newReminderDate: v.string(),
+  },
+  returns: v.object({
+    success: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const user = await getUserWithOrg(ctx);
+
+    const reminder = await ctx.db.get(args.reminderId);
+    if (!reminder) {
+      throw new Error("Relance introuvable");
+    }
+
+    // Vérifier que la relance appartient à l'organisation
+    if (reminder.organizationId !== user.organizationId) {
+      throw new Error("Accès refusé à cette relance");
+    }
+
+    // Vérifier les permissions
+    if (!isAdmin(user) && reminder.userId !== user.userId) {
+      throw new Error("Vous ne pouvez reprogrammer que vos propres relances");
+    }
+
+    // Vérifier que la relance est bien en attente
+    if (reminder.completionStatus !== "pending") {
+      throw new Error("Seules les relances en attente peuvent être reprogrammées");
+    }
+
+    // Reprogrammer
+    await ctx.db.patch(args.reminderId, {
+      reminderDate: args.newReminderDate,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * ✅ V2 : Mutation pour marquer un appel téléphonique comme effectué
+ */
+export const completePhoneReminder = mutation({
+  args: {
+    reminderId: v.id("reminders"),
+    outcome: v.union(
+      v.literal("completed"),
+      v.literal("no_answer"),
+      v.literal("voicemail"),
+      v.literal("will_pay"),
+      v.literal("dispute")
+    ),
+    notes: v.optional(v.string()),
+  },
+  returns: v.object({
+    success: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const user = await getUserWithOrg(ctx);
+
+    const reminder = await ctx.db.get(args.reminderId);
+    if (!reminder) {
+      throw new Error("Relance introuvable");
+    }
+
+    // Vérifier que la relance appartient à l'organisation
+    if (reminder.organizationId !== user.organizationId) {
+      throw new Error("Accès refusé à cette relance");
+    }
+
+    // Vérifier les permissions
+    if (!isAdmin(user) && reminder.userId !== user.userId) {
+      throw new Error("Vous ne pouvez compléter que vos propres relances");
+    }
+
+    // Vérifier que c'est une relance téléphonique
+    if (reminder.reminderType !== "phone") {
+      throw new Error("Seules les relances téléphoniques peuvent être marquées comme effectuées");
+    }
+
+    // Vérifier que la relance est bien en attente
+    if (reminder.completionStatus !== "pending") {
+      throw new Error("Cette relance a déjà été effectuée");
+    }
+
+    // Préparer les données mises à jour
+    const currentData = reminder.data || {};
+    const updatedData = {
+      ...currentData,
+      phoneCallOutcome: args.outcome,
+      phoneCallNotes: args.notes,
+    };
+
+    // Marquer comme effectuée
+    await ctx.db.patch(args.reminderId, {
+      completionStatus: "completed",
+      completedAt: Date.now(),
+      data: updatedData,
+    });
+
+    // Créer un événement dans l'historique
+    await ctx.db.insert("events", {
+      organizationId: user.organizationId,
+      userId: user.userId,
+      invoiceId: reminder.invoiceId,
+      reminderId: args.reminderId,
+      eventType: "reminder_sent",
+      eventDate: Date.now(),
+      description: `Appel téléphonique effectué`,
+      metadata: {
+        reminderType: "phone",
+        isAutomatic: false,
+      },
     });
 
     return { success: true };

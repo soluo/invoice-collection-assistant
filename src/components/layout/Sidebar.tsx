@@ -3,7 +3,7 @@ import { NavLink, useMatch, useResolvedPath } from "react-router-dom";
 import {
   FileText,
   Phone,
-  Calendar,
+  BellRing,
   Settings,
   User,
 } from "lucide-react";
@@ -30,7 +30,7 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { name: "Factures", path: "/invoices", icon: FileText },
   { name: "Plan d'appels", path: "/call-plan", icon: Phone },
-  { name: "Activité", path: "/agenda", icon: Calendar },
+  { name: "Relances", path: "/follow-up", icon: BellRing },
 ];
 
 const bottomNavItems: NavItem[] = [
