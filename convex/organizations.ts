@@ -835,65 +835,6 @@ export const updateSenderName = mutation({
 });
 
 /**
- * Mutation pour mettre à jour les paramètres de l'organisation
- * @deprecated Utiliser les nouvelles mutations spécifiques à la place
- */
-export const updateOrganizationSettings = mutation({
-  args: {
-    name: v.optional(v.string()),
-    senderEmail: v.optional(v.string()),
-    firstReminderDelay: v.optional(v.number()),
-    secondReminderDelay: v.optional(v.number()),
-    thirdReminderDelay: v.optional(v.number()),
-    litigationDelay: v.optional(v.number()),
-    firstReminderTemplate: v.optional(v.string()),
-    secondReminderTemplate: v.optional(v.string()),
-    thirdReminderTemplate: v.optional(v.string()),
-    signature: v.optional(v.string()),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Non authentifié");
-    }
-
-    const user = await ctx.db.get(userId);
-    if (!user?.organizationId) {
-      throw new Error("Vous n'appartenez à aucune organisation");
-    }
-
-    // Seuls les admins peuvent modifier les paramètres
-    if (user.role !== "admin") {
-      throw new Error("Seuls les admins peuvent modifier les paramètres de l'organisation");
-    }
-
-    // Mettre à jour uniquement les champs fournis
-    const updates: any = {};
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.senderEmail !== undefined) updates.senderEmail = args.senderEmail;
-    if (args.firstReminderDelay !== undefined)
-      updates.firstReminderDelay = args.firstReminderDelay;
-    if (args.secondReminderDelay !== undefined)
-      updates.secondReminderDelay = args.secondReminderDelay;
-    if (args.thirdReminderDelay !== undefined)
-      updates.thirdReminderDelay = args.thirdReminderDelay;
-    if (args.litigationDelay !== undefined) updates.litigationDelay = args.litigationDelay;
-    if (args.firstReminderTemplate !== undefined)
-      updates.firstReminderTemplate = args.firstReminderTemplate;
-    if (args.secondReminderTemplate !== undefined)
-      updates.secondReminderTemplate = args.secondReminderTemplate;
-    if (args.thirdReminderTemplate !== undefined)
-      updates.thirdReminderTemplate = args.thirdReminderTemplate;
-    if (args.signature !== undefined) updates.signature = args.signature;
-
-    await ctx.db.patch(user.organizationId, updates);
-
-    return null;
-  },
-});
-
-/**
  * Query publique pour récupérer les détails d'une invitation par token
  */
 export const getInvitationByToken = query({

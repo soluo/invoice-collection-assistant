@@ -28,16 +28,6 @@ const applicationTables = {
     // Paramètres d'envoi automatique (Phase 3)
     autoSendEnabled: v.optional(v.boolean()), // Par défaut : false
 
-    // Anciens champs (à supprimer après migration)
-    manualFollowupDelay: v.optional(v.number()),
-    firstReminderDelay: v.optional(v.number()),
-    secondReminderDelay: v.optional(v.number()),
-    thirdReminderDelay: v.optional(v.number()),
-    litigationDelay: v.optional(v.number()),
-    firstReminderTemplate: v.optional(v.string()),
-    secondReminderTemplate: v.optional(v.string()),
-    thirdReminderTemplate: v.optional(v.string()),
-
     // Connexion email OAuth (Phase 3)
     emailProvider: v.optional(
       v.union(

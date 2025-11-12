@@ -23,18 +23,14 @@ export function ReminderModal({ invoice, currentStatus, onClose }: ReminderModal
 
   // Déterminer le template selon le nombre de relances déjà envoyées
   const getTemplateFromReminderCount = (reminderCount: number) => {
-    if (!settings) return "";
+    if (!settings || !settings.reminderSteps) return "";
 
-    switch (reminderCount) {
-      case 0:
-        return settings.firstReminderTemplate;
-      case 1:
-        return settings.secondReminderTemplate;
-      case 2:
-        return settings.thirdReminderTemplate;
-      default:
-        return ""; // 3+ relances = contentieux
-    }
+    // Filtrer uniquement les étapes de type email
+    const emailSteps = settings.reminderSteps.filter(step => step.type === "email");
+
+    // Récupérer l'étape correspondant au nombre de relances
+    const step = emailSteps[reminderCount];
+    return step?.emailTemplate || "";
   };
 
   // Déterminer le nouveau statut selon le nombre de relances
