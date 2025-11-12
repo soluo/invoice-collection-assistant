@@ -16,6 +16,7 @@ import { Invoices } from "@pages/Invoices";
 import { Reminders } from "@pages/Reminders";
 import { FollowUp } from "@pages/FollowUp";
 import { CallPlan } from "@pages/CallPlan";
+import { Home } from "@/components/Home";
 import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
@@ -123,7 +124,8 @@ function Content() {
     <Routes>
       {loggedInUser ? (
         <>
-          <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
+          <Route path="/" element={<Home isAuthenticated={true} />} />
+          <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
           <Route path="/invoices" element={<AppLayout><Invoices /></AppLayout>} />
           <Route path="/follow-up" element={<AppLayout><FollowUp /></AppLayout>} />
           <Route path="/call-plan" element={<AppLayout><CallPlan /></AppLayout>} />
@@ -141,10 +143,11 @@ function Content() {
         </>
       ) : (
         <>
+          <Route path="/" element={<Home isAuthenticated={false} />} />
           <Route path="/login" element={<SignInPage />} />
           <Route path="/signup" element={<SignupForm />} />
           <Route path="/accept-invitation/:token" element={<AcceptInvitation />} />
-          <Route path="*" element={<Navigate to="/login" />} />
+          <Route path="*" element={<Navigate to="/" />} />
         </>
       )}
     </Routes>
