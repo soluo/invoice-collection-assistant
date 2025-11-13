@@ -849,7 +849,9 @@ async function createReminderRecord(
   dateStr: string,
   generatedByCron: boolean
 ): Promise<Id<"reminders">> {
-  const reminderDate = `${dateStr} 04:00:00`; // Planifié à 4h du matin
+  // Utiliser l'heure configurée dans l'organisation (défaut: 10:00)
+  const sendTime = org.reminderSendTime || "10:00";
+  const reminderDate = `${dateStr} ${sendTime}:00`;
 
   // Calculer les jours de retard depuis l'échéance réelle (pour affichage)
   const dueDate = new Date(invoice.dueDate);

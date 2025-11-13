@@ -26,6 +26,7 @@ const applicationTables = {
 
     // Paramètres d'envoi automatique (Phase 3)
     autoSendEnabled: v.optional(v.boolean()), // Par défaut : false
+    reminderSendTime: v.optional(v.string()), // Heure d'envoi quotidienne (format "HH:MM", défaut: "10:00")
 
     // Connexion email OAuth (Phase 3)
     emailProvider: v.optional(

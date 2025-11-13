@@ -20,6 +20,7 @@ export function OrganizationSettings() {
   const updateReminderStep = useMutation(api.organizations.updateReminderStep);
   const deleteReminderStep = useMutation(api.organizations.deleteReminderStep);
   const updateSenderName = useMutation(api.organizations.updateSenderName);
+  const updateReminderSendTime = useMutation(api.organizations.updateReminderSendTime);
   const getOAuthUrl = useQuery(api.oauth.getOAuthUrl);
   const disconnectEmail = useMutation(api.oauth.disconnectEmailProvider);
   const refreshTokenIfNeeded = useAction(api.oauth.refreshTokenIfNeeded);
@@ -37,6 +38,8 @@ export function OrganizationSettings() {
 
   // Block 3: Reminder settings
   const [autoSendEnabled, setAutoSendEnabled] = useState(false);
+  const [reminderSendTime, setReminderSendTime] = useState("10:00");
+  const [savingSendTime, setSavingSendTime] = useState(false);
   const [reminderSteps, setReminderSteps] = useState<ReminderStep[]>([]);
   const [stepModalOpen, setStepModalOpen] = useState(false);
   const [editingStep, setEditingStep] = useState<ReminderStep | null>(null);
@@ -62,6 +65,7 @@ export function OrganizationSettings() {
       setOrganizationName(organization.name);
       setSenderDisplayName(organization.senderName || "");
       setAutoSendEnabled(organization.autoSendEnabled ?? false);
+      setReminderSendTime(organization.reminderSendTime || "10:00");
       setReminderSteps(organization.reminderSteps || []);
     }
   }, [organization]);
@@ -179,6 +183,35 @@ export function OrganizationSettings() {
       );
     } catch (error: any) {
       toast.error(error.message || "Erreur lors de la mise à jour");
+    }
+  };
+
+  const handleSendTimeChange = async (newTime: string) => {
+    // Validation frontend
+    const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(newTime)) {
+      toast.error("Format d'heure invalide");
+      return;
+    }
+
+    const [hours] = newTime.split(":").map(Number);
+    if (hours < 6 || hours >= 22) {
+      toast.error("L'heure d'envoi doit être entre 06:00 et 21:59");
+      return;
+    }
+
+    setReminderSendTime(newTime);
+    setSavingSendTime(true);
+
+    try {
+      await updateReminderSendTime({ sendTime: newTime });
+      toast.success("Heure d'envoi mise à jour");
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de la sauvegarde");
+      // Revert on error
+      setReminderSendTime(organization?.reminderSendTime || "10:00");
+    } finally {
+      setSavingSendTime(false);
     }
   };
 
@@ -413,6 +446,34 @@ export function OrganizationSettings() {
               checked={autoSendEnabled}
               onCheckedChange={handleToggleAutoSend}
             />
+          </div>
+
+          {/* Reminder send time */}
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <Label htmlFor="reminderSendTime" className="text-base font-medium">
+              Heure d'envoi quotidienne
+            </Label>
+            <p className="text-sm text-gray-600 mt-1 mb-3">
+              Les relances automatiques seront générées quotidiennement à cette heure
+            </p>
+            <div className="flex items-center gap-3">
+              <Input
+                id="reminderSendTime"
+                type="time"
+                value={reminderSendTime}
+                onChange={(e) => handleSendTimeChange(e.target.value)}
+                disabled={savingSendTime}
+                className="w-40"
+                min="06:00"
+                max="21:59"
+              />
+              {savingSendTime && (
+                <span className="text-sm text-gray-500">Enregistrement...</span>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Plage autorisée : 06:00 - 21:59
+            </p>
           </div>
 
           {/* Reminder steps sequence */}

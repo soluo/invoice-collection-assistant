@@ -37,6 +37,7 @@ export const createOrganizationWithAdmin = mutation({
       reminderSteps: getDefaultReminderSteps(),
       signature: `L'équipe ${args.organizationName}`,
       autoSendEnabled: false,
+      reminderSendTime: "10:00", // Heure d'envoi par défaut: 10h du matin
     });
 
     // Mettre à jour l'utilisateur avec le rôle admin et l'organisation
@@ -358,6 +359,7 @@ export const getCurrentOrganization = query({
       ),
       signature: v.string(),
       autoSendEnabled: v.optional(v.boolean()),
+      reminderSendTime: v.optional(v.string()),
       emailProvider: v.optional(
         v.union(
           v.literal("microsoft"),
@@ -401,6 +403,7 @@ export const getCurrentOrganization = query({
       reminderSteps: organization.reminderSteps || [],
       signature: organization.signature,
       autoSendEnabled: organization.autoSendEnabled,
+      reminderSendTime: organization.reminderSendTime,
       emailProvider: organization.emailProvider,
       emailConnectedAt: organization.emailConnectedAt,
       emailTokenExpiresAt: organization.emailTokenExpiresAt,
@@ -826,6 +829,47 @@ export const updateSenderName = mutation({
     }
 
     await ctx.db.patch(user.organizationId, { senderName: args.senderName });
+
+    return null;
+  },
+});
+
+/**
+ * Mutation pour mettre à jour l'heure d'envoi quotidienne des relances
+ */
+export const updateReminderSendTime = mutation({
+  args: {
+    sendTime: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+
+    if (user.role !== "admin") {
+      throw new Error("Seuls les admins peuvent modifier ce paramètre");
+    }
+
+    // Validation du format HH:MM
+    const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(args.sendTime)) {
+      throw new Error("Format d'heure invalide. Utilisez le format HH:MM (ex: 10:00)");
+    }
+
+    // Validation de la plage horaire (06:00 - 21:59)
+    const [hours, minutes] = args.sendTime.split(":").map(Number);
+    if (hours < 6 || hours >= 22) {
+      throw new Error("L'heure d'envoi doit être entre 06:00 et 21:59");
+    }
+
+    await ctx.db.patch(user.organizationId, { reminderSendTime: args.sendTime });
 
     return null;
   },
