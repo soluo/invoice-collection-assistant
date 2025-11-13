@@ -300,7 +300,8 @@ Construit `"reminder_X"` depuis `number`
   paidAmount?: number,
   paidDate?: string,
   reminderStatus: "none" | "reminder_1" | ... | "manual_followup",
-  lastReminderDate?: string
+  lastReminderDate?: string,
+  overdueDetectedDate?: string // YYYY-MM-DD - Date de première détection en retard par le cron
 }
 ```
 
@@ -390,4 +391,142 @@ Construit `"reminder_X"` depuis `number`
 
 ---
 
-**Dernière mise à jour** : 2025-11-07
+## 🤖 Génération Automatique des Relances
+
+### Principe de fonctionnement
+
+Un **cron quotidien à 4h du matin** analyse toutes les factures impayées/partielles dont l'échéance est dépassée.
+
+### Gestion des factures anciennes (import legacy)
+
+**Problème** : Une entreprise peut importer des factures déjà en retard de 45+ jours. Il ne faut PAS générer les 3 relances d'un coup.
+
+**Solution adoptée** : **Délais depuis détection** + **Jours de retard depuis échéance réelle**
+
+#### Champ clé : `overdueDetectedDate`
+
+Ce champ enregistre la **date de première détection** du retard par le cron (format YYYY-MM-DD).
+
+#### Logique de génération
+
+**1. Première détection (overdueDetectedDate absent)** :
+- Le cron marque `overdueDetectedDate = aujourd'hui`
+- Génère immédiatement la **1ère relance** (reminder_1)
+- Planifie les suivantes selon les délais configurés **depuis la date de détection**
+
+**2. Relances suivantes** :
+- Calcul des jours depuis `overdueDetectedDate`
+- Génère la relance N quand `jours_depuis_détection >= delay_de_l'étape_N`
+- Respect des intervalles configurés dans `reminderSteps`
+
+**Exemple concret** : Facture échue depuis 45 jours, config J+7, J+14, J+30
+
+```
+Jour 1 (cron détecte la facture) :
+- overdueDetectedDate = 2025-11-12
+- Génère reminder_1 immédiatement
+- Affichage client : "En retard de 45 jours" (calculé depuis dueDate)
+
+Jour 8 (7 jours après détection) :
+- 7 jours >= 7 (delay de l'étape 2)
+- Génère reminder_2
+- Affichage : "En retard de 52 jours"
+
+Jour 15 (14 jours après détection) :
+- 14 jours >= 14 (delay de l'étape 3)
+- Génère reminder_3
+- Affichage : "En retard de 59 jours"
+
+Jour 31 (30 jours après détection) :
+- Plus d'étapes email → passage en manual_followup
+```
+
+### Gestion des relances téléphoniques
+
+Les étapes de type `phone` dans `reminderSteps` sont **générées automatiquement** par le cron mais **complétées manuellement** :
+
+1. Le cron crée un enregistrement `reminder` avec :
+   - `reminderType: "phone"`
+   - `completionStatus: "pending"`
+   - `generatedByCron: true`
+
+2. L'utilisateur voit la tâche dans l'agenda "À Venir"
+
+3. L'utilisateur peut :
+   - Modifier la date du rappel si nécessaire
+   - Marquer comme effectué après l'appel
+   - Ajouter des notes dans `data.phoneCallNotes`
+   - Renseigner le résultat dans `data.phoneCallOutcome`
+
+**Avantage** : Utilise le même système que les emails, tout en respectant la nature manuelle des appels.
+
+### Affichage des jours de retard
+
+**Référence** : `dueDate` (date d'échéance réelle)
+
+```typescript
+const dueDate = new Date(invoice.dueDate);
+const now = new Date();
+const daysPastDue = Math.max(0, Math.floor((now - dueDate) / (1000 * 60 * 60 * 24)));
+```
+
+**Pourquoi ?** Fidélité à la réalité pour le client. Une facture échue depuis 45 jours affiche "45 jours de retard", même si détectée récemment.
+
+### Fonction de génération
+
+**Fichier** : `convex/cron.ts`
+
+```typescript
+export const dailyReminderGeneration = internalMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    // Parcourt toutes les organisations
+    // Pour chaque facture impayée/partielle échue :
+    //   - Appelle generateInvoiceReminder(invoiceId, orgId, currentDate)
+  }
+});
+```
+
+**Fichier** : `convex/reminders.ts`
+
+```typescript
+export const generateInvoiceReminder = internalMutation({
+  args: {
+    invoiceId: v.id("invoices"),
+    organizationId: v.id("organizations"),
+    currentDate: v.optional(v.string()), // Pour tests (YYYY-MM-DD)
+  },
+  returns: v.union(...),
+  handler: async (ctx, args) => {
+    // 1. Vérifier si overdueDetectedDate existe
+    // 2. Si absent → marquer + générer reminder_1
+    // 3. Si présent → calculer jours depuis détection + générer reminder_N si délai atteint
+    // 4. Support email ET téléphone
+  }
+});
+```
+
+### Tests en développement
+
+Le paramètre `currentDate` permet de simuler une exécution à une date précise :
+
+```typescript
+// Test manuel depuis le dashboard Convex
+await ctx.runMutation(internal.reminders.generateInvoiceReminder, {
+  invoiceId: "jx7abc123...",
+  organizationId: "jx7def456...",
+  currentDate: "2025-12-25", // Simule l'exécution le 25 décembre
+});
+```
+
+### Idempotence
+
+La fonction peut être exécutée plusieurs fois par jour sans dupliquer les relances :
+- Vérification de `lastReminderDate` (au moins 1 jour d'écart)
+- Vérification de `reminderStatus` actuel
+- Calcul précis des délais depuis `overdueDetectedDate`
+
+---
+
+**Dernière mise à jour** : 2025-11-12

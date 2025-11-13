@@ -116,6 +116,7 @@ const applicationTables = {
       v.literal("manual_followup") // Fin des relances auto → suivi manuel
     ),
     lastReminderDate: v.optional(v.string()), // Date de dernière relance envoyée
+    overdueDetectedDate: v.optional(v.string()), // Date de première détection en retard par le cron (YYYY-MM-DD)
   })
     .index("by_user", ["userId"])
     .index("by_due_date", ["dueDate"])
