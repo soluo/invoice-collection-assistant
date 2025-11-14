@@ -6,7 +6,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search, Plus } from "lucide-react";
 import { InvoicesList } from "@components/InvoicesList";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 
 type SortField = "invoiceDate" | "amountTTC" | "outstandingBalance" | "dueDate";
@@ -20,7 +20,7 @@ export function Invoices() {
 
   // ===== LIRE DEPUIS L'URL (source de vérité unique) =====
   const search = searchParams.get("search") || "";
-  const status = searchParams.get("status") || "all";
+  const mainStatus = searchParams.get("mainStatus") || "all";
   const amount = searchParams.get("amount") || "";
   const userId = searchParams.get("userId") || "";
 
@@ -62,7 +62,7 @@ export function Invoices() {
       ? {
           filterByUserId: userId ? (userId as Id<"users">) : undefined,
           searchQuery: search || undefined,
-          status: status !== "all" ? status : undefined,
+          mainStatus: mainStatus !== "all" ? (mainStatus as any) : undefined,
           amountFilter: amountValue,
           sortBy,
           sortOrder,
@@ -188,33 +188,46 @@ export function Invoices() {
             />
           </div>
 
-          {/* Filtre Statut */}
+          {/* Filtre État */}
           <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-              Statut
+            <label htmlFor="mainStatus" className="block text-sm font-medium text-gray-700 mb-2">
+              État
             </label>
             <Select
-              value={status}
+              value={mainStatus}
               onValueChange={(value) => {
                 const params = Object.fromEntries(searchParams);
                 if (value !== "all") {
-                  params.status = value;
+                  params.mainStatus = value;
                 } else {
-                  delete params.status;
+                  delete params.mainStatus;
                 }
                 setSearchParams(params);
               }}
             >
-              <SelectTrigger id="status">
-                <SelectValue placeholder="Tous les statuts" />
+              <SelectTrigger id="mainStatus">
+                <SelectValue placeholder="Tous les états" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="overdue">En retard</SelectItem>
-                <SelectItem value="partial_payment">Paiement partiel</SelectItem>
-                <SelectItem value="pending">En attente</SelectItem>
-                <SelectItem value="paid">Payée</SelectItem>
-                <SelectItem value="litigation">En litige</SelectItem>
+                <SelectItem value="all">Tous les états</SelectItem>
+
+                <SelectGroup>
+                  <SelectLabel>Par envoi</SelectLabel>
+                  <SelectItem value="a-envoyer">À envoyer</SelectItem>
+                  <SelectItem value="envoyee">Envoyée</SelectItem>
+                </SelectGroup>
+
+                <SelectGroup>
+                  <SelectLabel>Par paiement</SelectLabel>
+                  <SelectItem value="non-payee">En attente</SelectItem>
+                  <SelectItem value="payee">Payée</SelectItem>
+                  <SelectItem value="en-retard">En retard</SelectItem>
+                </SelectGroup>
+
+                <SelectGroup>
+                  <SelectLabel>Par relance</SelectLabel>
+                  <SelectItem value="relance">Relance en cours</SelectItem>
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>

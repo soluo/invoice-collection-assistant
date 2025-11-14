@@ -36,7 +36,7 @@ export const getUpcomingReminders = query({
           dueDate: v.string(),
           sendStatus: v.string(),
           paymentStatus: v.string(),
-          reminderStatus: v.string(),
+          reminderStatus: v.optional(v.string()),
         }),
         v.null()
       ),

@@ -85,7 +85,7 @@ export const setupTestData = internalMutation({
       dueDate: "2025-11-09", // Échéance aujourd'hui
       sendStatus: "sent",
       paymentStatus: "unpaid",
-      reminderStatus: "none",
+      // reminderStatus optionnel - undefined = aucune relance
     });
     invoiceIds.push(invoice1);
 
@@ -140,7 +140,7 @@ export const setupTestData = internalMutation({
       dueDate: "2025-11-10", // Échéance demain
       sendStatus: "sent",
       paymentStatus: "unpaid",
-      reminderStatus: "none",
+      // reminderStatus optionnel - undefined = aucune relance
     });
     invoiceIds.push(invoice4);
 
@@ -158,7 +158,7 @@ export const setupTestData = internalMutation({
       sendStatus: "sent",
       paymentStatus: "paid", // Payée
       paidDate: "2025-11-08",
-      reminderStatus: "none",
+      // reminderStatus optionnel - undefined = aucune relance
     });
     invoiceIds.push(invoice5);
 
@@ -175,7 +175,7 @@ export const setupTestData = internalMutation({
       dueDate: "2025-11-09",
       sendStatus: "pending", // Pas encore envoyée
       paymentStatus: "unpaid",
-      reminderStatus: "none",
+      // reminderStatus optionnel - undefined = aucune relance
     });
     invoiceIds.push(invoice6);
 

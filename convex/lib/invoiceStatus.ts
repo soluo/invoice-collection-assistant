@@ -8,7 +8,6 @@
 export type SendStatus = "pending" | "sent";
 export type PaymentStatus = "unpaid" | "partial" | "pending_payment" | "paid";
 export type ReminderStatus =
-  | "none"
   | "reminder_1"
   | "reminder_2"
   | "reminder_3"
@@ -39,7 +38,7 @@ export interface InvoiceDisplayInfo {
 interface InvoiceData {
   sendStatus: SendStatus;
   paymentStatus: PaymentStatus;
-  reminderStatus: ReminderStatus;
+  reminderStatus?: ReminderStatus;
   dueDate: string;
   amountTTC: number;
   paidAmount?: number;
@@ -87,7 +86,7 @@ export function getInvoiceDisplayInfo(
   } else if (invoice.reminderStatus === "manual_followup") {
     // Fin des relances automatiques → suivi manuel
     mainStatus = "manual_followup";
-  } else if (invoice.reminderStatus !== "none") {
+  } else if (invoice.reminderStatus) {
     // En cours de relance (reminder_1, reminder_2, etc.)
     mainStatus = invoice.reminderStatus as MainStatus;
   } else if (isOverdue) {
@@ -115,16 +114,16 @@ export function getInvoiceDisplayInfo(
  * Extrait le numéro de relance depuis un ReminderStatus
  *
  * @param reminderStatus - Le statut de relance (ex: "reminder_2")
- * @returns Le numéro de relance (ex: 2), ou 0 si "none" ou "manual_followup"
+ * @returns Le numéro de relance (ex: 2), ou 0 si undefined ou "manual_followup"
  *
  * @example
  * getReminderNumber("reminder_1") // 1
  * getReminderNumber("reminder_3") // 3
- * getReminderNumber("none") // 0
+ * getReminderNumber(undefined) // 0
  * getReminderNumber("manual_followup") // 0
  */
-export function getReminderNumber(reminderStatus: ReminderStatus): number {
-  if (reminderStatus === "none" || reminderStatus === "manual_followup") {
+export function getReminderNumber(reminderStatus?: ReminderStatus): number {
+  if (!reminderStatus || reminderStatus === "manual_followup") {
     return 0;
   }
 
@@ -137,15 +136,16 @@ export function getReminderNumber(reminderStatus: ReminderStatus): number {
  * Construit un ReminderStatus depuis un numéro
  *
  * @param reminderNumber - Le numéro de relance (1, 2, 3, 4...)
- * @returns Le ReminderStatus correspondant (ex: "reminder_2")
+ * @returns Le ReminderStatus correspondant (ex: "reminder_2"), ou undefined si <= 0
  *
  * @example
  * getReminderStatusFromNumber(1) // "reminder_1"
  * getReminderStatusFromNumber(3) // "reminder_3"
+ * getReminderStatusFromNumber(0) // undefined
  */
-export function getReminderStatusFromNumber(reminderNumber: number): ReminderStatus {
+export function getReminderStatusFromNumber(reminderNumber: number): ReminderStatus | undefined {
   if (reminderNumber <= 0) {
-    return "none";
+    return undefined;
   }
   return `reminder_${reminderNumber}` as ReminderStatus;
 }

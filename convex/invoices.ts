@@ -133,7 +133,18 @@ export const listWithFilter = query({
   args: {
     filterByUserId: v.optional(v.id("users")),
     searchQuery: v.optional(v.string()),
-    mainStatus: v.optional(v.string()), // ✅ Filtre par statut calculé
+    // ✅ V2 Phase 2.9 : Filtre par état avec catégories (envoi, paiement, relance)
+    mainStatus: v.optional(v.union(
+      // Par envoi
+      v.literal("a-envoyer"),
+      v.literal("envoyee"),
+      // Par paiement
+      v.literal("non-payee"),
+      v.literal("payee"),
+      v.literal("en-retard"),
+      // Par relance
+      v.literal("relance")
+    )),
     amountFilter: v.optional(v.number()),
     sortBy: v.optional(
       v.union(
@@ -201,11 +212,32 @@ export const listWithFilter = query({
       };
     });
 
-    // ✅ Filtre par mainStatus (statut calculé)
-    if (args.mainStatus && args.mainStatus !== "all") {
-      invoicesWithDisplayInfo = invoicesWithDisplayInfo.filter(
-        (invoice) => invoice.mainStatus === args.mainStatus
-      );
+    // ✅ V2 Phase 2.9 : Filtre par état avec catégories
+    if (args.mainStatus) {
+      invoicesWithDisplayInfo = invoicesWithDisplayInfo.filter((invoice) => {
+        switch (args.mainStatus) {
+          // Par envoi
+          case "a-envoyer":
+            return invoice.sendStatus === "pending";
+          case "envoyee":
+            return invoice.sendStatus === "sent";
+
+          // Par paiement
+          case "payee":
+            return invoice.paymentStatus === "paid";
+          case "non-payee":
+            return invoice.paymentStatus !== "paid" && !invoice.isOverdue;
+          case "en-retard":
+            return invoice.isOverdue;
+
+          // Par relance (uniquement les factures impayées avec relance)
+          case "relance":
+            return invoice.reminderStatus != null && invoice.paymentStatus !== "paid";
+
+          default:
+            return true;
+        }
+      });
     }
 
     const sortBy = args.sortBy || "invoiceDate";
@@ -291,7 +323,7 @@ export const create = mutation({
       // ✅ V2 Phase 2.8 : États initiaux
       sendStatus: "pending",
       paymentStatus: "unpaid",
-      reminderStatus: "none",
+      // reminderStatus est optionnel - undefined = aucune relance
     });
 
     // ✅ Créer événement invoice_imported

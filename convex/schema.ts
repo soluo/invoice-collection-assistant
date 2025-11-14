@@ -107,14 +107,15 @@ const applicationTables = {
     paidAmount: v.optional(v.number()), // Montant déjà payé (pour paiements partiels)
     paidDate: v.optional(v.string()), // Date de paiement complet
 
-    // DIMENSION 3 : État de relance
-    reminderStatus: v.union(
-      v.literal("none"), // Pas de relance
-      v.literal("reminder_1"), // Première relance
-      v.literal("reminder_2"), // Deuxième relance
-      v.literal("reminder_3"), // Troisième relance
-      v.literal("reminder_4"), // Quatrième relance (si configuré)
-      v.literal("manual_followup") // Fin des relances auto → suivi manuel
+    // DIMENSION 3 : État de relance (optionnel - undefined = aucune relance envoyée)
+    reminderStatus: v.optional(
+      v.union(
+        v.literal("reminder_1"), // Première relance
+        v.literal("reminder_2"), // Deuxième relance
+        v.literal("reminder_3"), // Troisième relance
+        v.literal("reminder_4"), // Quatrième relance (si configuré)
+        v.literal("manual_followup") // Fin des relances auto → suivi manuel
+      )
     ),
     lastReminderDate: v.optional(v.string()), // Date de dernière relance envoyée
     overdueDetectedDate: v.optional(v.string()), // Date de première détection en retard par le cron (YYYY-MM-DD)
