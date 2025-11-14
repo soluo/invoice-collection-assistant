@@ -24,6 +24,7 @@ import type * as permissions from "../permissions.js";
 import type * as reminderDefaults from "../reminderDefaults.js";
 import type * as reminders from "../reminders.js";
 import type * as router from "../router.js";
+import type * as testReminders from "../testReminders.js";
 import type * as utils from "../utils.js";
 
 import type {
@@ -57,6 +58,7 @@ declare const fullApi: ApiFromModules<{
   reminderDefaults: typeof reminderDefaults;
   reminders: typeof reminders;
   router: typeof router;
+  testReminders: typeof testReminders;
   utils: typeof utils;
 }>;
 declare const fullApiWithMounts: typeof fullApi;

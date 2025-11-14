@@ -523,8 +523,11 @@ export const generateDailyReminders = internalMutation({
           return false;
         if (invoice.reminderStatus === "manual_followup") return false;
 
+        // Inclure les factures échues aujourd'hui pour la génération anticipée (J+1)
         const dueDate = new Date(invoice.dueDate);
-        return dueDate < now;
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return dueDate < tomorrow;
       });
     } else {
       // Mode production : récupérer toutes les factures, puis filtrer
@@ -539,8 +542,11 @@ export const generateDailyReminders = internalMutation({
           return false;
         if (invoice.reminderStatus === "manual_followup") return false;
 
+        // Inclure les factures échues aujourd'hui pour la génération anticipée (J+1)
         const dueDate = new Date(invoice.dueDate);
-        return dueDate < now;
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return dueDate < tomorrow;
       });
     }
 
@@ -694,16 +700,21 @@ export const generateInvoiceReminder = internalMutation({
         overdueDetectedDate: todayStr,
       });
 
-      // ✅ FIX: Calculer les jours depuis l'échéance RÉELLE (pas depuis détection)
+      // Calculer tomorrow pour la génération anticipée
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      // Calculer les jours entre DEMAIN et la date d'échéance
       const dueDate = new Date(invoice.dueDate);
-      const daysPastDue = Math.floor(
-        (now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
+      const daysPastDueTomorrow = Math.floor(
+        (tomorrow.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
       );
 
       // Vérifier si le délai du premier step est atteint
       const firstStep = steps[0];
 
-      if (daysPastDue >= firstStep.delay) {
+      // Générer le rappel si demain correspond exactement au délai configuré
+      if (daysPastDueTomorrow === firstStep.delay) {
         // Le délai est atteint, générer la première relance
         const reminderId = await createReminderRecord(
           ctx,
@@ -722,7 +733,7 @@ export const generateInvoiceReminder = internalMutation({
         });
 
         console.log(
-          `[REMINDER] Generated reminder_1 for invoice ${invoice.invoiceNumber} (type: ${firstStep.type}, ${daysPastDue} days past due >= ${firstStep.delay} days delay)`
+          `[REMINDER] Generated reminder_1 for invoice ${invoice.invoiceNumber} for tomorrow (type: ${firstStep.type}, tomorrow will be ${daysPastDueTomorrow} days past due, matching delay=${firstStep.delay})`
         );
 
         return {
@@ -733,19 +744,23 @@ export const generateInvoiceReminder = internalMutation({
       } else {
         // Pas encore temps pour la première relance
         console.log(
-          `[REMINDER] First detection but not yet time for reminder_1 (${daysPastDue}/${firstStep.delay} days past due)`
+          `[REMINDER] First detection but not yet time for reminder_1 (tomorrow: ${daysPastDueTomorrow} days past due, need ${firstStep.delay})`
         );
         return {
           action: "no_action" as const,
-          reason: `First detection, but delay not reached yet (${daysPastDue}/${firstStep.delay} days past due)`,
+          reason: `First detection, but delay not reached yet (tomorrow: ${daysPastDueTomorrow}/${firstStep.delay} days past due)`,
         };
       }
     }
 
     // ===== RELANCES SUIVANTES =====
+    // Calculer tomorrow pour la génération anticipée
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
     const detectionDate = new Date(invoice.overdueDetectedDate);
-    const daysSinceDetection = Math.floor(
-      (now.getTime() - detectionDate.getTime()) / (1000 * 60 * 60 * 24)
+    const daysSinceDetectionTomorrow = Math.floor(
+      (tomorrow.getTime() - detectionDate.getTime()) / (1000 * 60 * 60 * 24)
     );
 
     // Déterminer le numéro de relance actuel
@@ -753,7 +768,7 @@ export const generateInvoiceReminder = internalMutation({
     const nextReminderNum = currentReminderNum + 1;
 
     console.log(
-      `[REMINDER] Invoice ${invoice.invoiceNumber}: current reminder=${currentReminderNum}, next=${nextReminderNum}, days since detection=${daysSinceDetection}`
+      `[REMINDER] Invoice ${invoice.invoiceNumber}: current reminder=${currentReminderNum}, next=${nextReminderNum}, tomorrow will be ${daysSinceDetectionTomorrow} days since detection`
     );
 
     // Vérifier si on a une prochaine étape
@@ -774,8 +789,8 @@ export const generateInvoiceReminder = internalMutation({
     // Récupérer la prochaine étape configurée
     const nextStep = steps[nextReminderNum - 1];
 
-    // Vérifier si le délai est atteint
-    if (daysSinceDetection >= nextStep.delay) {
+    // Vérifier si demain correspond exactement au délai configuré
+    if (daysSinceDetectionTomorrow === nextStep.delay) {
       // Vérifier qu'on n'a pas déjà envoyé une relance récemment
       const lastReminderDate = invoice.lastReminderDate
         ? new Date(invoice.lastReminderDate)
@@ -816,7 +831,7 @@ export const generateInvoiceReminder = internalMutation({
       });
 
       console.log(
-        `[REMINDER] Generated reminder_${nextReminderNum} for invoice ${invoice.invoiceNumber} (type: ${nextStep.type})`
+        `[REMINDER] Generated reminder_${nextReminderNum} for invoice ${invoice.invoiceNumber} for tomorrow (type: ${nextStep.type}, tomorrow will be ${daysSinceDetectionTomorrow} days since detection, matching delay=${nextStep.delay})`
       );
 
       return {
@@ -828,11 +843,11 @@ export const generateInvoiceReminder = internalMutation({
 
     // Pas encore temps pour la prochaine relance
     console.log(
-      `[REMINDER] Invoice ${invoice.invoiceNumber}: not yet time (${daysSinceDetection}/${nextStep.delay} days)`
+      `[REMINDER] Invoice ${invoice.invoiceNumber}: not yet time (tomorrow: ${daysSinceDetectionTomorrow} days since detection, need ${nextStep.delay})`
     );
     return {
       action: "no_action" as const,
-      reason: `Not yet time for next reminder (${daysSinceDetection}/${nextStep.delay} days since detection)`,
+      reason: `Not yet time for next reminder (tomorrow: ${daysSinceDetectionTomorrow}/${nextStep.delay} days since detection)`,
     };
   },
 });
@@ -849,9 +864,15 @@ async function createReminderRecord(
   dateStr: string,
   generatedByCron: boolean
 ): Promise<Id<"reminders">> {
+  // Calculer la date de demain pour la génération anticipée
+  const today = new Date(dateStr);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split("T")[0];
+
   // Utiliser l'heure configurée dans l'organisation (défaut: 10:00)
   const sendTime = org.reminderSendTime || "10:00";
-  const reminderDate = `${dateStr} ${sendTime}:00`;
+  const reminderDate = `${tomorrowStr} ${sendTime}:00`;
 
   // Calculer les jours de retard depuis l'échéance réelle (pour affichage)
   const dueDate = new Date(invoice.dueDate);
@@ -926,3 +947,96 @@ function replaceTemplatePlaceholders(
 
   return result;
 }
+
+/**
+ * Query de débogage : Vérifier pourquoi une facture n'est pas incluse dans les rappels
+ */
+export const debugInvoiceFilter = query({
+  args: {
+    invoiceId: v.id("invoices"),
+    currentDate: v.optional(v.string()),
+  },
+  returns: v.object({
+    invoice: v.any(),
+    now: v.string(),
+    tomorrow: v.string(),
+    checks: v.object({
+      sendStatus: v.object({ value: v.string(), passes: v.boolean() }),
+      paymentStatus: v.object({ value: v.string(), passes: v.boolean() }),
+      reminderStatus: v.object({ value: v.union(v.string(), v.null()), passes: v.boolean() }),
+      dueDate: v.object({
+        value: v.string(),
+        passes: v.boolean(),
+        daysPastDueToday: v.number(),
+        daysPastDueTomorrow: v.number(),
+      }),
+    }),
+    overallPasses: v.boolean(),
+    reason: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    const invoice = await ctx.db.get(args.invoiceId);
+    if (!invoice) {
+      throw new Error("Invoice not found");
+    }
+
+    const now = args.currentDate ? new Date(args.currentDate) : new Date();
+    const todayStr = now.toISOString().split("T")[0];
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split("T")[0];
+
+    // Vérifier chaque condition du filtre
+    const sendStatusPasses = invoice.sendStatus === "sent";
+    const paymentStatusPasses =
+      invoice.paymentStatus !== "paid" &&
+      invoice.paymentStatus !== "pending_payment";
+    const reminderStatusPasses = invoice.reminderStatus !== "manual_followup";
+
+    const dueDate = new Date(invoice.dueDate);
+    const datePasses = dueDate < tomorrow;
+
+    const daysPastDueToday = Math.floor(
+      (now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const daysPastDueTomorrow = Math.floor(
+      (tomorrow.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    const overallPasses =
+      sendStatusPasses &&
+      paymentStatusPasses &&
+      reminderStatusPasses &&
+      datePasses;
+
+    let reason = "OK";
+    if (!sendStatusPasses) {
+      reason = `sendStatus must be "sent" but is "${invoice.sendStatus}"`;
+    } else if (!paymentStatusPasses) {
+      reason = `paymentStatus must not be "paid" or "pending_payment" but is "${invoice.paymentStatus}"`;
+    } else if (!reminderStatusPasses) {
+      reason = `reminderStatus must not be "manual_followup" but is "${invoice.reminderStatus}"`;
+    } else if (!datePasses) {
+      reason = `dueDate (${invoice.dueDate}) must be < tomorrow (${tomorrowStr}) but it's not`;
+    }
+
+    return {
+      invoice,
+      now: todayStr,
+      tomorrow: tomorrowStr,
+      checks: {
+        sendStatus: { value: invoice.sendStatus, passes: sendStatusPasses },
+        paymentStatus: { value: invoice.paymentStatus, passes: paymentStatusPasses },
+        reminderStatus: { value: invoice.reminderStatus || null, passes: reminderStatusPasses },
+        dueDate: {
+          value: invoice.dueDate,
+          passes: datePasses,
+          daysPastDueToday,
+          daysPastDueTomorrow,
+        },
+      },
+      overallPasses,
+      reason,
+    };
+  },
+});
