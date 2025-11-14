@@ -15,7 +15,7 @@ export const getUpcomingReminders = query({
       reminderDate: v.string(),
       reminderStatus: v.string(),
       reminderType: v.string(),
-      completionStatus: v.optional(v.string()),
+      completionStatus: v.string(),
       isPaused: v.optional(v.boolean()),
       data: v.optional(
         v.object({
@@ -46,8 +46,9 @@ export const getUpcomingReminders = query({
   handler: async (ctx) => {
     const user = await getUserWithOrg(ctx);
 
-    // Récupérer les reminders en attente pour l'organisation
-    const reminders = isAdmin(user)
+    // Récupérer les reminders non complétés (pending + failed)
+    // Utilisation de l'index composé pour performance optimale
+    const pendingReminders = isAdmin(user)
       ? await ctx.db
           .query("reminders")
           .withIndex("by_organization_and_status", (q) =>
@@ -59,6 +60,22 @@ export const getUpcomingReminders = query({
           .withIndex("by_user", (q) => q.eq("userId", user.userId))
           .filter((q) => q.eq(q.field("completionStatus"), "pending"))
           .collect();
+
+    const failedReminders = isAdmin(user)
+      ? await ctx.db
+          .query("reminders")
+          .withIndex("by_organization_and_status", (q) =>
+            q.eq("organizationId", user.organizationId).eq("completionStatus", "failed")
+          )
+          .collect()
+      : await ctx.db
+          .query("reminders")
+          .withIndex("by_user", (q) => q.eq("userId", user.userId))
+          .filter((q) => q.eq(q.field("completionStatus"), "failed"))
+          .collect();
+
+    // Fusionner les résultats
+    const reminders = [...pendingReminders, ...failedReminders];
 
     // Filtrer les relances non mises en pause et enrichir avec les données de factures
     const now = new Date();

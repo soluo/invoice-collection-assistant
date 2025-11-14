@@ -43,7 +43,7 @@ export function FollowUp() {
             value="upcoming"
             className="border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 rounded-none px-4 py-3"
           >
-            À Venir
+            En cours
             {upcomingReminders && upcomingReminders.length > 0 && (
               <Badge variant="secondary" className="ml-2">
                 {upcomingReminders.length}
@@ -58,7 +58,7 @@ export function FollowUp() {
           </TabsTrigger>
         </TabsList>
 
-        {/* À Venir Tab Content */}
+        {/* En cours Tab Content */}
         <TabsContent value="upcoming" className="mt-6">
           {upcomingReminders === undefined ? (
             <div className="text-center py-8 text-gray-500">Chargement...</div>
@@ -66,7 +66,7 @@ export function FollowUp() {
             <div className="text-center py-12">
               <Bell className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-semibold text-gray-900">
-                Aucune relance à venir
+                Aucune relance en cours
               </h3>
               <p className="mt-1 text-sm text-gray-500">
                 Toutes vos relances sont à jour.
@@ -74,6 +74,9 @@ export function FollowUp() {
             </div>
           ) : (
             <div className="space-y-6">
+              {groupedReminders.overdue.length > 0 && (
+                <ReminderGroup title="En retard" reminders={groupedReminders.overdue} />
+              )}
               {groupedReminders.today.length > 0 && (
                 <ReminderGroup title="Aujourd'hui" reminders={groupedReminders.today} />
               )}
@@ -122,6 +125,11 @@ function groupRemindersByDate(reminders: any[]) {
   dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
 
   return {
+    overdue: reminders.filter((r) => {
+      const reminderDate = new Date(r.reminderDate.replace(" ", "T"));
+      reminderDate.setHours(0, 0, 0, 0);
+      return reminderDate.getTime() < today.getTime();
+    }),
     today: reminders.filter((r) => {
       const reminderDate = new Date(r.reminderDate.replace(" ", "T"));
       reminderDate.setHours(0, 0, 0, 0);

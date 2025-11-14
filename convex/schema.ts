@@ -143,8 +143,11 @@ const applicationTables = {
     reminderType: v.union(v.literal("email"), v.literal("phone")),
 
     // Statut de complétion (générique pour email ET téléphone)
-    completionStatus: v.optional(
-      v.union(v.literal("pending"), v.literal("completed"), v.literal("failed"))
+    // Obligatoire avec valeur par défaut "pending"
+    completionStatus: v.union(
+      v.literal("pending"),
+      v.literal("completed"),
+      v.literal("failed")
     ),
     completedAt: v.optional(v.number()),
 

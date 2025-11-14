@@ -127,7 +127,7 @@ export const listForOrganization = query({
           reminderDate: reminder.reminderDate,
           reminderStatus: reminder.reminderStatus,
           reminderType: reminder.reminderType,
-          completionStatus: reminder.completionStatus ?? "pending",
+          completionStatus: reminder.completionStatus,
           completedAt: reminder.completedAt ?? null,
           data: reminder.data ?? null,
           generatedByCron: reminder.generatedByCron ?? false,
@@ -173,8 +173,10 @@ export const getReminderForSending = internalQuery({
             emailContent: v.optional(v.string()),
           })
         ),
-        completionStatus: v.optional(
-          v.union(v.literal("pending"), v.literal("completed"), v.literal("failed"))
+        completionStatus: v.union(
+          v.literal("pending"),
+          v.literal("completed"),
+          v.literal("failed")
         ),
       }),
       invoice: v.union(
