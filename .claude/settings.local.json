@@ -16,7 +16,8 @@
       "Bash(pnpm dlx shadcn@latest add:*)",
       "Bash(pnpm add:*)",
       "Bash(pnpm dev)",
-      "Bash(npx shadcn:*)"
+      "Bash(npx shadcn:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

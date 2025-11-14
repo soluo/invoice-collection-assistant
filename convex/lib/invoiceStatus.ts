@@ -72,9 +72,13 @@ export function getInvoiceDisplayInfo(
   const outstandingBalance = invoice.amountTTC - (invoice.paidAmount || 0);
 
   // Déterminer le statut principal selon la logique de priorité
+  // ✅ V2 : sendStatus vérifié en PREMIER (factures non envoyées ne peuvent pas avoir de relances)
   let mainStatus: MainStatus;
 
-  if (invoice.paymentStatus === "paid") {
+  if (invoice.sendStatus === "pending") {
+    // En attente d'envoi - prioritaire sur tout (car pas encore envoyée au client)
+    mainStatus = "pending";
+  } else if (invoice.paymentStatus === "paid") {
     // Statut final : facture payée
     mainStatus = "paid";
   } else if (invoice.paymentStatus === "pending_payment") {
@@ -93,7 +97,7 @@ export function getInvoiceDisplayInfo(
     // Envoyée, pas encore échue
     mainStatus = "sent";
   } else {
-    // En attente d'envoi
+    // Fallback (ne devrait jamais arriver)
     mainStatus = "pending";
   }
 
@@ -150,8 +154,8 @@ export function getReminderStatusFromNumber(reminderNumber: number): ReminderSta
  * Labels français pour l'affichage des statuts principaux
  */
 export const MAIN_STATUS_LABELS: Record<MainStatus, string> = {
-  pending: "En attente",
-  sent: "Envoyée",
+  pending: "À envoyer",
+  sent: "En attente",
   overdue: "En retard",
   reminder_1: "Relance 1",
   reminder_2: "Relance 2",

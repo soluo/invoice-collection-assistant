@@ -67,8 +67,8 @@ export function formatComplementPaid(days: number): string {
  * Labels français pour l'affichage des statuts principaux
  */
 const MAIN_STATUS_LABELS: Record<MainStatus, string> = {
-  pending: "En attente",
-  sent: "Envoyée",
+  pending: "À envoyer",
+  sent: "En attente",
   overdue: "En retard",
   reminder_1: "Relance 1",
   reminder_2: "Relance 2",

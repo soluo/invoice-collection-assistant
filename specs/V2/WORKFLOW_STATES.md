@@ -77,12 +77,14 @@ amountTTC - (paidAmount || 0)
 ### `mainStatus` (statut principal pour l'UI)
 
 **Logique de priorité** :
-1. Si `paymentStatus === "paid"` → **"paid"**
-2. Sinon si `reminderStatus === "manual_followup"` → **"manual_followup"**
-3. Sinon si `reminderStatus !== "none"` → **reminderStatus** (reminder_1, reminder_2, etc.)
-4. Sinon si `isOverdue` → **"overdue"**
-5. Sinon si `sendStatus === "sent"` → **"sent"**
-6. Sinon → **"pending"**
+1. Si `sendStatus === "pending"` → **"pending"** (À envoyer - prioritaire car factures non envoyées ne peuvent pas générer de relances)
+2. Sinon si `paymentStatus === "paid"` → **"paid"**
+3. Sinon si `paymentStatus === "pending_payment"` → **"pending_payment"**
+4. Sinon si `reminderStatus === "manual_followup"` → **"manual_followup"**
+5. Sinon si `reminderStatus !== "none"` → **reminderStatus** (reminder_1, reminder_2, etc.)
+6. Sinon si `isOverdue` → **"overdue"**
+7. Sinon si `sendStatus === "sent"` → **"sent"**
+8. Sinon → **"pending"** (fallback)
 
 ---
 
@@ -243,14 +245,15 @@ Chaque action utilisateur crée un événement dans la table `events` :
 
 | mainStatus | Label UI | Couleur |
 |------------|----------|---------|
-| `pending` | En attente | Gris |
-| `sent` | Envoyée | Bleu |
+| `pending` | À envoyer | Gris |
+| `sent` | En attente | Bleu |
 | `overdue` | En retard | Orange |
 | `reminder_1` | Relance 1 | Jaune |
 | `reminder_2` | Relance 2 | Orange |
 | `reminder_3` | Relance 3 | Rouge |
 | `reminder_4` | Relance 4 | Rouge |
 | `manual_followup` | Suivi manuel | Violet |
+| `pending_payment` | Chèque(s) en attente | Cyan |
 | `paid` | Payée | Vert |
 
 ### Badges complémentaires
