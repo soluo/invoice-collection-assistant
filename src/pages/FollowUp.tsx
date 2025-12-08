@@ -6,10 +6,8 @@ import { Button } from "@/components/ui/button";
 import {
   Mail,
   Phone,
-  Pause,
-  Play,
   Calendar,
-  Edit,
+  Eye,
   FileText,
   Check,
   Bell,
@@ -18,10 +16,18 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useState } from "react";
+import { EmailPreviewModalFollowUp } from "@/components/EmailPreviewModalFollowUp";
+import { EmailEditModal } from "@/components/EmailEditModal";
+import { BulkSendConfirmModal } from "@/components/BulkSendConfirmModal";
 
 export function FollowUp() {
   const upcomingReminders = useQuery(api.followUp.getUpcomingReminders);
   const reminderHistory = useQuery(api.followUp.getReminderHistory);
+  const organization = useQuery(api.organizations.getCurrentOrganization);
+  const [previewReminder, setPreviewReminder] = useState<any | null>(null);
+  const [editReminder, setEditReminder] = useState<any | null>(null);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  const [selectedReminders, setSelectedReminders] = useState<string[]>([]);
 
   // Group upcoming reminders by date
   const groupedReminders = groupRemindersByDate(upcomingReminders || []);
@@ -75,16 +81,56 @@ export function FollowUp() {
           ) : (
             <div className="space-y-6">
               {groupedReminders.overdue.length > 0 && (
-                <ReminderGroup title="En retard" reminders={groupedReminders.overdue} />
+                <ReminderGroup
+                  title="En retard"
+                  reminders={groupedReminders.overdue}
+                  selectedReminders={selectedReminders}
+                  onToggleSelect={(id) => {
+                    setSelectedReminders((prev) =>
+                      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
+                    );
+                  }}
+                  onPreview={setPreviewReminder}
+                />
               )}
               {groupedReminders.today.length > 0 && (
-                <ReminderGroup title="Aujourd'hui" reminders={groupedReminders.today} />
+                <ReminderGroup
+                  title="Aujourd'hui"
+                  reminders={groupedReminders.today}
+                  selectedReminders={selectedReminders}
+                  onToggleSelect={(id) => {
+                    setSelectedReminders((prev) =>
+                      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
+                    );
+                  }}
+                  onPreview={setPreviewReminder}
+                />
               )}
               {groupedReminders.tomorrow.length > 0 && (
-                <ReminderGroup title="Demain" reminders={groupedReminders.tomorrow} />
+                <ReminderGroup
+                  title="Demain"
+                  reminders={groupedReminders.tomorrow}
+                  selectedReminders={selectedReminders}
+                  onToggleSelect={(id) => {
+                    setSelectedReminders((prev) =>
+                      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
+                    );
+                  }}
+                  onPreview={setPreviewReminder}
+                />
               )}
               {groupedReminders.later.length > 0 && (
-                <ReminderGroup title="Plus tard" reminders={groupedReminders.later} />
+                <ReminderGroup
+                  title="Plus tard"
+                  reminders={groupedReminders.later}
+                  selectedReminders={selectedReminders}
+                  onToggleSelect={(id) => {
+                    setSelectedReminders((prev) =>
+                      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
+                    );
+                  }}
+                  onPreview={setPreviewReminder}
+                />
               )}
             </div>
           )}
@@ -109,6 +155,56 @@ export function FollowUp() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Bouton flottant pour envoi en masse */}
+      {selectedReminders.length > 0 && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <Button
+            onClick={() => setShowBulkConfirm(true)}
+            className="bg-blue-600 hover:bg-blue-700 shadow-lg px-6 py-3 text-lg"
+          >
+            <Mail className="h-5 w-5 mr-2" />
+            Envoyer {selectedReminders.length} relance{selectedReminders.length > 1 ? "s" : ""}
+          </Button>
+        </div>
+      )}
+
+      {/* Modaux */}
+      {previewReminder && (
+        <EmailPreviewModalFollowUp
+          reminder={previewReminder}
+          organization={organization}
+          onClose={() => setPreviewReminder(null)}
+          onEdit={() => {
+            setEditReminder(previewReminder);
+            setPreviewReminder(null);
+          }}
+        />
+      )}
+
+      {editReminder && (
+        <EmailEditModal
+          reminderId={editReminder._id}
+          initialSubject={editReminder.data?.emailSubject || ""}
+          initialContent={editReminder.data?.emailContent || ""}
+          onClose={() => setEditReminder(null)}
+          onSave={() => {
+            setEditReminder(null);
+            // Rafraîchir les données
+          }}
+        />
+      )}
+
+      {showBulkConfirm && upcomingReminders && (
+        <BulkSendConfirmModal
+          reminders={upcomingReminders.filter((r) => selectedReminders.includes(r._id))}
+          onClose={() => setShowBulkConfirm(false)}
+          onSuccess={() => {
+            setSelectedReminders([]);
+            setShowBulkConfirm(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -149,13 +245,31 @@ function groupRemindersByDate(reminders: any[]) {
 }
 
 // Component for a group of reminders
-function ReminderGroup({ title, reminders }: { title: string; reminders: any[] }) {
+function ReminderGroup({
+  title,
+  reminders,
+  selectedReminders,
+  onToggleSelect,
+  onPreview
+}: {
+  title: string;
+  reminders: any[];
+  selectedReminders: string[];
+  onToggleSelect: (id: string) => void;
+  onPreview: (reminder: any) => void;
+}) {
   return (
     <div>
       <h2 className="text-lg font-semibold text-gray-900 mb-3">{title}</h2>
       <div className="space-y-4">
         {reminders.map((reminder) => (
-          <ReminderCard key={reminder._id} reminder={reminder} />
+          <ReminderCard
+            key={reminder._id}
+            reminder={reminder}
+            isSelected={selectedReminders.includes(reminder._id)}
+            onToggleSelect={() => onToggleSelect(reminder._id)}
+            onPreview={() => onPreview(reminder)}
+          />
         ))}
       </div>
     </div>
@@ -163,7 +277,17 @@ function ReminderGroup({ title, reminders }: { title: string; reminders: any[] }
 }
 
 // Component for a single reminder card
-function ReminderCard({ reminder }: { reminder: any }) {
+function ReminderCard({
+  reminder,
+  isSelected,
+  onToggleSelect,
+  onPreview
+}: {
+  reminder: any;
+  isSelected: boolean;
+  onToggleSelect: () => void;
+  onPreview: () => void;
+}) {
   const isEmail = reminder.reminderType === "email";
   const isPhone = reminder.reminderType === "phone";
 
@@ -191,6 +315,15 @@ function ReminderCard({ reminder }: { reminder: any }) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
       <div className="flex items-center gap-4">
+        {/* Checkbox for selection */}
+        {isEmail && (
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={onToggleSelect}
+            className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+        )}
         <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${bgColor} ${textColor}`}>
           {isEmail && <Mail className="h-5 w-5" />}
           {isPhone && <Phone className="h-5 w-5" />}
@@ -231,9 +364,9 @@ function ReminderCard({ reminder }: { reminder: any }) {
         )}
         <div className="mt-2 flex gap-2 justify-end">
           {isEmail && (
-            <Button variant="ghost" size="sm">
-              <Edit className="h-4 w-4 mr-1" />
-              Modifier
+            <Button variant="ghost" size="sm" onClick={onPreview}>
+              <Eye className="h-4 w-4 mr-1" />
+              Prévisualiser
             </Button>
           )}
           {isPhone && (
@@ -242,10 +375,6 @@ function ReminderCard({ reminder }: { reminder: any }) {
               Marquer fait
             </Button>
           )}
-          <Button variant="ghost" size="sm">
-            <Pause className="h-4 w-4 mr-1" />
-            Pause
-          </Button>
         </div>
       </div>
     </div>

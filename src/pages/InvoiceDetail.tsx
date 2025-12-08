@@ -9,6 +9,7 @@ import { ArrowLeft, Download, MessageSquare, Calendar } from "lucide-react";
 import { InvoiceTimeline } from "@/components/InvoiceTimeline";
 import { PaymentRecordModal } from "@/components/PaymentRecordModal";
 import { SnoozeInvoiceModal } from "@/components/SnoozeInvoiceModal";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -151,10 +152,10 @@ export function InvoiceDetail() {
         )}
       </div>
 
-      {/* 3-column layout */}
+      {/* 2-column layout */}
       <div className="flex flex-col gap-6 lg:flex-row">
-        {/* Left column: Invoice details */}
-        <div className="lg:w-1/3">
+        {/* Left column: Invoice details (35%) */}
+        <div className="lg:w-[35%]">
           <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">Détails</h2>
             <dl className="space-y-3">
@@ -218,73 +219,83 @@ export function InvoiceDetail() {
           </div>
         </div>
 
-        {/* Middle column: Activity timeline */}
-        <div className="lg:w-1/3">
-          <InvoiceTimeline events={events} />
-        </div>
+        {/* Right column: Tabs for Historique & Notes (65%) */}
+        <div className="lg:w-[65%]">
+          <Tabs defaultValue="historique" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="historique">Historique des actions</TabsTrigger>
+              <TabsTrigger value="notes">Notes & Commentaires</TabsTrigger>
+            </TabsList>
 
-        {/* Right column: Notes */}
-        <div className="lg:w-1/3">
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
-              <MessageSquare className="h-5 w-5" />
-              Notes & Commentaires
-            </h2>
+            {/* Tab: Historique */}
+            <TabsContent value="historique" className="mt-4">
+              <InvoiceTimeline events={events} />
+            </TabsContent>
 
-            {/* Add note form */}
-            <div className="mb-6">
-              <textarea
-                value={noteContent}
-                onChange={(e) => setNoteContent(e.target.value)}
-                placeholder="Ajouter une note (ex: accord de paiement, discussion avec le client...)"
-                className="w-full rounded-lg border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[100px]"
-                disabled={isAddingNote}
-              />
-              <div className="mt-2 flex justify-end">
-                <Button
-                  onClick={handleAddNote}
-                  disabled={!noteContent.trim() || isAddingNote}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  {isAddingNote ? "Ajout..." : "Ajouter une note"}
-                </Button>
-              </div>
-            </div>
+            {/* Tab: Notes */}
+            <TabsContent value="notes" className="mt-4">
+              <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+                  <MessageSquare className="h-5 w-5" />
+                  Notes & Commentaires
+                </h2>
 
-            {/* Notes list */}
-            <div className="space-y-4">
-              {notes.length === 0 ? (
-                <p className="text-sm text-gray-500 italic">
-                  Aucune note pour le moment
-                </p>
-              ) : (
-                notes.map((note) => (
-                  <div
-                    key={note._id}
-                    className="rounded-lg bg-gray-50 p-4 border border-gray-200"
-                  >
-                    <div className="mb-2 flex items-start justify-between gap-2">
-                      <span className="text-xs font-medium text-gray-900">
-                        {note.createdByName}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {new Date(note._creationTime).toLocaleDateString("fr-FR", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                      {note.content}
-                    </p>
+                {/* Add note form */}
+                <div className="mb-6">
+                  <textarea
+                    value={noteContent}
+                    onChange={(e) => setNoteContent(e.target.value)}
+                    placeholder="Ajouter une note (ex: accord de paiement, discussion avec le client...)"
+                    className="w-full rounded-lg border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[100px]"
+                    disabled={isAddingNote}
+                  />
+                  <div className="mt-2 flex justify-end">
+                    <Button
+                      onClick={handleAddNote}
+                      disabled={!noteContent.trim() || isAddingNote}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {isAddingNote ? "Ajout..." : "Ajouter une note"}
+                    </Button>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
+                </div>
+
+                {/* Notes list */}
+                <div className="space-y-4">
+                  {notes.length === 0 ? (
+                    <p className="text-sm text-gray-500 italic">
+                      Aucune note pour le moment
+                    </p>
+                  ) : (
+                    notes.map((note) => (
+                      <div
+                        key={note._id}
+                        className="rounded-lg bg-gray-50 p-4 border border-gray-200"
+                      >
+                        <div className="mb-2 flex items-start justify-between gap-2">
+                          <span className="text-xs font-medium text-gray-900">
+                            {note.createdByName}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(note._creationTime).toLocaleDateString("fr-FR", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                          {note.content}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 

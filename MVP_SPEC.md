@@ -175,6 +175,117 @@
 
 ---
 
+## 🎨 AJUSTEMENTS UI (Post-implémentation)
+
+### 📌 InvoiceDetail : Refonte Layout Notes + Historique
+**Problème :** Layout 3 colonnes trop serré (Détails | Historique | Notes)
+**Solution :** Layout 2 colonnes avec onglets
+
+**Structure finale :**
+```
+┌─────────────────────────────────────────────────────┐
+│ Détails (35%)  │  Historique & Notes (65%)          │
+│                │  ┌──────────────────────────────┐  │
+│ - Montant      │  │ [Historique] [Notes]        │  │
+│ - Échéance     │  └──────────────────────────────┘  │
+│ - Émission     │                                    │
+│ - Contact      │  [Contenu de l'onglet actif]      │
+└─────────────────────────────────────────────────────┘
+```
+
+**Implémentation :**
+- Tab "Historique" : Événements système (import, envoi, relances, paiements)
+- Tab "Notes" : Formulaire d'ajout + liste des notes utilisateur
+- Utiliser `<Tabs>` de shadcn/ui (déjà utilisé dans FollowUp.tsx)
+
+**Fichiers à modifier :**
+- `src/pages/InvoiceDetail.tsx` : Refonte du layout avec onglets
+
+---
+
+### 📌 FollowUp : Preview + Envoi en masse
+**Problème :** Preview dans /reminders au lieu de /follow-up
+**Solution :** Déplacer preview dans /follow-up avec envoi multiple
+
+**Changements à implémenter :**
+
+**1. Remplacer bouton "Modifier" par "Prévisualiser"**
+- Pour relances de type "email" uniquement
+- Ouvre modal de prévisualisation
+
+**2. Supprimer bouton "Pause"**
+- Retirer complètement (ligne 245-248 de FollowUp.tsx)
+- Feature à implémenter plus tard
+
+**3. Ajouter cases à cocher pour sélection multiple**
+```tsx
+// Structure de chaque ReminderCard
+<div className="flex items-center gap-4">
+  <input type="checkbox" />  {/* Nouveau */}
+  <div className="icon">...</div>
+  <div className="content">...</div>
+</div>
+
+// Bouton flottant si sélection
+{selectedReminders.length > 0 && (
+  <FloatingButton>
+    Envoyer {selectedReminders.length} relance(s)
+  </FloatingButton>
+)}
+```
+
+**4. Modal de prévisualisation avec permissions**
+```tsx
+<EmailPreviewModal>
+  - Afficher : De, À, Objet, Corps
+  - Boutons :
+    * "Fermer" (toujours)
+    * "Modifier" (SI : admin OU createdBy de facture)
+    * "Envoyer" (si email valide)
+</EmailPreviewModal>
+```
+
+**5. Modal d'édition (si "Modifier" cliqué)**
+```tsx
+<EmailEditModal>
+  - Champ "Objet" éditable
+  - Textarea "Corps" éditable
+  - Boutons : "Annuler" | "Enregistrer"
+  - Uniquement AVANT premier envoi (completionStatus !== "completed")
+</EmailEditModal>
+```
+
+**6. Confirmation avant envoi en masse**
+```tsx
+<BulkSendConfirmModal>
+  - Liste des {n} relances sélectionnées
+  - Récapitulatif : Clients, montants
+  - Boutons : "Annuler" | "Confirmer l'envoi"
+</BulkSendConfirmModal>
+```
+
+**Fichiers à créer :**
+- `src/components/EmailPreviewModal.tsx` (nouveau modal pour /follow-up)
+- `src/components/EmailEditModal.tsx` (édition sujet/corps)
+- `src/components/BulkSendConfirmModal.tsx` (confirmation envoi multiple)
+
+**Fichiers à modifier :**
+- `src/pages/FollowUp.tsx` :
+  - Ajouter état `selectedReminders`
+  - Remplacer bouton "Modifier" par "Prévisualiser"
+  - Supprimer bouton "Pause"
+  - Ajouter checkboxes + bouton flottant
+- `convex/reminders.ts` :
+  - Ajouter mutation `updateEmailContent({ reminderId, subject, content })`
+  - Ajouter action `sendMultipleReminders({ reminderIds[] })`
+
+**Règles métier :**
+- Édition uniquement si `completionStatus === "pending"` (pas pour retry)
+- Permissions édition : admin OU createdBy de la facture associée
+- Envoi en masse : confirmation obligatoire avant envoi
+
+---
+
 ## 📋 Ordre d'implémentation recommandé
 
 1. **Notes sur factures** (3️⃣) - Feature la plus demandée

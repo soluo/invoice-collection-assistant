@@ -7,7 +7,7 @@ import {
 } from "./_generated/server";
 import { v } from "convex/values";
 import { getUserWithOrg, assertCanAccessInvoice, isAdmin } from "./permissions";
-import { internal } from "./_generated/api";
+import { internal, api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { getReminderNumber, getReminderStatusFromNumber } from "./lib/invoiceStatus";
 
@@ -1039,6 +1039,104 @@ export const debugInvoiceFilter = query({
       },
       overallPasses,
       reason,
+    };
+  },
+});
+
+/**
+ * ✅ MVP : Mutation pour modifier le contenu d'un email de relance
+ * Uniquement autorisé pour les relances en attente (completionStatus = "pending")
+ */
+export const updateEmailContent = mutation({
+  args: {
+    reminderId: v.id("reminders"),
+    subject: v.string(),
+    content: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const user = await getUserWithOrg(ctx);
+
+    // Récupérer la relance
+    const reminder = await ctx.db.get(args.reminderId);
+    if (!reminder) {
+      throw new Error("Relance introuvable");
+    }
+
+    // Vérifier les permissions
+    if (reminder.organizationId !== user.organizationId) {
+      throw new Error("Accès non autorisé");
+    }
+
+    // Uniquement pour les relances en attente
+    if (reminder.completionStatus !== "pending") {
+      throw new Error("Vous ne pouvez modifier que les relances en attente");
+    }
+
+    // Vérifier que c'est une relance email
+    if (reminder.reminderType !== "email") {
+      throw new Error("Seules les relances email peuvent être modifiées");
+    }
+
+    // Récupérer la facture pour vérifier les permissions
+    const invoice = await ctx.db.get(reminder.invoiceId);
+    if (!invoice) {
+      throw new Error("Facture introuvable");
+    }
+
+    // Permissions : admin OU createdBy de la facture
+    const isAdmin = user.role === "admin";
+    const isCreator = user.userId === invoice.createdBy;
+    if (!isAdmin && !isCreator) {
+      throw new Error("Vous n'avez pas les permissions pour modifier cette relance");
+    }
+
+    // Mettre à jour le contenu
+    await ctx.db.patch(args.reminderId, {
+      data: {
+        ...reminder.data,
+        emailSubject: args.subject,
+        emailContent: args.content,
+      },
+    });
+
+    return null;
+  },
+});
+
+/**
+ * ✅ MVP : Action pour envoyer plusieurs relances en masse
+ */
+export const sendMultipleReminders = action({
+  args: {
+    reminderIds: v.array(v.id("reminders")),
+  },
+  returns: v.object({
+    sent: v.number(),
+    failed: v.number(),
+    errors: v.array(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    let sent = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
+    for (const reminderId of args.reminderIds) {
+      try {
+        await ctx.runAction(api.reminders.sendReminderEmail, { reminderId });
+        sent++;
+      } catch (error: any) {
+        failed++;
+        const errorMsg = `Relance ${reminderId}: ${error?.message || "Erreur inconnue"}`;
+        errors.push(errorMsg);
+        console.error(errorMsg, error);
+      }
+    }
+
+    return {
+      sent,
+      failed,
+      errors,
     };
   },
 });
