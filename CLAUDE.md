@@ -39,6 +39,39 @@ pnpm lint
 
 This command runs TypeScript compilation check for both convex and frontend code, runs convex dev once, and builds with vite.
 
+## Git Workflow & Commits
+
+**IMPORTANT: TOUJOURS créer un commit après chaque fonctionnalité ou grosse modification.**
+
+### Workflow de développement
+1. Implémenter une fonctionnalité complète
+2. Tester manuellement (vérifier que ça fonctionne)
+3. Lancer `pnpm lint` pour vérifier qu'il n'y a pas d'erreurs
+4. **Créer un commit Git** avec un message descriptif
+5. Passer à la fonctionnalité suivante
+
+### Format des commits
+Utiliser des messages de commit clairs et concis :
+- `feat: description courte` - Nouvelle fonctionnalité
+- `fix: description courte` - Correction de bug
+- `refactor: description courte` - Refactoring sans changement de comportement
+- `style: description courte` - Changements de style/formatage
+- `docs: description courte` - Documentation uniquement
+
+**Exemples:**
+```bash
+git add .
+git commit -m "feat: add invoice notes system with timeline"
+git commit -m "feat: add email preview before sending reminders"
+git commit -m "fix: handle failed email sends with retry button"
+```
+
+### Pourquoi commiter régulièrement ?
+- Permet de revenir en arrière facilement si besoin
+- Facilite le suivi des changements
+- Permet de déployer par étapes
+- Évite de perdre du travail
+
 ## Architecture
 
 ### Backend Structure (Convex)
@@ -213,3 +246,6 @@ This project follows the Convex function syntax defined in `convex_rules.txt` at
     Invoices
   </NavLink>
   ```
+## context7
+
+Always use context7 when I need code generation, setup or configuration steps, or library/API documentation. This means you should automatically use the Context7 MCP tools to resolve library id and get library docs without me having to explicitly ask.
