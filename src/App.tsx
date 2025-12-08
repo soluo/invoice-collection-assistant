@@ -13,6 +13,7 @@ import { InvoiceUpload } from "@pages/InvoiceUpload";
 import { TeamManagement } from "@pages/TeamManagement";
 import { OrganizationSettings } from "@pages/OrganizationSettings";
 import { Invoices } from "@pages/Invoices";
+import { InvoiceDetail } from "@pages/InvoiceDetail";
 import { Reminders } from "@pages/Reminders";
 import { FollowUp } from "@pages/FollowUp";
 import { CallPlan } from "@pages/CallPlan";
@@ -142,6 +143,7 @@ function Content() {
           <Route path="/" element={<Home isAuthenticated={true} />} />
           <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
           <Route path="/invoices" element={<AppLayout><Invoices /></AppLayout>} />
+          <Route path="/invoices/:id" element={<AppLayout><InvoiceDetail /></AppLayout>} />
           <Route path="/follow-up" element={<AppLayout><FollowUp /></AppLayout>} />
           <Route path="/call-plan" element={<AppLayout><CallPlan /></AppLayout>} />
           <Route path="/reminders" element={<AppLayout><Reminders /></AppLayout>} />

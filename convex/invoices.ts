@@ -673,6 +673,44 @@ export const listPaid = query({
 });
 
 /**
+ * ✅ V2 Phase 2.3 : Récupérer une facture par son ID avec toutes les infos calculées
+ */
+export const getById = query({
+  args: {
+    invoiceId: v.id("invoices"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getUserWithOrg(ctx);
+
+    const invoice = await ctx.db.get(args.invoiceId);
+    if (!invoice) {
+      throw new Error("Facture introuvable");
+    }
+
+    // Vérifier les permissions
+    if (!isAdmin(user) && invoice.createdBy !== user.userId) {
+      throw new Error("Vous n'avez pas accès à cette facture");
+    }
+
+    // Enrichir avec le nom du créateur
+    const creator = await ctx.db.get(invoice.createdBy);
+    const invoiceWithCreator = {
+      ...invoice,
+      creatorName: creator?.name || creator?.email || "Utilisateur inconnu",
+    };
+
+    // Calculer les infos d'affichage
+    const now = new Date();
+    const displayInfo = getInvoiceDisplayInfo(invoice, now);
+
+    return {
+      ...invoiceWithCreator,
+      ...displayInfo,
+    };
+  },
+});
+
+/**
  * ✅ V2 Phase 2.8 : Envoyer une relance
  * - Détermine le numéro de relance en fonction de la config org
  * - Met à jour reminderStatus

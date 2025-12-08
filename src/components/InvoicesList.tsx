@@ -11,6 +11,7 @@ import { formatCurrency, formatDate } from "@/lib/formatters";
 import { getStatusDisplay, type InvoiceStatus } from "@/lib/invoiceStatus";
 import { canSendReminder, canMarkAsPaid } from "@/lib/invoiceHelpers";
 import { ArrowUpDown, ArrowUp, ArrowDown, MoreVertical } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   Pagination,
   PaginationContent,
@@ -196,25 +197,27 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
             <tbody className="bg-white divide-y divide-gray-200">
               {paginatedInvoices.map((invoice) => {
                 const statusDisplay = getStatusDisplay(invoice);
-                // ✅ V2 : Solde dû vient du backend
+                // Solde dû vient du backend
                 const outstandingBalance = invoice.outstandingBalance ?? 0;
                 const isPartiallyPaid = invoice.hasPartialPayment || false;
 
                 return (
                   <tr key={invoice._id} className="hover:bg-gray-50">
-                    {/* ✅ V2 : Colonne N° Facture + Client regroupée */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">#{invoice.invoiceNumber}</div>
+                      <Link
+                        to={`/invoices/${invoice._id}`}
+                        className="text-sm font-medium text-primary hover:underline"
+                      >
+                        #{invoice.invoiceNumber}
+                      </Link>
                       <div className="text-sm text-gray-500">{invoice.clientName}</div>
                     </td>
-                    {/* ✅ V2 : Colonne Émission (Date d'émission) */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatDate(invoice.invoiceDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatCurrency(invoice.amountTTC)}
                     </td>
-                    {/* ✅ V2 : Colonne Solde dû */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <span className={
                         invoice.paymentStatus === "paid"
@@ -226,7 +229,6 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
                         {formatCurrency(outstandingBalance)}
                       </span>
                     </td>
-                    {/* ✅ V2 : Colonne Échéance avec complément */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         {formatDate(invoice.dueDate)}
@@ -237,7 +239,6 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
                         </div>
                       )}
                     </td>
-                    {/* ✅ V2 : Colonne Statut avec juste le badge */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Badge variant="outline"
                         className={`${statusDisplay.colorClass}`}
@@ -252,7 +253,12 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
                     )}
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
-                        <a href="#" className="text-indigo-600 hover:text-indigo-900">Voir</a>
+                        <Link
+                          to={`/invoices/${invoice._id}`}
+                          className="text-sm font-medium text-primary hover:underline"
+                        >
+                          Voir
+                        </Link>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <button className="p-1 hover:bg-gray-100 rounded-md transition-colors">
