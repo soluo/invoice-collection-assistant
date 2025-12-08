@@ -14,6 +14,7 @@ import type * as dev from "../dev.js";
 import type * as events from "../events.js";
 import type * as followUp from "../followUp.js";
 import type * as http from "../http.js";
+import type * as invoiceNotes from "../invoiceNotes.js";
 import type * as invoices from "../invoices.js";
 import type * as lib_invoiceStatus from "../lib/invoiceStatus.js";
 import type * as oauth from "../oauth.js";
@@ -48,6 +49,7 @@ declare const fullApi: ApiFromModules<{
   events: typeof events;
   followUp: typeof followUp;
   http: typeof http;
+  invoiceNotes: typeof invoiceNotes;
   invoices: typeof invoices;
   "lib/invoiceStatus": typeof lib_invoiceStatus;
   oauth: typeof oauth;

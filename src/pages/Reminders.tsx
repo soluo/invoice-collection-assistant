@@ -238,13 +238,25 @@ export function Reminders() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-700">
-                      <button
-                        type="button"
-                        onClick={() => setPreviewReminder(reminder)}
-                        className="px-3 py-1 text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
-                      >
-                        Prévisualiser
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewReminder(reminder)}
+                          className="px-3 py-1 text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                        >
+                          Prévisualiser
+                        </button>
+                        {reminder.sendStatus === "failed" && (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewReminder(reminder)}
+                            className="px-3 py-1 text-sm font-medium text-red-600 hover:text-red-700 hover:underline"
+                            title="Réessayer l'envoi"
+                          >
+                            Réessayer
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -305,6 +317,7 @@ function ReminderPreviewModal({ reminder, organization, onClose }: ReminderPrevi
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const alreadySent = reminder.sendStatus === "sent";
+  const isFailed = reminder.sendStatus === "failed";
   const canSend = Boolean(reminder.invoice?.contactEmail) && !alreadySent; // ✅ V2 Phase 2.6 : Renommé de clientEmail
 
   const recipientName = reminder.invoice?.clientName ?? "Client inconnu";
@@ -355,19 +368,26 @@ function ReminderPreviewModal({ reminder, organization, onClose }: ReminderPrevi
           </div>
 
           {alreadySent && (
-            <div className="text-sm text-green-600">
-              Cette relance a déjà été envoyée.
+            <div className="text-sm text-green-600 bg-green-50 p-3 rounded-lg">
+              ✅ Cette relance a déjà été envoyée avec succès.
             </div>
           )}
 
-          {!reminder.invoice?.clientEmail && (
-            <div className="text-sm text-red-600">
-              Adresse email du client manquante : impossible d'envoyer la relance.
+          {isFailed && reminder.sendError && (
+            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+              <p className="font-semibold mb-1">⚠️ Erreur lors du dernier envoi :</p>
+              <p>{reminder.sendError}</p>
+            </div>
+          )}
+
+          {!reminder.invoice?.contactEmail && (
+            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+              ⚠️ Adresse email du client manquante : impossible d'envoyer la relance.
             </div>
           )}
 
           {sendError && (
-            <div className="text-sm text-red-600">
+            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
               {sendError}
             </div>
           )}
@@ -411,10 +431,12 @@ function ReminderPreviewModal({ reminder, organization, onClose }: ReminderPrevi
             className={`px-4 py-2 text-sm font-semibold text-white rounded-md ${
               sending || !canSend
                 ? "bg-blue-400 opacity-60 cursor-not-allowed"
+                : isFailed
+                ? "bg-red-600 hover:bg-red-700"
                 : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
-            {sending ? "Envoi..." : "Envoyer"}
+            {sending ? "Envoi..." : isFailed ? "Réessayer l'envoi" : "Envoyer"}
           </button>
         </div>
       </div>

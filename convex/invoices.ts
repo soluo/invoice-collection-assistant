@@ -579,6 +579,58 @@ export const deleteInvoice = mutation({
 });
 
 /**
+ * ✅ MVP : Reporter l'échéance d'une facture (snooze)
+ * Change la date d'échéance et ajoute une note automatique
+ */
+export const snooze = mutation({
+  args: {
+    invoiceId: v.id("invoices"),
+    newDueDate: v.string(), // Format: "YYYY-MM-DD"
+    reason: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const user = await getUserWithOrg(ctx);
+
+    const invoice = await ctx.db.get(args.invoiceId);
+    if (!invoice) {
+      throw new Error("Facture introuvable");
+    }
+
+    assertCanModifyInvoice(user, invoice);
+
+    // Formater la nouvelle date pour affichage
+    const newDueDateFormatted = new Date(args.newDueDate).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    // Construire le message de la note
+    let noteContent = `📅 Échéance reportée au ${newDueDateFormatted}`;
+    if (args.reason && args.reason.trim()) {
+      noteContent += `\n\nRaison : ${args.reason.trim()}`;
+    }
+
+    // Mettre à jour l'échéance
+    await ctx.db.patch(args.invoiceId, {
+      dueDate: args.newDueDate,
+    });
+
+    // Ajouter une note automatique via le système de notes
+    await ctx.scheduler.runAfter(0, internal.invoiceNotes.createInternal, {
+      invoiceId: args.invoiceId,
+      organizationId: invoice.organizationId,
+      content: noteContent,
+      createdBy: user.userId,
+      createdByName: user.name || user.email || "Utilisateur",
+    });
+
+    return null;
+  },
+});
+
+/**
  * ✅ V2 Phase 2.8 : Liste les factures en cours (envoyées mais pas encore échues, non payées)
  */
 export const listOngoing = query({

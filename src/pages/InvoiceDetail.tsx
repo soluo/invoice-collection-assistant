@@ -1,19 +1,24 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { getStatusDisplay } from "@/lib/invoiceStatus";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, MessageSquare, Calendar } from "lucide-react";
 import { InvoiceTimeline } from "@/components/InvoiceTimeline";
 import { PaymentRecordModal } from "@/components/PaymentRecordModal";
+import { SnoozeInvoiceModal } from "@/components/SnoozeInvoiceModal";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export function InvoiceDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isSnoozeModalOpen, setIsSnoozeModalOpen] = useState(false);
+  const [noteContent, setNoteContent] = useState("");
+  const [isAddingNote, setIsAddingNote] = useState(false);
 
   const invoice = useQuery(
     api.invoices.getById,
@@ -25,12 +30,38 @@ export function InvoiceDetail() {
     id ? { invoiceId: id as Id<"invoices"> } : "skip"
   );
 
+  const notes = useQuery(
+    api.invoiceNotes.listForInvoice,
+    id ? { invoiceId: id as Id<"invoices"> } : "skip"
+  );
+
   const pdfUrl = useQuery(
     api.invoices.getPdfUrl,
     invoice?.pdfStorageId ? { storageId: invoice.pdfStorageId } : "skip"
   );
 
-  if (invoice === undefined || events === undefined) {
+  const createNote = useMutation(api.invoiceNotes.create);
+
+  const handleAddNote = async () => {
+    if (!noteContent.trim() || !id) return;
+
+    setIsAddingNote(true);
+    try {
+      await createNote({
+        invoiceId: id as Id<"invoices">,
+        content: noteContent.trim(),
+      });
+      setNoteContent("");
+      toast.success("Note ajoutée avec succès");
+    } catch (error) {
+      console.error("Erreur lors de l'ajout de la note:", error);
+      toast.error("Erreur lors de l'ajout de la note");
+    } finally {
+      setIsAddingNote(false);
+    }
+  };
+
+  if (invoice === undefined || events === undefined || notes === undefined) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -99,6 +130,14 @@ export function InvoiceDetail() {
         >
           Enregistrer un paiement
         </Button>
+        <Button
+          onClick={() => setIsSnoozeModalOpen(true)}
+          variant="outline"
+          className="inline-flex items-center gap-2"
+        >
+          <Calendar className="h-4 w-4" />
+          Reporter l'échéance
+        </Button>
         {pdfUrl && (
           <Button
             variant="outline"
@@ -112,9 +151,9 @@ export function InvoiceDetail() {
         )}
       </div>
 
-      {/* 2-column layout */}
+      {/* 3-column layout */}
       <div className="flex flex-col gap-6 lg:flex-row">
-        {/* Left column: Invoice details (35%) */}
+        {/* Left column: Invoice details */}
         <div className="lg:w-1/3">
           <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">Détails</h2>
@@ -179,9 +218,73 @@ export function InvoiceDetail() {
           </div>
         </div>
 
-        {/* Right column: Activity timeline (65%) */}
-        <div className="lg:w-2/3">
+        {/* Middle column: Activity timeline */}
+        <div className="lg:w-1/3">
           <InvoiceTimeline events={events} />
+        </div>
+
+        {/* Right column: Notes */}
+        <div className="lg:w-1/3">
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+              <MessageSquare className="h-5 w-5" />
+              Notes & Commentaires
+            </h2>
+
+            {/* Add note form */}
+            <div className="mb-6">
+              <textarea
+                value={noteContent}
+                onChange={(e) => setNoteContent(e.target.value)}
+                placeholder="Ajouter une note (ex: accord de paiement, discussion avec le client...)"
+                className="w-full rounded-lg border border-gray-300 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[100px]"
+                disabled={isAddingNote}
+              />
+              <div className="mt-2 flex justify-end">
+                <Button
+                  onClick={handleAddNote}
+                  disabled={!noteContent.trim() || isAddingNote}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {isAddingNote ? "Ajout..." : "Ajouter une note"}
+                </Button>
+              </div>
+            </div>
+
+            {/* Notes list */}
+            <div className="space-y-4">
+              {notes.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">
+                  Aucune note pour le moment
+                </p>
+              ) : (
+                notes.map((note) => (
+                  <div
+                    key={note._id}
+                    className="rounded-lg bg-gray-50 p-4 border border-gray-200"
+                  >
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <span className="text-xs font-medium text-gray-900">
+                        {note.createdByName}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(note._creationTime).toLocaleDateString("fr-FR", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {note.content}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -193,6 +296,16 @@ export function InvoiceDetail() {
           clientName={invoice.clientName}
           outstandingBalance={invoice.outstandingBalance}
           onClose={() => setIsPaymentModalOpen(false)}
+        />
+      )}
+
+      {/* Snooze modal */}
+      {isSnoozeModalOpen && (
+        <SnoozeInvoiceModal
+          invoiceId={id as Id<"invoices">}
+          invoiceNumber={invoice.invoiceNumber}
+          currentDueDate={invoice.dueDate}
+          onClose={() => setIsSnoozeModalOpen(false)}
         />
       )}
     </div>

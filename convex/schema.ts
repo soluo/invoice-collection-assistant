@@ -250,6 +250,18 @@ const applicationTables = {
       "status",
       "expectedDepositDate",
     ]),
+
+  // ✅ MVP : Notes sur les factures
+  invoiceNotes: defineTable({
+    invoiceId: v.id("invoices"),
+    organizationId: v.id("organizations"),
+    content: v.string(),
+    createdBy: v.id("users"),
+    createdByName: v.string(),
+    // _creationTime est automatique (pas besoin de createdAt!)
+  })
+    .index("by_invoice", ["invoiceId"])
+    .index("by_organization", ["organizationId"]),
 };
 
 export default defineSchema({
