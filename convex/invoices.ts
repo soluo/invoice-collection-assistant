@@ -846,3 +846,152 @@ export const sendReminder = mutation({
     return { success: true, reminderNumber: nextReminderNumber };
   },
 });
+
+/**
+ * ✅ V2 Interface : Liste les factures pour la vue principale
+ * - Filtre par onglet (to_handle, waiting, paid)
+ * - Recherche par client ou N° facture
+ * - Filtre par statut (urgent, late, to_send)
+ * - Tri personnalisable
+ */
+export const listForMainView = query({
+  args: {
+    tab: v.union(
+      v.literal("to_handle"),
+      v.literal("waiting"),
+      v.literal("paid")
+    ),
+    searchQuery: v.optional(v.string()),
+    filterStatus: v.optional(v.union(
+      v.literal("urgent"),
+      v.literal("late"),
+      v.literal("to_send")
+    )),
+    sortBy: v.union(
+      v.literal("dueDate"),
+      v.literal("amount"),
+      v.literal("client")
+    ),
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    const user = await getUserWithOrg(ctx);
+
+    // Récupérer toutes les factures de l'organisation
+    let invoices;
+    if (isAdmin(user)) {
+      invoices = await ctx.db
+        .query("invoices")
+        .withIndex("by_organization", (q) => q.eq("organizationId", user.organizationId))
+        .collect();
+    } else {
+      invoices = await ctx.db
+        .query("invoices")
+        .withIndex("by_organization_and_creator", (q) =>
+          q.eq("organizationId", user.organizationId).eq("createdBy", user.userId)
+        )
+        .collect();
+    }
+
+    // Enrichir avec le nom du créateur
+    const invoicesWithCreator = await enrichInvoicesWithCreator(ctx, invoices);
+
+    // Calculer les infos d'affichage
+    const now = new Date();
+    let invoicesWithDisplayInfo = invoicesWithCreator.map((invoice) => {
+      const displayInfo = getInvoiceDisplayInfo(invoice, now);
+
+      return {
+        ...invoice,
+        ...displayInfo,
+      };
+    });
+
+    // Filtre par onglet
+    if (args.tab === "to_handle") {
+      // Affiche : urgent (>15j retard), late (1-15j retard), to_send (pas encore envoyée)
+      invoicesWithDisplayInfo = invoicesWithDisplayInfo.filter((invoice) => {
+        if (invoice.paymentStatus === "paid") return false;
+
+        if (invoice.sendStatus === "pending") return true; // to_send
+
+        if (invoice.isOverdue) {
+          // En retard
+          return true;
+        }
+
+        return false;
+      });
+    } else if (args.tab === "waiting") {
+      // Factures envoyées, pas encore à l'échéance OU échéance dépassée mais <7j
+      invoicesWithDisplayInfo = invoicesWithDisplayInfo.filter((invoice) => {
+        if (invoice.paymentStatus === "paid") return false;
+        if (invoice.sendStatus === "pending") return false;
+
+        // Envoyée et pas encore échue
+        if (!invoice.isOverdue) return true;
+
+        // OU échéance dépassée mais <7j
+        if (invoice.daysPastDue < 7) return true;
+
+        return false;
+      });
+    } else if (args.tab === "paid") {
+      // Archives des factures payées
+      invoicesWithDisplayInfo = invoicesWithDisplayInfo.filter((invoice) =>
+        invoice.paymentStatus === "paid"
+      );
+    }
+
+    // Filtre recherche texte
+    if (args.searchQuery) {
+      const query = args.searchQuery.toLowerCase().trim();
+      invoicesWithDisplayInfo = invoicesWithDisplayInfo.filter(
+        (invoice) =>
+          invoice.invoiceNumber.toLowerCase().includes(query) ||
+          invoice.clientName.toLowerCase().includes(query)
+      );
+    }
+
+    // Filtre par statut (uniquement pour l'onglet "to_handle")
+    if (args.filterStatus && args.tab === "to_handle") {
+      invoicesWithDisplayInfo = invoicesWithDisplayInfo.filter((invoice) => {
+        if (args.filterStatus === "urgent") {
+          return invoice.isOverdue && invoice.daysPastDue > 15;
+        } else if (args.filterStatus === "late") {
+          return invoice.isOverdue && invoice.daysPastDue >= 1 && invoice.daysPastDue <= 15;
+        } else if (args.filterStatus === "to_send") {
+          return invoice.sendStatus === "pending";
+        }
+        return true;
+      });
+    }
+
+    // Tri
+    return invoicesWithDisplayInfo.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (args.sortBy) {
+        case "dueDate":
+          aValue = new Date(a.dueDate).getTime();
+          bValue = new Date(b.dueDate).getTime();
+          break;
+        case "amount":
+          aValue = a.amountTTC;
+          bValue = b.amountTTC;
+          // Tri descendant pour les montants (plus gros d'abord)
+          return bValue - aValue;
+        case "client":
+          aValue = a.clientName.toLowerCase();
+          bValue = b.clientName.toLowerCase();
+          return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+        default:
+          return 0;
+      }
+
+      // Tri ascendant par défaut (sauf montants)
+      return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+    });
+  },
+});

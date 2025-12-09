@@ -473,3 +473,140 @@ export const completePhoneReminder = mutation({
     return { success: true };
   },
 });
+
+/**
+ * ✅ V2 Interface : Récupère les relances pour l'onglet "Relances auto"
+ * Format simplifié pour l'interface V2
+ */
+export const getRemindersForAutoTab = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("reminders"),
+      invoiceId: v.id("invoices"),
+      invoiceNumber: v.string(),
+      clientName: v.string(),
+      amount: v.number(),
+      scheduledDate: v.string(),
+      reminderType: v.string(),
+      status: v.union(v.literal("scheduled"), v.literal("sent")),
+      sentDate: v.optional(v.string()),
+      emailSubject: v.optional(v.string()),
+      emailContent: v.optional(v.string()),
+    })
+  ),
+  handler: async (ctx) => {
+    const user = await getUserWithOrg(ctx);
+
+    // Récupérer tous les reminders de l'organisation
+    let reminders;
+    if (isAdmin(user)) {
+      reminders = await ctx.db
+        .query("reminders")
+        .withIndex("by_organization", (q) => q.eq("organizationId", user.organizationId))
+        .collect();
+    } else {
+      reminders = await ctx.db
+        .query("reminders")
+        .withIndex("by_user", (q) => q.eq("userId", user.userId))
+        .collect();
+    }
+
+    // Filtrer pour garder uniquement :
+    // - Les reminders "pending" (pas encore envoyés)
+    // - Les reminders "completed" envoyés dans les derniers 30 jours
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const filteredReminders = reminders.filter((reminder) => {
+      if (reminder.completionStatus === "pending") return true;
+
+      if (reminder.completionStatus === "completed" && reminder.completedAt) {
+        const completedDate = new Date(reminder.completedAt);
+        return completedDate >= thirtyDaysAgo;
+      }
+
+      return false;
+    });
+
+    // Enrichir avec les infos de la facture
+    const enrichedReminders = await Promise.all(
+      filteredReminders.map(async (reminder) => {
+        const invoice = await ctx.db.get(reminder.invoiceId);
+
+        if (!invoice) {
+          // Facture supprimée, skip
+          return null;
+        }
+
+        // Déterminer le nom du type de relance
+        let reminderTypeName = "";
+        const reminderStatusStr = String(reminder.reminderStatus);
+
+        switch (reminder.reminderStatus) {
+          case "reminder_1":
+            reminderTypeName = "Relance 1 - Amicale";
+            break;
+          case "reminder_2":
+            reminderTypeName = "Relance 2 - Sérieuse";
+            break;
+          case "reminder_3":
+            reminderTypeName = "Relance 3 - Ferme";
+            break;
+          case "reminder_4":
+            reminderTypeName = "Relance 4 - Ultime";
+            break;
+          default:
+            reminderTypeName = `Relance ${reminderStatusStr.replace("reminder_", "")}`;
+        }
+
+        return {
+          _id: reminder._id,
+          invoiceId: reminder.invoiceId,
+          invoiceNumber: invoice.invoiceNumber,
+          clientName: invoice.clientName,
+          amount: invoice.amountTTC,
+          scheduledDate: reminder.reminderDate,
+          reminderType: reminderTypeName,
+          status: reminder.completionStatus === "pending" ? "scheduled" as const : "sent" as const,
+          sentDate: reminder.completedAt
+            ? new Date(reminder.completedAt).toISOString().split("T")[0]
+            : undefined,
+          emailSubject: reminder.data?.emailSubject,
+          emailContent: reminder.data?.emailContent,
+        };
+      })
+    );
+
+    // Filtrer les nulls et trier
+    const validReminders = enrichedReminders.filter((r) => r !== null) as Array<{
+      _id: any;
+      invoiceId: any;
+      invoiceNumber: string;
+      clientName: string;
+      amount: number;
+      scheduledDate: string;
+      reminderType: string;
+      status: "scheduled" | "sent";
+      sentDate?: string;
+      emailSubject?: string;
+      emailContent?: string;
+    }>;
+
+    // Trier : planifiées d'abord (par date), puis envoyées (par date desc)
+    return validReminders.sort((a, b) => {
+      if (a.status === "scheduled" && b.status === "sent") return -1;
+      if (a.status === "sent" && b.status === "scheduled") return 1;
+
+      if (a.status === "scheduled") {
+        // Trier par date planifiée (ascendant)
+        return new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime();
+      } else {
+        // Trier par date d'envoi (descendant)
+        const aDate = a.sentDate ? new Date(a.sentDate).getTime() : 0;
+        const bDate = b.sentDate ? new Date(b.sentDate).getTime() : 0;
+        return bDate - aDate;
+      }
+    });
+  },
+});

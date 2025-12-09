@@ -20,6 +20,7 @@ import { CallPlan } from "@pages/CallPlan";
 import { MvpMockup } from "@pages/MvpMockup";
 import { MvpMockupV2 } from "@pages/MvpMockupV2";
 import { Home } from "@/components/Home";
+import MainView from "@pages/MainView";
 import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
@@ -57,8 +58,8 @@ function Content() {
           sessionStorage.removeItem("pendingOrgData");
           setOrgSetupError(null);
           setIsCreatingOrg(false);
-          // Rediriger vers /follow-up après la création de l'organisation
-          void navigate("/follow-up");
+          // Rediriger vers /invoices après la création de l'organisation
+          void navigate("/invoices");
         } catch (error: any) {
           console.error("Erreur lors de la création de l'organisation:", error);
           const errorMessage = error.message || "Erreur lors de la création de l'organisation";
@@ -91,8 +92,8 @@ function Content() {
           sessionStorage.removeItem("pendingInvitationData");
           setOrgSetupError(null);
           setIsCreatingOrg(false);
-          // Rediriger vers /follow-up après l'acceptation de l'invitation
-          void navigate("/follow-up");
+          // Rediriger vers /invoices après l'acceptation de l'invitation
+          void navigate("/invoices");
         } catch (error: any) {
           console.error("Erreur lors de l'acceptation de l'invitation:", error);
           const errorMessage = error.message || "Erreur lors de l'acceptation de l'invitation";
@@ -108,12 +109,12 @@ function Content() {
     }
   }, [loggedInUser, createOrganization, acceptInvitation, signOut, navigate]);
 
-  // Rediriger automatiquement vers /follow-up si l'utilisateur est déjà connecté
+  // Rediriger automatiquement vers /invoices si l'utilisateur est déjà connecté
   // et se trouve sur /login ou /signup
   useEffect(() => {
     if (loggedInUser && loggedInUser.organizationId &&
         (location.pathname === "/login" || location.pathname === "/signup")) {
-      void navigate("/follow-up");
+      void navigate("/invoices");
     }
   }, [loggedInUser, location.pathname, navigate]);
 
@@ -142,25 +143,35 @@ function Content() {
     <Routes>
       {loggedInUser ? (
         <>
-          <Route path="/" element={<Home isAuthenticated={true} />} />
-          <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
-          <Route path="/invoices" element={<AppLayout><Invoices /></AppLayout>} />
+          {/* Redirect home to invoices (new main view) */}
+          <Route path="/" element={<Navigate to="/invoices" replace />} />
+
+          {/* New V2 Interface */}
+          <Route path="/invoices" element={<AppLayout><MainView /></AppLayout>} />
           <Route path="/invoices/:id" element={<AppLayout><InvoiceDetail /></AppLayout>} />
-          <Route path="/follow-up" element={<AppLayout><FollowUp /></AppLayout>} />
-          <Route path="/call-plan" element={<AppLayout><CallPlan /></AppLayout>} />
-          <Route path="/reminders" element={<AppLayout><Reminders /></AppLayout>} />
-          <Route path="/ongoing" element={<AppLayout><OngoingInvoices /></AppLayout>} />
-          <Route path="/paid" element={<AppLayout><PaidInvoices /></AppLayout>} />
+
+          {/* Other pages */}
           <Route path="/upload" element={<AppLayout><InvoiceUploadPage /></AppLayout>} />
           <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
           <Route path="/team" element={<AppLayout><TeamManagement /></AppLayout>} />
+
+          {/* Legacy routes (kept for backward compatibility) */}
+          <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
+          <Route path="/follow-up" element={<Navigate to="/invoices" replace />} />
+          <Route path="/call-plan" element={<AppLayout><CallPlan /></AppLayout>} />
+          <Route path="/reminders" element={<AppLayout><Reminders /></AppLayout>} />
+          <Route path="/ongoing" element={<Navigate to="/invoices" replace />} />
+          <Route path="/paid" element={<Navigate to="/invoices" replace />} />
+
+          {/* Mockups */}
           <Route path="/mvp" element={<MvpMockup />} />
           <Route path="/mvp-v2" element={<MvpMockupV2 />} />
-          {/* Les routes d'auth ne sont plus accessibles une fois connecté */}
-          <Route path="/login" element={<Navigate to="/" />} />
-          <Route path="/signup" element={<Navigate to="/" />} />
-          <Route path="/accept-invitation/:token" element={<Navigate to="/" />} />
-          <Route path="*" element={<Navigate to="/" />} />
+
+          {/* Auth routes redirect */}
+          <Route path="/login" element={<Navigate to="/invoices" replace />} />
+          <Route path="/signup" element={<Navigate to="/invoices" replace />} />
+          <Route path="/accept-invitation/:token" element={<Navigate to="/invoices" replace />} />
+          <Route path="*" element={<Navigate to="/invoices" replace />} />
         </>
       ) : (
         <>
