@@ -17,6 +17,8 @@ import { InvoiceDetail } from "@pages/InvoiceDetail";
 import { Reminders } from "@pages/Reminders";
 import { FollowUp } from "@pages/FollowUp";
 import { CallPlan } from "@pages/CallPlan";
+import { MvpMockup } from "@pages/MvpMockup";
+import { MvpMockupV2 } from "@pages/MvpMockupV2";
 import { Home } from "@/components/Home";
 import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
@@ -152,6 +154,8 @@ function Content() {
           <Route path="/upload" element={<AppLayout><InvoiceUploadPage /></AppLayout>} />
           <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
           <Route path="/team" element={<AppLayout><TeamManagement /></AppLayout>} />
+          <Route path="/mvp" element={<MvpMockup />} />
+          <Route path="/mvp-v2" element={<MvpMockupV2 />} />
           {/* Les routes d'auth ne sont plus accessibles une fois connecté */}
           <Route path="/login" element={<Navigate to="/" />} />
           <Route path="/signup" element={<Navigate to="/" />} />
