@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useNavigate } from "react-router";
+import { Link } from "react-router";
 
 interface EmailPreviewModalProps {
   open: boolean;
@@ -29,8 +29,6 @@ export default function EmailPreviewModal({
   reminder,
   onConfirm,
 }: EmailPreviewModalProps) {
-  const navigate = useNavigate();
-
   if (!reminder) return null;
 
   return (
@@ -73,15 +71,13 @@ export default function EmailPreviewModal({
             <div className="flex-1">
               <p className="text-sm text-blue-900">
                 Vous pouvez modifier les templates dans les{" "}
-                <button
-                  onClick={() => {
-                    onClose();
-                    navigate("/settings");
-                  }}
+                <Link
+                  to="/settings"
+                  onClick={onClose}
                   className="underline font-medium hover:text-blue-700"
                 >
                   paramètres
-                </button>
+                </Link>
               </p>
             </div>
           </div>
