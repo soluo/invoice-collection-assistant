@@ -1,11 +1,11 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Mail } from "lucide-react";
 
 export function SignupForm() {
   const { signIn } = useAuthActions();
@@ -50,53 +50,60 @@ export function SignupForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-20">
+    <div className="bg-white rounded-2xl shadow-2xl p-8 border border-slate-100">
+      {/* Header avec logo */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          RelanceFactures
-        </h1>
+        <div className="inline-flex items-center gap-2 mb-4">
+          <div className="w-12 h-12 bg-brand-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+            <Mail className="w-7 h-7" />
+          </div>
+          <span className="text-3xl font-bold text-slate-900">
+            Relance<span className="text-brand-500">Zen</span>
+          </span>
+        </div>
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">Créez votre compte</h1>
+        <p className="text-slate-600">Commencez à gérer vos relances facilement</p>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Créez votre compte</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
+      <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="organizationName">Nom de la société</Label>
+              <Label htmlFor="organizationName" className="text-sm font-semibold text-slate-700">Nom de la société</Label>
               <Input
                 id="organizationName"
                 type="text"
                 name="organizationName"
                 placeholder="Mon Entreprise SARL"
                 required
+                className="h-12 rounded-lg border-slate-200 focus:border-brand-500 focus:ring-brand-500"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="userName">Votre nom</Label>
+              <Label htmlFor="userName" className="text-sm font-semibold text-slate-700">Votre nom</Label>
               <Input
                 id="userName"
                 type="text"
                 name="userName"
                 placeholder="Alexandre Dupont"
                 required
+                className="h-12 rounded-lg border-slate-200 focus:border-brand-500 focus:ring-brand-500"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm font-semibold text-slate-700">Email</Label>
               <Input
                 id="email"
                 type="email"
                 name="email"
                 placeholder="alexandre@monentreprise.fr"
                 required
+                className="h-12 rounded-lg border-slate-200 focus:border-brand-500 focus:ring-brand-500"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
+              <Label htmlFor="password" className="text-sm font-semibold text-slate-700">Mot de passe</Label>
               <Input
                 id="password"
                 type="password"
@@ -104,26 +111,29 @@ export function SignupForm() {
                 placeholder="••••••••"
                 required
                 minLength={6}
+                className="h-12 rounded-lg border-slate-200 focus:border-brand-500 focus:ring-brand-500"
               />
+              <p className="text-xs text-slate-500">Minimum 6 caractères</p>
             </div>
 
-            <Button type="submit" disabled={submitting} className="w-full">
-              {submitting ? "Création en cours..." : "Créer mon organisation"}
+            <Button
+              type="submit"
+              disabled={submitting}
+              className="w-full h-12 bg-brand-500 hover:bg-brand-600 text-white text-lg font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 mt-6"
+            >
+              {submitting ? "Création en cours..." : "Créer mon compte"}
             </Button>
 
-            <div className="text-center text-sm text-gray-600">
+            <div className="text-center text-slate-600">
               <span>Vous avez déjà un compte ? </span>
-              <button
-                type="button"
-                className="text-blue-600 hover:text-blue-700 hover:underline font-medium cursor-pointer"
-                onClick={() => navigate("/login")}
+              <NavLink
+                to="/login"
+                className="text-brand-600 hover:text-brand-700 font-semibold hover:underline"
               >
                 Se connecter
-              </button>
+              </NavLink>
             </div>
           </form>
-        </CardContent>
-      </Card>
     </div>
   );
 }

@@ -1,10 +1,10 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, NavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Mail } from "lucide-react";
 
 export function SignInForm() {
   const { signIn } = useAuthActions();
@@ -14,14 +14,24 @@ export function SignInForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Connexion</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form
-          className="flex flex-col gap-4"
-          onSubmit={async (e) => {
+    <div className="bg-white rounded-2xl shadow-2xl p-8 border border-slate-100">
+      {/* Header avec logo */}
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center gap-2 mb-4">
+          <div className="w-12 h-12 bg-brand-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+            <Mail className="w-7 h-7" />
+          </div>
+          <span className="text-3xl font-bold text-slate-900">
+            Relance<span className="text-brand-500">Zen</span>
+          </span>
+        </div>
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">Bon retour !</h1>
+        <p className="text-slate-600">Connectez-vous à votre compte</p>
+      </div>
+
+      <form
+        className="space-y-6"
+        onSubmit={async (e) => {
           e.preventDefault();
           setSubmitting(true);
           setErrorMessage(null);
@@ -70,44 +80,50 @@ export function SignInForm() {
         }}
       >
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-sm font-semibold text-slate-700">Email</Label>
             <Input
               id="email"
               type="email"
               name="email"
               placeholder="nom@exemple.fr"
               required
+              className="h-12 rounded-lg border-slate-200 focus:border-brand-500 focus:ring-brand-500"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Mot de passe</Label>
+            <Label htmlFor="password" className="text-sm font-semibold text-slate-700">Mot de passe</Label>
             <Input
               id="password"
               type="password"
               name="password"
               placeholder="••••••••"
               required
+              className="h-12 rounded-lg border-slate-200 focus:border-brand-500 focus:ring-brand-500"
             />
           </div>
           {errorMessage && (
-            <p className="text-sm text-red-600">{errorMessage}</p>
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {errorMessage}
+            </div>
           )}
-          <Button type="submit" disabled={submitting} className="w-full">
+          <Button
+            type="submit"
+            disabled={submitting}
+            className="w-full h-12 bg-brand-500 hover:bg-brand-600 text-white text-lg font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5"
+          >
             {submitting ? "Connexion en cours..." : "Se connecter"}
           </Button>
-          <div className="text-center text-sm text-gray-600">
+          <div className="text-center text-slate-600">
             <span>Vous n'avez pas de compte ? </span>
-            <button
-              type="button"
-              className="text-blue-600 hover:text-blue-700 hover:underline font-medium cursor-pointer"
-              onClick={() => navigate("/signup")}
+            <NavLink
+              to="/signup"
+              className="text-brand-600 hover:text-brand-700 font-semibold hover:underline"
             >
-              Créer une organisation
-            </button>
+              Créer un compte
+            </NavLink>
           </div>
         </form>
-      </CardContent>
-    </Card>
+    </div>
   );
 }
 

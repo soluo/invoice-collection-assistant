@@ -25,6 +25,7 @@ import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { AuthLayout } from "@/components/auth/AuthLayout";
 
 export default function App() {
   return (
@@ -176,26 +177,21 @@ function Content() {
       ) : (
         <>
           <Route path="/" element={<Home isAuthenticated={false} />} />
-          <Route path="/login" element={<SignInPage />} />
-          <Route path="/signup" element={<SignupForm />} />
+          <Route path="/login" element={
+            <AuthLayout showSignupLink={false}>
+              <SignInForm />
+            </AuthLayout>
+          } />
+          <Route path="/signup" element={
+            <AuthLayout showSignupLink={true}>
+              <SignupForm />
+            </AuthLayout>
+          } />
           <Route path="/accept-invitation/:token" element={<AcceptInvitation />} />
           <Route path="*" element={<Navigate to="/" />} />
         </>
       )}
     </Routes>
-  );
-}
-
-function SignInPage() {
-  return (
-    <div className="max-w-md mx-auto mt-20">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          RelanceFactures
-        </h1>
-      </div>
-      <SignInForm />
-    </div>
   );
 }
 
