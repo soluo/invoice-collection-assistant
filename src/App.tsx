@@ -25,7 +25,8 @@ import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { AuthLayout } from "@/components/auth/AuthLayout";
+import { SimpleAuthLayout } from "@/components/auth/SimpleAuthLayout";
+import { SplitAuthLayout } from "@/components/auth/SplitAuthLayout";
 
 export default function App() {
   return (
@@ -178,14 +179,14 @@ function Content() {
         <>
           <Route path="/" element={<Home isAuthenticated={false} />} />
           <Route path="/login" element={
-            <AuthLayout showSignupLink={false}>
+            <SimpleAuthLayout>
               <SignInForm />
-            </AuthLayout>
+            </SimpleAuthLayout>
           } />
           <Route path="/signup" element={
-            <AuthLayout showSignupLink={true}>
+            <SplitAuthLayout>
               <SignupForm />
-            </AuthLayout>
+            </SplitAuthLayout>
           } />
           <Route path="/accept-invitation/:token" element={<AcceptInvitation />} />
           <Route path="*" element={<Navigate to="/" />} />
