@@ -2,124 +2,88 @@
 
 Guide de référence pour les agents de code (Codex, GitHub Copilot, etc.) qui travaillent sur ce dépôt.
 
-## Aperçu du projet
+Application française de gestion de recouvrement de factures avec Convex (backend) et React 19 + TypeScript + Vite (frontend).
 
-Application française de gestion du recouvrement de factures. Stack : Convex pour le backend temps réel et React 19 + TypeScript + Vite pour le frontend. Les utilisateurs importent des PDF, l’IA extrait automatiquement les données, puis l’outil orchestre le suivi des paiements et les relances.
+## Package Manager
 
-## Gestionnaire de paquets
+**pnpm** - Utiliser `pnpm` pour toutes les commandes.
 
-Le projet utilise **pnpm**. Toujours privilégier les commandes `pnpm ...`.
+## Commandes Essentielles
 
-## Commandes de développement
+```bash
+pnpm dev              # Frontend + Backend
+pnpm dev:frontend     # Frontend seul
+pnpm dev:backend      # Backend Convex seul (validation après modif Convex)
+pnpm build            # Build production
+pnpm lint             # Lint + typecheck complet
+```
 
-- **Lancer frontend + backend :** `pnpm dev`
-- **Frontend seul :** `pnpm dev:frontend`
-- **Backend Convex seul :** `pnpm dev:backend`
-- **Build production :** `pnpm build`
-- **Lint complet + typecheck + build :** `pnpm lint` (inclut un `convex dev --once`)
+## Git Workflow & Commits
 
-## Architecture
+**IMPORTANT : si on te l'as demandé tu DOIS créer un commit après chaque fonctionnalité ou grosse modification.**
 
-### Backend (Convex)
-- Répertoire : `convex/`
-- Fichiers clés : `schema.ts`, `invoices.ts`, `reminderSettings.ts`, `reminders.ts`, `pdfExtractionAI.ts`, `dashboard.ts`, `auth.ts`, `auth.config.ts`, `router.ts`, `http.ts`
-- Tables principales : `invoices`, `reminderSettings`, `reminders` (+ tables d’auth Convex)
-- Toujours régénérer les bindings en lançant une commande Convex après modification (ex. `convex dev --once`)
+### Workflow
+1. Implémenter une fonctionnalité complète
+2. Tester manuellement (vérifier que ça fonctionne)
+3. Lancer `pnpm lint` pour vérifier qu'il n'y a pas d'erreurs
+4. **Créer un commit Git** avec un message descriptif (si on te l'a demandé)
+5. Passer à la fonctionnalité suivante
 
-### Frontend (React)
-- Répertoire : `src/`
-- `src/App.tsx` : shell principal + React Router
-- Layout : `src/components/layout/AppLayout.tsx`, `Sidebar.tsx`, `Topbar.tsx`
-- Pages/clés : `src/pages`, `src/components/Dashboard.tsx`, `InvoiceList.tsx`, `InvoiceUpload.tsx`, `ReminderSettings.tsx`, etc.
-- State : hooks Convex (`useQuery`, `useMutation`)
-- Navigation : React Router v7, préférer `<NavLink>` avec prop `end` si nécessaire
+### Format des commits
+Utiliser des messages de commit clairs et concis :
+- `feat: description courte` - Nouvelle fonctionnalité
+- `fix: description courte` - Correction de bug
+- `refactor: description courte` - Refactoring sans changement de comportement
+- `style: description courte` - Changements de style/formatage
+- `docs: description courte` - Documentation uniquement
 
-### Organisation des fichiers
-- UI partagée : `src/components`
-- Pages : `src/pages`
-- Helpers : `src/lib`
-- Backend : `convex/functions`, `convex/http.ts`, `convex/router.ts`
-- Artifacts : `dist/` (ne jamais éditer)
-- Config : `vite.config.ts`, `eslint.config.js`, `setup.mjs`, `tsconfig*.json`
+**Exemples :**
+```bash
+git add .
+git commit -m "feat: add invoice notes system with timeline"
+git commit -m "feat: add email preview before sending reminders"
+git commit -m "fix: handle failed email sends with retry button"
+```
 
-## Tailwind CSS v4
+### Pourquoi commiter régulièrement ?
+- Permet de revenir en arrière facilement si besoin
+- Facilite le suivi des changements
+- Permet de déployer par étapes
+- Évite de perdre du travail
 
-- Plus de `tailwind.config.js` : toute la config se fait via `@theme` dans `src/index.css`
-- Import : `@import "tailwindcss"`
-- Variables personnalisées (couleurs, spacing, radius, ombres) définies dans `@theme` et appelées via utilitaires (ex. `bg-primary`, `rounded-container`)
-- Vite plugin : `@tailwindcss/vite` dans `vite.config.ts`
-- Lors d’un ajout de thèmes, modifier `src/index.css`
+## Documentation (Lazy Loading)
 
-## Style de code & conventions
+**Consulter selon besoin :**
+- `ARCHITECTURE.md` - Structure détaillée backend/frontend/DB/features
+- `CONVEX_GUIDELINES.md` - Validation obligatoire après modification Convex
+- `convex_rules.txt` - Règles officielles Convex (syntaxe, validateurs)
+- `CONVENTIONS.md` - Best practices (Navigation NavLink, Tailwind, style de code)
 
-- TypeScript strict : conserver les types explicites, en particulier pour les fonctions Convex et hooks React
-- Nommer : PascalCase pour composants/handlers, camelCase pour variables/fonctions, kebab-case pour nouveaux fichiers (`invoice-upload.tsx`)
-- ESLint + Prettier : indentation 2 espaces, JSX en double quotes, trailing commas quand possible
-- Utiliser les utilitaires Tailwind existants (voir `src/App.tsx`) pour rester cohérent
+## Règles Importantes
 
-## Schéma et logique métier
-
-- **Invoices** : suivi du statut, informations client, montants, dates, PDF optionnel. Index `by_user`, `by_user_and_status`, `by_due_date`
-- **ReminderSettings** : configuration des délais et modèles d’emails par utilisateur (index `by_user`)
-- **Reminders** : historique des relances (index `by_invoice`, `by_user`)
-- Flow des statuts : `sent` → `overdue` → `first_reminder` → `second_reminder` → `third_reminder` → `litigation` → `paid`
-- La requête `invoices.list` calcule `daysOverdue` et trie par priorité
-
-## Fonctionnalités clés
-
-1. Extraction automatique de PDF via Claude 3.5 Haiku (`@anthropic-ai/sdk`) – nécessite `CLAUDE_API_KEY`
-2. Gestion des statuts et relances planifiées
-3. Synchronisation temps réel (Convex)
-4. Authentification avec `@convex-dev/auth` (anonymous auth)
-5. Tableau de bord multi-vues et filtres
-
-## Directives Convex importantes
-
-- Se référer à `convex_rules.txt` et `CONVEX_GUIDELINES.md`
-- Toujours définir `args`, `returns`, `handler` dans les fonctions (`query`, `mutation`, `action`, `internal*`)
-- Ajouter des validateurs (`v.*`) pour tous les arguments/retours
-- Utiliser les indexes avec `.withIndex()` plutôt que `.filter()` pour les requêtes
+### Convex (Backend)
+- **Validation obligatoire** : `pnpm dev:backend` après toute modification Convex
+- **Documentation complète** : voir `CONVEX_GUIDELINES.md` et `convex_rules.txt`
+- Toujours définir `args`, `returns`, `handler` dans les fonctions Convex
+- Utiliser les indexes avec `.withIndex()` plutôt que `.filter()` pour les performances
 - Pour les actions Node.js, ajouter `"use node";` en tête du fichier
-- Après toute modification Convex, exécuter `pnpm dev:backend` (ou `convex dev --once`) pour régénérer les bindings
 
-## Tests et validation
+### Code
+- **Imports avec alias** : `@/lib/utils` (jamais de chemins relatifs `../../`)
+- **Navigation** : `<NavLink>` (pas `<button onClick>`) - voir `CONVENTIONS.md`
+- TypeScript strict : conserver les types explicites
+- Nommage : PascalCase pour composants, camelCase pour variables/fonctions
 
-- Pas de tests automatisés à ce jour : effectuer des vérifications manuelles ciblées via `pnpm dev`
-- Pour les scénarios backend, utiliser le dashboard Convex ou des scripts
+## Tests et Validation
+
+- Pas de tests automatisés : effectuer des vérifications manuelles via `pnpm dev`
 - Avant PR, lancer `pnpm lint` pour vérifier types + build
+- Après modification Convex : `pnpm dev:backend` pour valider
 
-## Bonnes pratiques de navigation
+## Ressources Utiles
 
-- Toujours utiliser `<NavLink>` pour les liens de navigation (meilleur UX/accessibilité, états actifs)
-- Exemple :
-  ```tsx
-  <NavLink to="/" end>Dashboard</NavLink>
-  <NavLink
-    to="/invoices"
-    className={({ isActive }) =>
-      cn("base-classes", isActive ? "active" : "inactive")
-    }
-  >
-    Invoices
-  </NavLink>
-  ```
-
-## Ligne de commande & opérations
-
-- `pnpm install` après un pull ou modification Convex
-- `convex dev --once` pour la validation la plus rapide côté backend
-- Éviter toute modification manuelle dans `dist/`
-
-## Commits & PR
-
-- Messages courts, temps présent, ≤72 caractères (`add invoices page filters`)
-- PR : expliquer le “pourquoi”, lister les changements majeurs, joindre des captures si UI, préciser les fonctions Convex modifiées et la méthode de validation (`pnpm lint`, tests manuels…)
-- Documenter toute modification du schéma Convex ou des données seed pour faciliter la reproduction locale
-
-## Ressources utiles
-
-- `convex_rules.txt` : syntaxe et conventions officielles Convex
-- `CONVEX_GUIDELINES.md` : étapes de validation obligatoires
-- `src/index.css` : configuration Tailwind v4 via `@theme`
-- `vite.config.ts` : plugin Tailwind et configuration Vite
-- `README.md` : vue d’ensemble utilisateur
+- `ARCHITECTURE.md` - Vue détaillée de l'architecture
+- `CONVEX_GUIDELINES.md` - Étapes de validation obligatoires Convex
+- `CONVENTIONS.md` - Conventions de code et best practices
+- `convex_rules.txt` - Syntaxe et conventions officielles Convex
+- `src/index.css` - Configuration Tailwind v4 via `@theme`
