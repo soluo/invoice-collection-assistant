@@ -16,6 +16,10 @@ interface FilterBarProps {
   sortBy: string;
   onSortByChange: (value: string) => void;
   showStatusFilter?: boolean;
+  showUserFilter?: boolean;
+  selectedUserId?: string;
+  onUserFilterChange?: (value: string) => void;
+  users?: Array<{ _id: string; name: string }>;
 }
 
 export default function FilterBar({
@@ -26,6 +30,10 @@ export default function FilterBar({
   sortBy,
   onSortByChange,
   showStatusFilter = true,
+  showUserFilter = false,
+  selectedUserId = "all",
+  onUserFilterChange,
+  users = [],
 }: FilterBarProps) {
   return (
     <div className="flex flex-col md:flex-row gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -41,7 +49,7 @@ export default function FilterBar({
         />
       </div>
 
-      {/* Filtre Statut (uniquement pour l'onglet "À traiter") */}
+      {/* Filtre Statut */}
       {showStatusFilter && (
         <div className="w-full md:w-48">
           <Select value={filterStatus} onValueChange={onFilterStatusChange}>
@@ -50,9 +58,29 @@ export default function FilterBar({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous les statuts</SelectItem>
-              <SelectItem value="urgent">Urgent uniquement</SelectItem>
-              <SelectItem value="late">En retard</SelectItem>
-              <SelectItem value="to_send">À envoyer</SelectItem>
+              <SelectItem value="a-envoyer">A envoyer</SelectItem>
+              <SelectItem value="envoyee">Envoyée</SelectItem>
+              <SelectItem value="en-retard">En retard</SelectItem>
+              <SelectItem value="payee">Payée</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Filtre Technicien (admin uniquement) */}
+      {showUserFilter && (
+        <div className="w-full md:w-48">
+          <Select value={selectedUserId} onValueChange={onUserFilterChange}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Technicien" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les techniciens</SelectItem>
+              {users.map((user) => (
+                <SelectItem key={user._id} value={user._id}>
+                  {user.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -66,8 +94,9 @@ export default function FilterBar({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="dueDate">Trier par échéance</SelectItem>
-            <SelectItem value="amount">Trier par montant</SelectItem>
-            <SelectItem value="client">Trier par client</SelectItem>
+            <SelectItem value="invoiceDate">Trier par date de facture</SelectItem>
+            <SelectItem value="amountTTC">Trier par montant</SelectItem>
+            <SelectItem value="clientName">Trier par client</SelectItem>
           </SelectContent>
         </Select>
       </div>

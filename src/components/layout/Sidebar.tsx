@@ -6,8 +6,11 @@ import {
   Phone,
   Settings,
   User,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import {
   Sidebar as SidebarComp,
   SidebarContent,
@@ -29,10 +32,10 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { name: "Factures", path: "/invoices", icon: FileText },
+  { name: "Relances", path: "/follow-up", icon: Calendar },
 ];
 
 const bottomNavItems: NavItem[] = [
-  { name: "Réglages", path: "/settings", icon: Settings },
   { name: "Mon Compte", path: "/account", icon: User },
 ];
 
@@ -46,7 +49,7 @@ function NavItem({ item, onClick }: { item: NavItem; onClick: () => void }) {
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive}>
         <NavLink to={item.path} onClick={onClick}>
-          <Icon className={cn("h-5 w-5", isActive ? "text-primary-foreground" : "text-muted-foreground")} />
+          <Icon className="h-5 w-5" />
           <span>{item.name}</span>
         </NavLink>
       </SidebarMenuButton>
@@ -56,16 +59,19 @@ function NavItem({ item, onClick }: { item: NavItem; onClick: () => void }) {
 
 export function Sidebar() {
   const { setOpenMobile } = useSidebar();
+  const loggedInUser = useQuery(api.auth.loggedInUser);
 
   return (
     <SidebarComp className="md:hidden">
       {/* Header avec logo */}
       <SidebarHeader>
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
-            Z
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-white">
+            <Mail className="h-5 w-5" />
           </div>
-          <h1 className="text-lg font-bold text-foreground">ZenRelance</h1>
+          <h1 className="text-lg font-bold text-foreground">
+            Relance<span className="text-brand-500">Zen</span>
+          </h1>
         </div>
       </SidebarHeader>
 
@@ -78,6 +84,13 @@ export function Sidebar() {
               {mainNavItems.map((item) => (
                 <NavItem key={item.path} item={item} onClick={() => setOpenMobile(false)} />
               ))}
+              {/* Settings - visible only for admins */}
+              {loggedInUser?.role === "admin" && (
+                <NavItem
+                  item={{ name: "Réglages", path: "/settings", icon: Settings }}
+                  onClick={() => setOpenMobile(false)}
+                />
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

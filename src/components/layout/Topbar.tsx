@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LogOut, FileText, Phone, Calendar, Settings, User } from "lucide-react";
+import { LogOut, FileText, Calendar, Settings, User, ChevronDown, Mail } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -26,6 +26,24 @@ function getUserInitials(user: MaybeUser) {
     return localPart.slice(0, 2).toUpperCase();
   }
   return "?";
+}
+
+function getUserDisplayName(user: MaybeUser) {
+  const name = user?.name?.trim();
+  if (name) {
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) {
+      return parts[0];
+    }
+    // Format: "Prénom P."
+    return `${parts[0]} ${parts[1][0]}.`;
+  }
+  const email = user?.email;
+  if (email) {
+    const localPart = email.split("@")[0];
+    return localPart;
+  }
+  return "Utilisateur";
 }
 
 export function Topbar() {
@@ -72,9 +90,8 @@ export function Topbar() {
   const displayName = loggedInUser?.name || "Utilisateur";
 
   const navItems = [
-    { name: "Factures", path: "/invoices", icon: FileText },
-    { name: "Relances", path: "/follow-up", icon: Calendar },
-    { name: "Plan d'appels", path: "/call-plan", icon: Phone },
+    { name: "Factures", path: "/invoices" },
+    { name: "Relances", path: "/follow-up" },
   ];
 
   return (
@@ -85,50 +102,72 @@ export function Topbar() {
 
         {/* Logo (desktop only) */}
         <div className="hidden md:flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
-            Z
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-white">
+            <Mail className="h-5 w-5" />
           </div>
-          <h1 className="text-lg font-bold text-foreground">ZenRelance</h1>
+          <h1 className="text-lg font-bold text-foreground">
+            Relance<span className="text-brand-500">Zen</span>
+          </h1>
         </div>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center justify-center gap-1 flex-1">
           {navItems.map((item) => {
-            const Icon = item.icon;
             return (
               <NavLink
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) =>
                   cn(
-                    "flex flex-col items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-colors",
+                    "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
                     isActive
-                      ? "text-primary"
-                      : "text-gray-500 hover:text-gray-900"
+                      ? "text-brand-600 bg-brand-50"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                   )
                 }
               >
-                <Icon className="size-5" />
-                <span>{item.name}</span>
+                {item.name}
               </NavLink>
             );
           })}
+          {/* Settings button - visible only for admins on desktop */}
+          {loggedInUser?.role === "admin" && (
+            <NavLink
+              to="/settings"
+              className={({ isActive }) =>
+                cn(
+                  "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                  isActive
+                    ? "text-brand-600 bg-brand-50"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                )
+              }
+            >
+              Réglages
+            </NavLink>
+          )}
         </nav>
 
         {/* Right side: User avatar with dropdown */}
-        <div className="relative ml-auto" ref={menuRef}>
+        <div className="flex items-center gap-4 ml-auto">
+          {/* User menu */}
+          <div className="relative" ref={menuRef}>
           <button
             type="button"
             onClick={() => setIsMenuOpen((prev) => !prev)}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 hover:bg-slate-50 p-1 pr-3 rounded-full transition-colors border border-transparent hover:border-slate-200"
             aria-haspopup="true"
             aria-expanded={isMenuOpen}
           >
-            <Avatar className="h-10 w-10 bg-primary text-white">
+            <Avatar className="h-8 w-8 bg-primary text-white">
               <AvatarFallback className="bg-primary text-white font-semibold">
                 {initials}
               </AvatarFallback>
             </Avatar>
+            <span className="text-sm font-semibold text-slate-700 hidden sm:block">
+              {getUserDisplayName(loggedInUser)}
+            </span>
+            <ChevronDown className="text-xs text-slate-400 h-3 w-3" />
           </button>
 
           {/* Dropdown menu */}
@@ -168,6 +207,7 @@ export function Topbar() {
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
     </header>

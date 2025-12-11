@@ -995,3 +995,262 @@ export const listForMainView = query({
     });
   },
 });
+
+/**
+ * ✅ V3 : Obtenir les statistiques pour le tableau de bord principal
+ * - Total En cours : toutes les factures envoyées non payées (en retard ou non)
+ * - Total En retard : factures en retard non payées
+ * - Total Payé : factures payées dans les 30 derniers jours
+ */
+export const getStatsForMainView = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getUserWithOrg(ctx);
+
+    // Récupérer les factures selon le rôle
+    let invoices;
+    if (isAdmin(user)) {
+      invoices = await ctx.db
+        .query("invoices")
+        .withIndex("by_organization", (q) => q.eq("organizationId", user.organizationId))
+        .collect();
+    } else {
+      invoices = await ctx.db
+        .query("invoices")
+        .withIndex("by_organization_and_creator", (q) =>
+          q.eq("organizationId", user.organizationId).eq("createdBy", user.userId)
+        )
+        .collect();
+    }
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // Calculer les 3 stats
+    let totalOngoing = 0;
+    let totalOverdue = 0;
+    let totalPaidLast30Days = 0;
+
+    for (const invoice of invoices) {
+      const displayInfo = getInvoiceDisplayInfo(invoice, now);
+
+      // Stat 1 : Total En cours (toutes factures envoyées non payées)
+      if (invoice.sendStatus === "sent" && invoice.paymentStatus !== "paid") {
+        totalOngoing += displayInfo.outstandingBalance;
+      }
+
+      // Stat 2 : Total En retard (factures en retard non payées)
+      if (displayInfo.isOverdue && invoice.paymentStatus !== "paid") {
+        totalOverdue += displayInfo.outstandingBalance;
+      }
+
+      // Stat 3 : Total Payé dans les 30 derniers jours
+      if (invoice.paymentStatus === "paid" && invoice.paidDate) {
+        const paidDate = new Date(invoice.paidDate);
+        if (paidDate >= thirtyDaysAgo) {
+          totalPaidLast30Days += invoice.amountTTC;
+        }
+      }
+    }
+
+    return {
+      totalOngoing,
+      totalOverdue,
+      totalPaidLast30Days,
+    };
+  },
+});
+
+/**
+ * ✅ V3 : Liste les factures avec tous les filtres pour le nouveau MainView
+ * - Filtre par rôle (technicien/admin)
+ * - Recherche par N° facture ou client
+ * - Filtre par statut simplifié (a-envoyer, envoyee, en-retard, payee)
+ * - Filtre par technicien (admin uniquement)
+ * - Tri configurable
+ * - Calcul du prochain rappel
+ */
+export const listInvoicesWithFilters = query({
+  args: {
+    searchQuery: v.optional(v.string()),
+    statusFilter: v.optional(
+      v.union(
+        v.literal("a-envoyer"),
+        v.literal("envoyee"),
+        v.literal("en-retard"),
+        v.literal("payee")
+      )
+    ),
+    sortBy: v.optional(
+      v.union(
+        v.literal("invoiceDate"),
+        v.literal("dueDate"),
+        v.literal("amountTTC"),
+        v.literal("clientName")
+      )
+    ),
+    filterByUserId: v.optional(v.id("users")), // Admin only
+  },
+  handler: async (ctx, args) => {
+    const user = await getUserWithOrg(ctx);
+
+    // Récupérer les factures selon le rôle et le filtre user
+    let invoices;
+
+    if (args.filterByUserId) {
+      // Filtre par technicien spécifique (admin uniquement)
+      if (!isAdmin(user)) {
+        throw new Error("Seuls les admins peuvent filtrer par technicien");
+      }
+
+      invoices = await ctx.db
+        .query("invoices")
+        .withIndex("by_organization_and_creator", (q) =>
+          q.eq("organizationId", user.organizationId).eq("createdBy", args.filterByUserId!)
+        )
+        .collect();
+    } else if (isAdmin(user)) {
+      // Admin sans filtre = toutes les factures de l'org
+      invoices = await ctx.db
+        .query("invoices")
+        .withIndex("by_organization", (q) => q.eq("organizationId", user.organizationId))
+        .collect();
+    } else {
+      // Technicien = seulement ses factures
+      invoices = await ctx.db
+        .query("invoices")
+        .withIndex("by_organization_and_creator", (q) =>
+          q.eq("organizationId", user.organizationId).eq("createdBy", user.userId)
+        )
+        .collect();
+    }
+
+    // Récupérer l'organisation pour les reminderSteps
+    const organization = await ctx.db.get(user.organizationId);
+    const reminderSteps = organization?.reminderSteps || [];
+
+    // Enrichir avec le nom du créateur
+    const invoicesWithCreator = await enrichInvoicesWithCreator(ctx, invoices);
+
+    // Calculer les infos d'affichage + prochain rappel
+    const now = new Date();
+    let invoicesWithDisplayInfo = invoicesWithCreator.map((invoice) => {
+      const displayInfo = getInvoiceDisplayInfo(invoice, now);
+
+      // Calculer le prochain rappel
+      let nextReminderDate: string | null = null;
+
+      // Si payée ou pas encore envoyée, pas de rappel
+      if (invoice.paymentStatus === "paid" || invoice.sendStatus === "pending") {
+        nextReminderDate = null;
+      }
+      // Si pas encore en retard, pas de rappel
+      else if (!displayInfo.isOverdue) {
+        nextReminderDate = null;
+      }
+      // Si en retard, calculer le prochain rappel
+      else {
+        // TODO: Implémenter calculateNextReminderDate
+        // Pour l'instant, logique simple
+        const dueDate = new Date(invoice.dueDate);
+
+        if (!invoice.reminderStatus) {
+          // Pas encore de relance -> calculer le premier rappel
+          if (reminderSteps.length > 0) {
+            const firstStep = reminderSteps[0];
+            const nextDate = new Date(dueDate);
+            nextDate.setDate(nextDate.getDate() + firstStep.delay);
+            nextReminderDate = nextDate.toISOString().split("T")[0];
+          } else {
+            nextReminderDate = null; // Pas de steps configurés
+          }
+        } else if (invoice.reminderStatus === "manual_followup") {
+          nextReminderDate = null; // Suivi manuel
+        } else {
+          // Relance en cours -> calculer le prochain
+          const currentReminderNumber = invoice.reminderStatus.match(/reminder_(\d+)/)?.[1];
+          if (currentReminderNumber) {
+            const nextReminderNumber = parseInt(currentReminderNumber) + 1;
+            const nextStep = reminderSteps[nextReminderNumber - 1];
+
+            if (nextStep && invoice.lastReminderDate) {
+              const lastReminder = new Date(invoice.lastReminderDate);
+              const nextDate = new Date(lastReminder);
+              nextDate.setDate(nextDate.getDate() + nextStep.delay);
+              nextReminderDate = nextDate.toISOString().split("T")[0];
+            } else {
+              nextReminderDate = null; // Pas de step suivant ou pas de lastReminderDate
+            }
+          }
+        }
+      }
+
+      return {
+        ...invoice,
+        ...displayInfo,
+        nextReminderDate,
+      };
+    });
+
+    // Filtre recherche texte
+    if (args.searchQuery) {
+      const query = args.searchQuery.toLowerCase().trim();
+      invoicesWithDisplayInfo = invoicesWithDisplayInfo.filter(
+        (invoice) =>
+          invoice.invoiceNumber.toLowerCase().includes(query) ||
+          invoice.clientName.toLowerCase().includes(query)
+      );
+    }
+
+    // Filtre par statut simplifié
+    if (args.statusFilter) {
+      invoicesWithDisplayInfo = invoicesWithDisplayInfo.filter((invoice) => {
+        switch (args.statusFilter) {
+          case "a-envoyer":
+            return invoice.sendStatus === "pending";
+          case "envoyee":
+            return invoice.sendStatus === "sent" && !invoice.isOverdue;
+          case "en-retard":
+            return invoice.isOverdue;
+          case "payee":
+            return invoice.paymentStatus === "paid";
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Tri
+    const sortBy = args.sortBy || "dueDate";
+    return invoicesWithDisplayInfo.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortBy) {
+        case "invoiceDate":
+          aValue = new Date(a.invoiceDate).getTime();
+          bValue = new Date(b.invoiceDate).getTime();
+          break;
+        case "dueDate":
+          aValue = new Date(a.dueDate).getTime();
+          bValue = new Date(b.dueDate).getTime();
+          break;
+        case "amountTTC":
+          aValue = a.amountTTC;
+          bValue = b.amountTTC;
+          break;
+        case "clientName":
+          aValue = a.clientName.toLowerCase();
+          bValue = b.clientName.toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+
+      // Tri ascendant
+      return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+    });
+  },
+});
+

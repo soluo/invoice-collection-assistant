@@ -18,6 +18,11 @@ export type MainStatus =
 // Keep old InvoiceStatus type for backward compatibility
 export type InvoiceStatus = MainStatus;
 
+/**
+ * ✅ NEW: Simplified status system for V3 (4 statuses)
+ */
+export type SimplifiedInvoiceStatus = "a-envoyer" | "envoyee" | "en-retard" | "payee";
+
 export type StatusDisplay = {
   badgeLabel: string;
   complement?: string;
@@ -137,4 +142,44 @@ export function getStatusDisplay(invoice: any): StatusDisplay {
     complement,
     colorClass,
   };
+}
+
+/**
+ * ✅ NEW: Get simplified status (4 statuses for V3)
+ * - "a-envoyer": Not sent yet
+ * - "envoyee": Sent but not overdue
+ * - "en-retard": Overdue (regardless of reminder status)
+ * - "payee": Paid
+ */
+export function getInvoiceSimplifiedStatus(invoice: any): SimplifiedInvoiceStatus {
+  if (invoice.paymentStatus === "paid") return "payee";
+  if (invoice.sendStatus === "pending") return "a-envoyer";
+  if (invoice.isOverdue) return "en-retard";
+  return "envoyee";
+}
+
+/**
+ * ✅ NEW: Get label for simplified status
+ */
+export function getStatusLabel(status: SimplifiedInvoiceStatus): string {
+  const labels: Record<SimplifiedInvoiceStatus, string> = {
+    "a-envoyer": "A envoyer",
+    "envoyee": "Envoyée",
+    "en-retard": "En retard",
+    "payee": "Payée",
+  };
+  return labels[status];
+}
+
+/**
+ * ✅ NEW: Get badge color classes for simplified status
+ */
+export function getStatusBadgeColor(status: SimplifiedInvoiceStatus): string {
+  const colors: Record<SimplifiedInvoiceStatus, string> = {
+    "a-envoyer": "bg-gray-100 text-gray-800 border-gray-200",
+    "envoyee": "bg-blue-100 text-blue-800 border-blue-200",
+    "en-retard": "bg-red-100 text-red-800 border-red-200",
+    "payee": "bg-green-100 text-green-800 border-green-200",
+  };
+  return colors[status];
 }

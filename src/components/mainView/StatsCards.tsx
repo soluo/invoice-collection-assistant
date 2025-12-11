@@ -1,28 +1,42 @@
-import { AlertCircle, Clock, Euro, Send } from "lucide-react";
+import { FileText, AlertCircle, CheckCircle } from "lucide-react";
 
 interface StatsCardsProps {
-  urgentCount: number;
-  waitingCount: number;
-  totalOutstanding: number;
-  autoRemindersCount: number;
-  onCardClick: (tab: string) => void;
-  activeTab: string;
+  totalOngoing: number;
+  totalOverdue: number;
+  totalPaidLast30Days: number;
 }
 
 export default function StatsCards({
-  urgentCount,
-  waitingCount,
-  totalOutstanding,
-  autoRemindersCount,
-  onCardClick,
-  activeTab,
+  totalOngoing,
+  totalOverdue,
+  totalPaidLast30Days,
 }: StatsCardsProps) {
+  const formatCurrency = (amount: number) => {
+    return amount.toLocaleString("fr-FR", {
+      style: "currency",
+      currency: "EUR",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
+  };
+
   const cards = [
     {
-      id: "to_handle",
-      title: "Urgentes",
-      value: urgentCount,
-      subtitle: ">15j de retard",
+      id: "ongoing",
+      title: "Total En cours",
+      value: formatCurrency(totalOngoing),
+      subtitle: "factures envoyées non payées",
+      icon: FileText,
+      bgColor: "bg-blue-50",
+      textColor: "text-blue-700",
+      borderColor: "border-blue-200",
+      iconBg: "bg-blue-100",
+    },
+    {
+      id: "overdue",
+      title: "Total En retard",
+      value: formatCurrency(totalOverdue),
+      subtitle: "factures en retard",
       icon: AlertCircle,
       bgColor: "bg-red-50",
       textColor: "text-red-700",
@@ -30,60 +44,29 @@ export default function StatsCards({
       iconBg: "bg-red-100",
     },
     {
-      id: "waiting",
-      title: "En attente",
-      value: waitingCount,
-      subtitle: "factures envoyées",
-      icon: Clock,
-      bgColor: "bg-blue-50",
-      textColor: "text-blue-700",
-      borderColor: "border-blue-200",
-      iconBg: "bg-blue-100",
-    },
-    {
-      id: "outstanding",
-      title: "À encaisser",
-      value: `${totalOutstanding.toLocaleString("fr-FR")} €`,
-      subtitle: "total non payé",
-      icon: Euro,
+      id: "paid",
+      title: "Total Payé",
+      value: formatCurrency(totalPaidLast30Days),
+      subtitle: "30 derniers jours",
+      icon: CheckCircle,
       bgColor: "bg-green-50",
       textColor: "text-green-700",
       borderColor: "border-green-200",
       iconBg: "bg-green-100",
     },
-    {
-      id: "auto_reminders",
-      title: "Relances auto",
-      value: autoRemindersCount,
-      subtitle: "planifiées",
-      icon: Send,
-      bgColor: "bg-purple-50",
-      textColor: "text-purple-700",
-      borderColor: "border-purple-200",
-      iconBg: "bg-purple-100",
-    },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {cards.map((card) => {
         const Icon = card.icon;
-        const isActive = activeTab === card.id;
-        const isClickable = card.id !== "outstanding";
 
         return (
-          <button
+          <div
             key={card.id}
-            onClick={() => isClickable && onCardClick(card.id)}
-            disabled={!isClickable}
             className={`
               ${card.bgColor} ${card.textColor} ${card.borderColor}
-              border rounded-lg p-4 text-left transition-all
-              ${isClickable ? "cursor-pointer hover:shadow-md hover:scale-105" : "cursor-default"}
-              ${isActive ? "ring-2 ring-offset-2" : ""}
-              ${isActive && card.id === "to_handle" ? "ring-red-500" : ""}
-              ${isActive && card.id === "waiting" ? "ring-blue-500" : ""}
-              ${isActive && card.id === "auto_reminders" ? "ring-purple-500" : ""}
+              border rounded-lg p-4
             `}
           >
             <div className="flex items-start justify-between">
@@ -96,7 +79,7 @@ export default function StatsCards({
                 <Icon className="w-5 h-5" />
               </div>
             </div>
-          </button>
+          </div>
         );
       })}
     </div>
