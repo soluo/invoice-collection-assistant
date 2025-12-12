@@ -27,10 +27,9 @@ export default function StatsCards({
       value: formatCurrency(totalOngoing),
       subtitle: "factures envoyées non payées",
       icon: FileText,
-      bgColor: "bg-blue-50",
-      textColor: "text-blue-700",
-      borderColor: "border-blue-200",
-      iconBg: "bg-blue-100",
+      iconBg: "bg-blue-50",
+      iconColor: "text-blue-500",
+      valueColor: "text-slate-900",
     },
     {
       id: "overdue",
@@ -38,10 +37,9 @@ export default function StatsCards({
       value: formatCurrency(totalOverdue),
       subtitle: "factures en retard",
       icon: AlertCircle,
-      bgColor: "bg-red-50",
-      textColor: "text-red-700",
-      borderColor: "border-red-200",
-      iconBg: "bg-red-100",
+      iconBg: "bg-red-50",
+      iconColor: "text-red-500",
+      valueColor: "text-red-600",
     },
     {
       id: "paid",
@@ -49,35 +47,35 @@ export default function StatsCards({
       value: formatCurrency(totalPaidLast30Days),
       subtitle: "30 derniers jours",
       icon: CheckCircle,
-      bgColor: "bg-green-50",
-      textColor: "text-green-700",
-      borderColor: "border-green-200",
-      iconBg: "bg-green-100",
+      iconBg: "bg-green-50",
+      iconColor: "text-green-500",
+      valueColor: "text-slate-900",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {cards.map((card) => {
         const Icon = card.icon;
 
         return (
           <div
             key={card.id}
-            className={`
-              ${card.bgColor} ${card.textColor} ${card.borderColor}
-              border rounded-lg p-4
-            `}
+            className="bg-white p-5 rounded-xl shadow-card border border-slate-100 flex items-center justify-between"
           >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-semibold">{card.title}</p>
-                <p className="text-2xl font-bold mt-1">{card.value}</p>
-                <p className="text-xs mt-1 opacity-75">{card.subtitle}</p>
-              </div>
-              <div className={`${card.iconBg} p-2 rounded-lg`}>
-                <Icon className="w-5 h-5" />
-              </div>
+            <div>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                {card.title}
+              </p>
+              <h3 className={`text-2xl font-extrabold ${card.valueColor}`}>
+                {card.value}
+              </h3>
+              <div className="text-xs text-slate-400 mt-1">{card.subtitle}</div>
+            </div>
+            <div
+              className={`w-12 h-12 rounded-lg ${card.iconBg} ${card.iconColor} flex items-center justify-center`}
+            >
+              <Icon className="w-6 h-6" />
             </div>
           </div>
         );

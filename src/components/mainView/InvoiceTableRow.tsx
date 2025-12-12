@@ -1,7 +1,6 @@
 import { NavLink } from "react-router-dom";
-import { MoreVertical } from "lucide-react";
+import { Bot, Send, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,17 +11,31 @@ import {
   getInvoiceSimplifiedStatus,
   getStatusLabel,
   getStatusBadgeColor,
+  getStatusDotColor,
 } from "@/lib/invoiceStatus";
-import { getPrimaryActionForStatus } from "@/lib/invoiceActions";
+import { cn } from "@/lib/utils";
 
 interface InvoiceTableRowProps {
   invoice: any; // Enriched with nextReminderDate
   onAction: (action: string, invoiceId: string) => void;
 }
 
+/**
+ * Helper function pour obtenir le nom de la relance
+ */
+function getReminderName(reminderStatus: string | undefined): string {
+  const names: Record<string, string> = {
+    reminder_1: "Relance 1",
+    reminder_2: "Relance 2",
+    reminder_3: "Relance 3",
+    reminder_4: "Relance 4",
+    manual_followup: "Appeler",
+  };
+  return names[reminderStatus || ""] || "Relance prévue";
+}
+
 export default function InvoiceTableRow({ invoice, onAction }: InvoiceTableRowProps) {
   const status = getInvoiceSimplifiedStatus(invoice);
-  const primaryAction = getPrimaryActionForStatus(status);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "—";
@@ -37,7 +50,7 @@ export default function InvoiceTableRow({ invoice, onAction }: InvoiceTableRowPr
   };
 
   return (
-    <div className="grid grid-cols-[2fr_1fr_1fr_1.5fr_1fr_auto] gap-4 p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors items-center">
+    <div className="grid grid-cols-[2fr_1fr_1fr_1.5fr_1.2fr_1.5fr] gap-4 px-6 py-4 border-b border-slate-100 hover:bg-slate-50 transition-colors items-center">
       {/* Col 1: Facture / Client */}
       <div>
         <NavLink
@@ -56,12 +69,15 @@ export default function InvoiceTableRow({ invoice, onAction }: InvoiceTableRowPr
 
       {/* Col 3: État */}
       <div>
-        <Badge
-          variant="outline"
-          className={`${getStatusBadgeColor(status)} border`}
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border",
+            getStatusBadgeColor(status)
+          )}
         >
+          <span className={cn("w-1.5 h-1.5 rounded-full", getStatusDotColor(status))} />
           {getStatusLabel(status)}
-        </Badge>
+        </span>
       </div>
 
       {/* Col 4: Montant + échéance */}
@@ -75,23 +91,54 @@ export default function InvoiceTableRow({ invoice, onAction }: InvoiceTableRowPr
       </div>
 
       {/* Col 5: Prochain rappel */}
-      <div className="text-sm text-gray-700">
-        {invoice.nextReminderDate
-          ? formatDate(invoice.nextReminderDate)
-          : "—"}
+      <div>
+        {(status === "en-retard" || status === "envoyee") && invoice.nextReminderDate ? (
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-brand-50 text-brand-500 flex items-center justify-center">
+              <Bot className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-slate-700">
+                {getReminderName(invoice.reminderStatus)}
+              </div>
+              <div className="text-[10px] text-slate-400">
+                {formatDate(invoice.nextReminderDate)}
+              </div>
+            </div>
+          </div>
+        ) : status === "payee" ? (
+          <div className="text-xs text-slate-400 italic">Complete</div>
+        ) : status === "a-envoyer" ? (
+          <div className="text-xs text-slate-400">Pas encore envoyée</div>
+        ) : (
+          <div className="text-xs text-slate-400">—</div>
+        )}
       </div>
 
       {/* Col 6: Actions */}
       <div className="flex items-center gap-2 justify-end">
-        {primaryAction && (
+        {/* Bouton "Envoyer" pour brouillons */}
+        {status === "a-envoyer" && (
           <Button
-            variant={primaryAction.variant}
+            variant="default"
             size="sm"
-            onClick={() => onAction(primaryAction.action, invoice._id)}
+            onClick={() => onAction("markAsSent", invoice._id)}
             className="whitespace-nowrap"
           >
-            <primaryAction.icon className="w-4 h-4 mr-1" />
-            {primaryAction.label}
+            <Send className="w-4 h-4 mr-1" />
+            Envoyer
+          </Button>
+        )}
+
+        {/* Bouton "Paiement" pour envoyée/en-retard */}
+        {(status === "envoyee" || status === "en-retard") && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onAction("recordPayment", invoice._id)}
+            className="whitespace-nowrap"
+          >
+            Paiement
           </Button>
         )}
 
@@ -107,7 +154,6 @@ export default function InvoiceTableRow({ invoice, onAction }: InvoiceTableRowPr
                 Voir la facture
               </NavLink>
             </DropdownMenuItem>
-            <DropdownMenuItem>Relancer maintenant</DropdownMenuItem>
             <DropdownMenuItem>Modifier</DropdownMenuItem>
             <DropdownMenuItem className="text-red-600">
               Supprimer

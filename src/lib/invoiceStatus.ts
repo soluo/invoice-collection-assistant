@@ -183,3 +183,16 @@ export function getStatusBadgeColor(status: SimplifiedInvoiceStatus): string {
   };
   return colors[status];
 }
+
+/**
+ * ✅ NEW: Get dot color for simplified status badges
+ */
+export function getStatusDotColor(status: SimplifiedInvoiceStatus): string {
+  const colors: Record<SimplifiedInvoiceStatus, string> = {
+    "a-envoyer": "bg-gray-500",
+    "envoyee": "bg-blue-500",
+    "en-retard": "bg-red-500",
+    "payee": "bg-green-500",
+  };
+  return colors[status];
+}

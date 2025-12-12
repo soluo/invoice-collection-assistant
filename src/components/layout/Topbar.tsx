@@ -96,7 +96,7 @@ export function Topbar() {
 
   return (
     <header className="sticky top-0 z-20 bg-white border-b border-gray-200">
-      <div className="max-w-6xl mx-auto h-16 px-4 md:px-6 flex items-center gap-6">
+      <div className="max-w-7xl mx-auto h-16 px-4 md:px-6 flex items-center gap-6">
         {/* Mobile hamburger trigger */}
         <SidebarTrigger className="md:hidden" />
 
