@@ -104,7 +104,7 @@ export function BulkSendConfirmModal({
                   className="px-4 py-3 hover:bg-gray-50 flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3">
-                    <Mail className="h-4 w-4 text-blue-600" />
+                    <Mail className="h-4 w-4 text-gray-500" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">
                         {reminder.invoice?.clientName || "Client inconnu"}
@@ -138,7 +138,7 @@ export function BulkSendConfirmModal({
             type="button"
             onClick={handleConfirm}
             disabled={isSending}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-primary hover:bg-primary/90"
           >
             <Mail className="h-4 w-4 mr-2" />
             {isSending

@@ -147,7 +147,6 @@ export function EmailPreviewModalFollowUp({
               type="button"
               onClick={onEdit}
               variant="outline"
-              className="border-blue-500 text-blue-600 hover:bg-blue-50"
             >
               <Edit className="h-4 w-4 mr-2" />
               Modifier
@@ -158,7 +157,7 @@ export function EmailPreviewModalFollowUp({
             type="button"
             disabled={sending || !canSend}
             onClick={handleSend}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-primary hover:bg-primary/90"
           >
             <Mail className="h-4 w-4 mr-2" />
             {sending ? "Envoi..." : "Envoyer"}

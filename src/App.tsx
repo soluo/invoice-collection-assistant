@@ -153,7 +153,7 @@ function Content() {
 
           {/* Legacy routes (kept for backward compatibility) */}
           <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
-          <Route path="/follow-up" element={<Navigate to="/invoices" replace />} />
+          <Route path="/follow-up" element={<AppLayout><FollowUp /></AppLayout>} />
           <Route path="/call-plan" element={<AppLayout><CallPlan /></AppLayout>} />
           <Route path="/reminders" element={<AppLayout><Reminders /></AppLayout>} />
           <Route path="/ongoing" element={<Navigate to="/invoices" replace />} />

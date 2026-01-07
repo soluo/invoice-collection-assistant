@@ -90,7 +90,7 @@ export function EmailEditModal({
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="Ex: Relance pour facture en retard"
               disabled={isSaving}
             />
@@ -108,7 +108,7 @@ export function EmailEditModal({
               id="content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[300px]"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary min-h-[300px]"
               placeholder="Bonjour,&#10;&#10;Nous constatons que..."
               disabled={isSaving}
             />
@@ -133,7 +133,7 @@ export function EmailEditModal({
             type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-primary hover:bg-primary/90"
           >
             <Save className="h-4 w-4 mr-2" />
             {isSaving ? "Enregistrement..." : "Enregistrer"}

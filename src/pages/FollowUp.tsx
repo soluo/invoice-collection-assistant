@@ -44,11 +44,8 @@ export function FollowUp() {
 
       {/* Tabs */}
       <Tabs defaultValue="upcoming" className="w-full">
-        <TabsList className="border-b border-gray-200 w-full justify-start rounded-none h-auto p-0 bg-transparent">
-          <TabsTrigger
-            value="upcoming"
-            className="border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 rounded-none px-4 py-3"
-          >
+        <TabsList>
+          <TabsTrigger value="upcoming">
             En cours
             {upcomingReminders && upcomingReminders.length > 0 && (
               <Badge variant="secondary" className="ml-2">
@@ -56,10 +53,7 @@ export function FollowUp() {
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger
-            value="history"
-            className="border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 rounded-none px-4 py-3"
-          >
+          <TabsTrigger value="history">
             Historique
           </TabsTrigger>
         </TabsList>
@@ -161,7 +155,7 @@ export function FollowUp() {
         <div className="fixed bottom-6 right-6 z-50">
           <Button
             onClick={() => setShowBulkConfirm(true)}
-            className="bg-blue-600 hover:bg-blue-700 shadow-lg px-6 py-3 text-lg"
+            className="bg-primary hover:bg-primary/90 shadow-lg px-6 py-3 text-lg"
           >
             <Mail className="h-5 w-5 mr-2" />
             Envoyer {selectedReminders.length} relance{selectedReminders.length > 1 ? "s" : ""}
@@ -291,18 +285,21 @@ function ReminderCard({
   const isEmail = reminder.reminderType === "email";
   const isPhone = reminder.reminderType === "phone";
 
-  // Color coding based on reminder status
-  const getStatusColor = () => {
-    if (reminder.reminderStatus === "reminder_1") return "blue";
-    if (reminder.reminderStatus === "reminder_2") return "orange";
-    if (reminder.reminderStatus === "reminder_3" || reminder.reminderStatus === "reminder_4") return "red";
-    return "blue";
+  // Indicateur de sévérité subtil (petit dot)
+  const getSeverityDot = () => {
+    if (reminder.reminderStatus === "reminder_1") return "bg-gray-400";
+    if (reminder.reminderStatus === "reminder_2") return "bg-amber-500";
+    if (reminder.reminderStatus === "reminder_3" || reminder.reminderStatus === "reminder_4") return "bg-red-500";
+    return "bg-gray-400";
   };
 
-  const statusColor = getStatusColor();
-  const bgColor = statusColor === "blue" ? "bg-blue-100" : statusColor === "orange" ? "bg-orange-100" : "bg-red-100";
-  const textColor = statusColor === "blue" ? "text-blue-600" : statusColor === "orange" ? "text-orange-600" : "text-red-600";
-  const badgeColor = statusColor === "blue" ? "text-blue-700" : statusColor === "orange" ? "text-orange-700" : "text-red-700";
+  const getSeverityLabel = () => {
+    if (reminder.reminderStatus === "reminder_1") return "1ère relance";
+    if (reminder.reminderStatus === "reminder_2") return "2ème relance";
+    if (reminder.reminderStatus === "reminder_3") return "3ème relance";
+    if (reminder.reminderStatus === "reminder_4") return "4ème relance";
+    return "";
+  };
 
   const reminderDate = new Date(reminder.reminderDate.replace(" ", "T"));
   const formattedDate = reminderDate.toLocaleDateString("fr-FR", {
@@ -313,7 +310,7 @@ function ReminderCard({
   });
 
   return (
-    <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 hover:border-gray-300 transition-colors">
       <div className="flex items-center gap-4">
         {/* Checkbox for selection */}
         {isEmail && (
@@ -321,36 +318,29 @@ function ReminderCard({
             type="checkbox"
             checked={isSelected}
             onChange={onToggleSelect}
-            className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
           />
         )}
-        <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${bgColor} ${textColor}`}>
+        {/* Icône neutre avec indicateur de sévérité */}
+        <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
           {isEmail && <Mail className="h-5 w-5" />}
           {isPhone && <Phone className="h-5 w-5" />}
+          {/* Dot de sévérité */}
+          <span className={`absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white ${getSeverityDot()}`} />
         </div>
         <div>
           <p className="font-semibold text-gray-900">
-            {reminder.invoice?.clientName || "Client inconnu"} ({reminder.invoice?.invoiceNumber || "N/A"})
+            {reminder.invoice?.clientName || "Client inconnu"}
+            <span className="text-gray-500 font-normal ml-1">
+              ({reminder.invoice?.invoiceNumber || "N/A"})
+            </span>
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-600">
             {isEmail && (
-              <>
-                Envoi Email{" "}
-                <span className={`font-medium ${badgeColor}`}>
-                  "{reminder.data?.emailSubject || "Sans objet"}"
-                </span>
-              </>
+              <>"{reminder.data?.emailSubject || "Sans objet"}"</>
             )}
-            {isPhone && (
-              <>
-                Appel téléphonique{" "}
-                <span className={`font-medium ${badgeColor}`}>
-                  {reminder.reminderStatus === "reminder_1" && "Amical"}
-                  {reminder.reminderStatus === "reminder_2" && "Sérieux"}
-                  {(reminder.reminderStatus === "reminder_3" || reminder.reminderStatus === "reminder_4") && "Urgent"}
-                </span>
-              </>
-            )}
+            {isPhone && "Appel téléphonique"}
+            <span className="text-gray-400 ml-2">· {getSeverityLabel()}</span>
           </p>
           <p className="text-xs text-gray-400 mt-1">{formattedDate}</p>
         </div>
@@ -360,17 +350,17 @@ function ReminderCard({
           {reminder.invoice?.amountTTC.toFixed(2)} €
         </p>
         {reminder.daysOverdue !== undefined && reminder.daysOverdue > 0 && (
-          <p className="text-sm text-red-600">Retard {reminder.daysOverdue} j</p>
+          <p className="text-sm text-red-600 font-medium">+{reminder.daysOverdue} j</p>
         )}
         <div className="mt-2 flex gap-2 justify-end">
           {isEmail && (
-            <Button variant="ghost" size="sm" onClick={onPreview}>
+            <Button variant="outline" size="sm" onClick={onPreview}>
               <Eye className="h-4 w-4 mr-1" />
               Prévisualiser
             </Button>
           )}
           {isPhone && (
-            <Button variant="ghost" size="sm">
+            <Button variant="outline" size="sm">
               <Check className="h-4 w-4 mr-1" />
               Marquer fait
             </Button>
@@ -470,27 +460,15 @@ function EventCard({ event }: { event: any }) {
     }
   };
 
-  const getEventColor = () => {
-    switch (event.eventType) {
-      case "payment_registered":
-      case "invoice_marked_paid":
-        return "bg-green-100 text-green-600";
-      case "reminder_sent":
-        if (event.metadata?.reminderType === "phone") {
-          return "bg-purple-100 text-purple-600";
-        }
-        return "bg-blue-100 text-blue-600";
-      case "invoice_sent":
-      case "invoice_marked_sent":
-        return "bg-blue-100 text-blue-600";
-      default:
-        return "bg-gray-100 text-gray-600";
-    }
-  };
+  // Couleurs simplifiées : vert pour paiement, gris pour le reste
+  const isPayment = event.eventType === "payment_registered" || event.eventType === "invoice_marked_paid";
+  const iconClasses = isPayment
+    ? "bg-green-100 text-green-600"
+    : "bg-gray-100 text-gray-600";
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
-      <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${getEventColor()}`}>
+    <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 hover:border-gray-300 transition-colors">
+      <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${iconClasses}`}>
         {getEventIcon()}
       </div>
       <p className="text-sm text-gray-700">
