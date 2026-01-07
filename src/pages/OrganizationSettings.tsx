@@ -9,10 +9,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { ReminderStepModal, type ReminderStep } from "@/components/ReminderStepModal";
+import { ForbiddenPage } from "@/components/ForbiddenPage";
+import { Tooltip } from "@/components/ui/simple-tooltip";
 
 const TOKEN_REFRESH_THRESHOLD_MS = 10 * 60 * 1000;
 
 export function OrganizationSettings() {
+  const loggedInUser = useQuery(api.auth.loggedInUser);
   const organization = useQuery(api.organizations.getCurrentOrganization);
   const updateOrganizationName = useMutation(api.organizations.updateOrganizationName);
   const updateAutoSendEnabled = useMutation(api.organizations.updateAutoSendEnabled);
@@ -273,7 +276,8 @@ export function OrganizationSettings() {
   const sortedSteps = [...reminderSteps].sort((a, b) => a.delay - b.delay);
   const existingDelays = reminderSteps.map((s) => s.delay);
 
-  if (!organization) {
+  // Loading state
+  if (loggedInUser === undefined || !organization) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -281,6 +285,17 @@ export function OrganizationSettings() {
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
+    );
+  }
+
+  // Permission check - Admin only
+  if (loggedInUser.role !== "admin") {
+    return (
+      <ForbiddenPage
+        message="Cette page est réservée aux administrateurs. Contactez votre administrateur pour obtenir les permissions nécessaires."
+        returnPath="/invoices"
+        returnLabel="Retour aux factures"
+      />
     );
   }
 
@@ -329,46 +344,65 @@ export function OrganizationSettings() {
           Connexion du compte email
         </legend>
         <div className="space-y-4 mt-4">
-          <p className="text-sm text-gray-600">
-            Connectez votre boîte mail pour envoyer les relances directement depuis votre adresse email.
-          </p>
-
           {organization.emailProvider && organization.emailAccountInfo ? (
-            <Card className="p-4 border-green-200 bg-green-50">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-green-100 rounded-full">
-                    <Check className="h-5 w-5 text-green-600" />
+            <>
+              {/* Connected account info */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 bg-green-100 rounded-full">
+                    <Check className="h-4 w-4 text-green-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-green-900">
-                      Compte connecté
-                    </p>
-                    <p className="text-sm text-green-700 mt-1">
+                    <p className="font-medium text-gray-900">
                       {organization.emailAccountInfo.email}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Provider: {organization.emailProvider === "microsoft" ? "Outlook" : organization.emailProvider}
+                    <p className="text-sm text-gray-500">
+                      {organization.emailProvider === "microsoft" ? "Outlook" : organization.emailProvider}
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDisconnectEmail}
-                  disabled={disconnecting}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  {disconnecting ? "Déconnexion..." : "Déconnecter"}
-                </Button>
+                {autoSendEnabled ? (
+                  <Tooltip
+                    content="Désactivez d'abord l'envoi automatique des relances pour déconnecter ce compte"
+                    side="left"
+                  >
+                    <span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled
+                        className="text-gray-400 cursor-not-allowed"
+                      >
+                        Déconnecter
+                      </Button>
+                    </span>
+                  </Tooltip>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDisconnectEmail}
+                    disabled={disconnecting}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    {disconnecting ? "Déconnexion..." : "Déconnecter"}
+                  </Button>
+                )}
               </div>
 
+              {refreshingToken && (
+                <div className="flex items-center gap-2 text-sm text-blue-600">
+                  <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span>Renouvellement du token d'accès...</span>
+                </div>
+              )}
+
               {/* Sender display name */}
-              <div className="mt-4 space-y-2">
+              <div className="pt-4 border-t border-gray-100">
                 <Label htmlFor="senderDisplayName">
                   Nom d'affichage pour l'expéditeur (optionnel)
                 </Label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 mt-1.5">
                   <Input
                     id="senderDisplayName"
                     value={senderDisplayName}
@@ -383,18 +417,11 @@ export function OrganizationSettings() {
                     {savingSenderName ? "..." : "Enregistrer"}
                   </Button>
                 </div>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 mt-1.5">
                   Personnalisez le nom qui apparaît comme expéditeur de vos emails
                 </p>
               </div>
-
-              {refreshingToken && (
-                <div className="mt-3 flex items-center gap-2 text-sm text-blue-600">
-                  <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                  <span>Renouvellement du token d'accès...</span>
-                </div>
-              )}
-            </Card>
+            </>
           ) : (
             <div className="grid grid-cols-2 gap-4">
               <Button
@@ -438,13 +465,16 @@ export function OrganizationSettings() {
                 Activer l'envoi automatique des emails de relance
               </Label>
               <p className="text-sm text-gray-600 mt-1">
-                Les reminders seront toujours créés, mais les emails ne seront envoyés que si cette option est activée
+                {organization.emailProvider && organization.emailAccountInfo
+                  ? "Les reminders seront toujours créés, mais les emails ne seront envoyés que si cette option est activée"
+                  : "Connectez d'abord un compte email pour activer cette option"}
               </p>
             </div>
             <Switch
               id="autoSend"
               checked={autoSendEnabled}
               onCheckedChange={handleToggleAutoSend}
+              disabled={!organization.emailProvider || !organization.emailAccountInfo}
             />
           </div>
 
