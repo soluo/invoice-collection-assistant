@@ -23,7 +23,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           <Topbar />
 
           {/* Page content */}
-          <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          <main className="flex-1 overflow-y-auto py-4 md:py-6">
             {children}
           </main>
         </SidebarInset>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
-import { Settings as SettingsIcon, Mail, Phone, Trash2, Edit, Plus, Check, X } from "lucide-react";
+import { Mail, Phone, Trash2, Edit, Plus, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
@@ -300,16 +300,15 @@ export function OrganizationSettings() {
   }
 
   return (
-    <div className="container mx-auto max-w-4xl p-6 space-y-8">
+    <div className="max-w-3xl mx-auto px-4 md:px-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-          <SettingsIcon className="h-8 w-8" />
-          Réglages
-        </h1>
-        <p className="mt-2 text-lg text-gray-600">
-          Gérez votre profil, vos connexions et vos scénarios de relance.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">Réglages</h1>
+          <p className="text-slate-500 mt-1">
+            Gérez votre profil, vos connexions et vos scénarios de relance.
+          </p>
+        </div>
       </div>
 
       {/* Block 1: Organization Profile */}
@@ -347,13 +346,13 @@ export function OrganizationSettings() {
           {organization.emailProvider && organization.emailAccountInfo ? (
             <>
               {/* Connected account info */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-1.5 bg-green-100 rounded-full">
-                    <Check className="h-4 w-4 text-green-600" />
+              <div className="flex flex-col items-center text-center sm:flex-row sm:items-center sm:text-left sm:justify-between gap-3">
+                <div className="flex flex-col items-center sm:flex-row sm:items-center gap-3">
+                  <div className="p-2 bg-green-100 rounded-full flex-shrink-0">
+                    <Check className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-gray-900 break-all sm:break-normal">
                       {organization.emailAccountInfo.email}
                     </p>
                     <p className="text-sm text-gray-500">
@@ -371,7 +370,7 @@ export function OrganizationSettings() {
                         variant="outline"
                         size="sm"
                         disabled
-                        className="text-gray-400 cursor-not-allowed"
+                        className="text-gray-400 cursor-not-allowed w-full sm:w-auto"
                       >
                         Déconnecter
                       </Button>
@@ -383,7 +382,7 @@ export function OrganizationSettings() {
                     size="sm"
                     onClick={handleDisconnectEmail}
                     disabled={disconnecting}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full sm:w-auto"
                   >
                     {disconnecting ? "Déconnexion..." : "Déconnecter"}
                   </Button>
@@ -408,11 +407,13 @@ export function OrganizationSettings() {
                     value={senderDisplayName}
                     onChange={(e) => setSenderDisplayName(e.target.value)}
                     placeholder={organization.emailAccountInfo.name}
+                    className="flex-1 min-w-0"
                   />
                   <Button
                     onClick={handleSaveSenderName}
                     disabled={savingSenderName}
                     size="sm"
+                    className="flex-shrink-0"
                   >
                     {savingSenderName ? "..." : "Enregistrer"}
                   </Button>
@@ -459,8 +460,8 @@ export function OrganizationSettings() {
         </legend>
         <div className="space-y-6 mt-4">
           {/* Auto-send toggle */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="flex-1">
+          <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+            <div className="flex-1 min-w-0">
               <Label htmlFor="autoSend" className="text-base font-medium cursor-pointer">
                 Activer l'envoi automatique des emails de relance
               </Label>
@@ -475,6 +476,7 @@ export function OrganizationSettings() {
               checked={autoSendEnabled}
               onCheckedChange={handleToggleAutoSend}
               disabled={!organization.emailProvider || !organization.emailAccountInfo}
+              className="flex-shrink-0 mt-0.5"
             />
           </div>
 
@@ -529,65 +531,70 @@ export function OrganizationSettings() {
                 </p>
               </Card>
             ) : (
-              <div className="space-y-3">
+              <div className="divide-y divide-gray-200 sm:divide-y-0 sm:space-y-3">
                 {sortedSteps.map((step, index) => (
-                  <Card
+                  <div
                     key={step.id}
-                    className="p-4 hover:border-gray-400 transition-colors cursor-pointer"
+                    className="py-4 sm:p-4 sm:border sm:border-gray-200 sm:rounded-lg hover:sm:border-gray-400 transition-colors cursor-pointer"
                     onClick={() => handleEditStep(step)}
                   >
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-start sm:items-center gap-3 sm:gap-4">
                       {/* Delay badge */}
-                      <div className="flex-shrink-0 w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
-                        <span className="font-semibold text-gray-700">J+{step.delay}</span>
+                      <div className="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                        <span className="font-semibold text-gray-700 text-sm sm:text-base">J+{step.delay}</span>
                       </div>
 
-                      {/* Step info */}
+                      {/* Step info + Actions wrapper */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          {step.type === "email" ? (
-                            <Mail className="h-4 w-4 text-blue-600" />
-                          ) : (
-                            <Phone className="h-4 w-4 text-orange-600" />
-                          )}
-                          <span className="text-sm text-gray-500">
-                            {step.type === "email" ? "Email automatique" : "Appel manuel"}
-                          </span>
-                        </div>
-                        <p className="font-semibold text-gray-900">{step.name}</p>
-                        {step.type === "email" && step.emailSubject && (
-                          <p className="text-sm text-gray-600 mt-1 truncate">
-                            {step.emailSubject}
-                          </p>
-                        )}
-                      </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                          {/* Step info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              {step.type === "email" ? (
+                                <Mail className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                              ) : (
+                                <Phone className="h-4 w-4 text-orange-600 flex-shrink-0" />
+                              )}
+                              <span className="text-sm text-gray-500">
+                                {step.type === "email" ? "Email automatique" : "Appel manuel"}
+                              </span>
+                            </div>
+                            <p className="font-semibold text-gray-900">{step.name}</p>
+                            {step.type === "email" && step.emailSubject && (
+                              <p className="text-sm text-gray-600 mt-1">
+                                {step.emailSubject}
+                              </p>
+                            )}
+                          </div>
 
-                      {/* Actions */}
-                      <div className="flex-shrink-0 flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditStep(step);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteStep(step.id);
-                          }}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          {/* Actions */}
+                          <div className="flex-shrink-0 flex items-center gap-2 mt-2 sm:mt-0">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditStep(step);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteStep(step.id);
+                              }}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 ))}
               </div>
             )}

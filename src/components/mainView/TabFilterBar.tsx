@@ -49,7 +49,7 @@ export default function TabFilterBar({
   ];
 
   return (
-    <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="p-0 md:p-5 md:border-b md:border-slate-100 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
       {/* Status Tabs (Toggle style) */}
       <div className="flex p-1 bg-slate-100 rounded-lg self-start">
         {statusTabs.map((tab) => (
@@ -57,7 +57,7 @@ export default function TabFilterBar({
             key={tab.value}
             onClick={() => onStatusFilterChange(tab.value)}
             className={cn(
-              "px-4 py-1.5 rounded-md text-sm font-bold transition-all",
+              "px-3 md:px-4 py-1.5 rounded-md text-xs md:text-sm font-bold transition-all",
               statusFilter === tab.value
                 ? "bg-white text-slate-900 shadow-sm"
                 : "text-slate-500 hover:text-slate-700"
@@ -69,7 +69,7 @@ export default function TabFilterBar({
       </div>
 
       {/* Right side: Search + Filters */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap md:flex-nowrap">
         {/* Search bar */}
         <div className="relative w-full md:w-64">
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
@@ -78,7 +78,7 @@ export default function TabFilterBar({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Client, n° facture, montant..."
-            className="w-full bg-slate-50 border-slate-200 rounded-lg py-2 pl-9 pr-3 text-sm"
+            className="w-full bg-white border-slate-200 rounded-lg py-2 pl-9 pr-3 text-sm"
           />
         </div>
 

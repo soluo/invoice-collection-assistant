@@ -35,13 +35,15 @@ export function FollowUp() {
   const groupedReminders = groupRemindersByDate(upcomingReminders || []);
 
   return (
-    <div className="container mx-auto max-w-6xl py-6">
+    <div className="max-w-3xl mx-auto px-4 md:px-6 space-y-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Relances</h1>
-        <p className="mt-2 text-lg text-gray-600">
-          Suivez ce que le système fait pour vous et ce qui a été fait.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">Relances</h1>
+          <p className="text-slate-500 mt-1">
+            Suivez ce que le système fait pour vous et ce qui a été fait.
+          </p>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -483,11 +485,11 @@ function EventTimeline({ events }: { events: any[] }) {
   const groupedEvents = groupEventsByDate(events);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       {Object.entries(groupedEvents).map(([date, dateEvents]) => (
-        <div key={date} className="flex gap-4">
-          {/* Date column */}
-          <div className="flex-shrink-0 w-14 text-center pt-1">
+        <div key={date} className="flex flex-col md:flex-row gap-2 md:gap-4">
+          {/* Date - inline on mobile, column on desktop */}
+          <div className="flex md:flex-col items-baseline md:items-center gap-2 md:gap-0 md:flex-shrink-0 md:w-14 md:text-center md:pt-1">
             <div className="text-lg font-bold text-primary leading-tight">
               {formatEventDateDay(date)}
             </div>

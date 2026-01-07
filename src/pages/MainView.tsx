@@ -114,7 +114,7 @@ export default function MainView() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto px-4 md:px-6 space-y-8">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
@@ -203,7 +203,7 @@ export default function MainView() {
       {/* Mobile: Filters + Cards (no container) */}
       <div className="md:hidden space-y-4">
         {/* Toolbar mobile */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-card overflow-hidden">
+        <div>
           <TabFilterBar
             statusFilter={statusFilter}
             onStatusFilterChange={setStatusFilter}
