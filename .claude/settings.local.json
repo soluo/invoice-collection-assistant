@@ -19,7 +19,8 @@
       "Bash(npx shadcn:*)",
       "Bash(find:*)",
       "Bash(ls:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "mcp__convex__status"
     ],
     "deny": [],
     "ask": []

@@ -483,39 +483,26 @@ function EventTimeline({ events }: { events: any[] }) {
   const groupedEvents = groupEventsByDate(events);
 
   return (
-    <div className="flow-root">
-      <ul role="list" className="-mb-8">
-        {Object.entries(groupedEvents).map(([date, dateEvents], dateIndex) => (
-          <li key={date}>
-            <div className="relative pb-8">
-              {dateIndex !== Object.keys(groupedEvents).length - 1 && (
-                <span
-                  className="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200"
-                  aria-hidden="true"
-                />
-              )}
-              <div className="relative flex items-start space-x-3">
-                <div>
-                  <div className="relative px-1">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 ring-8 ring-white">
-                      <span className="text-xs font-semibold text-gray-700">
-                        {formatEventDate(date)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="min-w-0 flex-1 py-1.5">
-                  <div className="space-y-3">
-                    {dateEvents.map((event: any) => (
-                      <EventCard key={event._id} event={event} />
-                    ))}
-                  </div>
-                </div>
-              </div>
+    <div className="space-y-8">
+      {Object.entries(groupedEvents).map(([date, dateEvents]) => (
+        <div key={date} className="flex gap-4">
+          {/* Date column */}
+          <div className="flex-shrink-0 w-14 text-center pt-1">
+            <div className="text-lg font-bold text-primary leading-tight">
+              {formatEventDateDay(date)}
             </div>
-          </li>
-        ))}
-      </ul>
+            <div className="text-xs font-medium text-gray-500 uppercase">
+              {formatEventDateMonth(date)}
+            </div>
+          </div>
+          {/* Events column */}
+          <div className="flex-1 space-y-3">
+            {dateEvents.map((event: any) => (
+              <EventCard key={event._id} event={event} />
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -537,10 +524,16 @@ function groupEventsByDate(events: any[]) {
   return grouped;
 }
 
-// Format date for timeline
-function formatEventDate(dateString: string) {
+// Format date day for timeline
+function formatEventDateDay(dateString: string) {
   const date = new Date(dateString);
-  return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }).toUpperCase();
+  return date.toLocaleDateString("fr-FR", { day: "2-digit" });
+}
+
+// Format date month for timeline
+function formatEventDateMonth(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("fr-FR", { month: "short" });
 }
 
 // Component for a single event card
@@ -572,14 +565,91 @@ function EventCard({ event }: { event: any }) {
     ? "bg-green-100 text-green-600"
     : "bg-gray-100 text-gray-600";
 
+  // Formater l'heure
+  const eventTime = new Date(event.eventDate).toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  // Déterminer qui a fait l'action
+  const getActorName = () => {
+    if (event.metadata?.isAutomatic) {
+      return "Système";
+    }
+    if (event.user?.name) {
+      return event.user.name;
+    }
+    if (event.user?.email) {
+      return event.user.email.split("@")[0];
+    }
+    return "Système";
+  };
+
+  // Description courte de l'action (sans les infos de facture)
+  const getActionDescription = () => {
+    switch (event.eventType) {
+      case "invoice_imported":
+        return "Facture importée";
+      case "invoice_sent":
+        return "Facture envoyée";
+      case "invoice_marked_sent":
+        return "Facture marquée comme envoyée";
+      case "reminder_sent":
+        if (event.metadata?.reminderType === "phone") {
+          // Extraire le résultat de l'appel depuis la description
+          if (event.description) {
+            const desc = event.description;
+            if (desc.includes("Litige signalé")) return "Litige signalé";
+            if (desc.includes("s'engage à payer")) return "Client s'engage à payer";
+            if (desc.includes("Message vocal")) return "Tentative d'appel : Message vocal laissé";
+            if (desc.includes("Pas de réponse")) return "Tentative d'appel : Pas de réponse";
+            if (desc.includes("Appel téléphonique effectué")) return "Appel téléphonique effectué";
+          }
+          return "Appel téléphonique effectué";
+        }
+        const reminderNum = event.metadata?.reminderNumber || 1;
+        const isManual = !event.metadata?.isAutomatic;
+        return `${reminderNum}${reminderNum === 1 ? "ère" : "ème"} relance ${isManual ? "manuelle " : ""}envoyée`;
+      case "payment_registered":
+        return "Paiement enregistré";
+      case "invoice_marked_paid":
+        return "Facture marquée comme payée";
+      default:
+        return event.eventType;
+    }
+  };
+
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 hover:border-gray-300 transition-colors">
-      <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${iconClasses}`}>
+    <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-4 hover:border-gray-300 transition-colors">
+      <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${iconClasses}`}>
         {getEventIcon()}
       </div>
-      <p className="text-sm text-gray-700">
-        {event.description || getDefaultEventDescription(event)}
-      </p>
+      <div className="min-w-0 flex-1">
+        {/* Ligne 1: Facture cliquable + client */}
+        {event.invoice && (
+          <div className="flex items-center gap-2 mb-1">
+            <a
+              href={`/invoices/${event.invoice._id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-gray-900 hover:text-primary hover:underline"
+            >
+              {event.invoice.invoiceNumber}
+            </a>
+            <span className="text-gray-500 text-sm">
+              {event.invoice.clientName}
+            </span>
+          </div>
+        )}
+        {/* Ligne 2: Description de l'action */}
+        <p className="text-sm text-gray-700">
+          {getActionDescription()}
+        </p>
+        {/* Ligne 3: Par qui + heure */}
+        <p className="text-xs text-gray-400 mt-1">
+          par {getActorName()} à {eventTime}
+        </p>
+      </div>
     </div>
   );
 }

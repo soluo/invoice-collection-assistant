@@ -152,3 +152,64 @@ export const clearAllTables = mutation({
     }
   },
 });
+
+/**
+ * Nettoie les événements orphelins (dont la facture a été supprimée)
+ */
+export const cleanOrphanEvents = mutation({
+  args: {},
+  returns: v.object({
+    success: v.boolean(),
+    deletedCount: v.number(),
+  }),
+  handler: async (ctx) => {
+    const events = await ctx.db.query("events").collect();
+    let deletedCount = 0;
+
+    for (const event of events) {
+      if (event.invoiceId) {
+        const invoice = await ctx.db.get(event.invoiceId);
+        if (!invoice) {
+          await ctx.db.delete(event._id);
+          deletedCount++;
+        }
+      }
+    }
+
+    return { success: true, deletedCount };
+  },
+});
+
+/**
+ * Nettoie les fichiers orphelins du storage (dont la facture a été supprimée)
+ */
+export const cleanOrphanFiles = mutation({
+  args: {},
+  returns: v.object({
+    success: v.boolean(),
+    deletedCount: v.number(),
+  }),
+  handler: async (ctx) => {
+    // Récupérer tous les fichiers stockés
+    const allFiles = await ctx.db.system.query("_storage").collect();
+
+    // Récupérer tous les pdfStorageId des factures existantes
+    const invoices = await ctx.db.query("invoices").collect();
+    const usedStorageIds = new Set(
+      invoices
+        .filter((inv) => inv.pdfStorageId)
+        .map((inv) => inv.pdfStorageId)
+    );
+
+    // Supprimer les fichiers orphelins
+    let deletedCount = 0;
+    for (const file of allFiles) {
+      if (!usedStorageIds.has(file._id)) {
+        await ctx.storage.delete(file._id);
+        deletedCount++;
+      }
+    }
+
+    return { success: true, deletedCount };
+  },
+});

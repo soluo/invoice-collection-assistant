@@ -181,6 +181,45 @@ Upload de factures PDF avec extraction automatique des données :
 - **Frontend** : React 19 avec hooks modernes et TypeScript strict
 - **Build** : Vite pour le bundling optimisé
 
+## Outils de Développement
+
+### Mutations de nettoyage (`convex/dev.ts`)
+
+Ces mutations sont accessibles depuis le dashboard Convex ou via le MCP Convex.
+
+| Mutation | Description |
+|----------|-------------|
+| `dev:clearAllTables` | **DANGER** - Supprime TOUTES les données (invoices, reminders, events, users, organizations, auth). Utile pour repartir de zéro en dev. |
+| `dev:cleanOrphanEvents` | Supprime les événements orphelins dont la facture associée a été supprimée. Retourne le nombre d'événements supprimés. |
+| `dev:cleanOrphanFiles` | Supprime les fichiers PDF orphelins du storage dont la facture associée a été supprimée. Retourne le nombre de fichiers supprimés. |
+
+**Usage via MCP Convex** :
+```
+mcp__convex__run(functionName: "dev:clearAllTables", args: "{}")
+mcp__convex__run(functionName: "dev:cleanOrphanEvents", args: "{}")
+mcp__convex__run(functionName: "dev:cleanOrphanFiles", args: "{}")
+```
+
+> **Note** : La suppression d'une facture via `deleteInvoice` supprime automatiquement les reminders, events et le fichier PDF associés (suppression cascade).
+
+### Tests de relances (`convex/testReminders.ts`)
+
+Mutations internes pour tester le système de relances automatiques.
+
+| Mutation | Description |
+|----------|-------------|
+| `testReminders:setupTestData` | Crée des données de test (organisation, utilisateur, factures) |
+| `testReminders:cleanupTestData` | Nettoie les données de test |
+| `testReminders:runAllTests` | Exécute tous les tests de relances |
+| `testReminders:runTest1_InvoiceDueTodayDelay1` | Test : facture échue aujourd'hui avec délai J+1 |
+| `testReminders:runTest2_InvoiceDueYesterdayDelay2` | Test : facture échue hier avec délai J+2 |
+| `testReminders:runTest3_SubsequentReminderDelay7` | Test : relance suivante avec délai J+7 |
+| `testReminders:runTest4_NotYetDue` | Test : facture pas encore échue |
+| `testReminders:runTest5_AlreadyPaid` | Test : facture déjà payée |
+| `testReminders:runTest6_NotSent` | Test : facture non envoyée |
+
+> **Note** : Ces mutations sont `internalMutation` et ne sont pas appelables directement depuis le frontend.
+
 ## Notes Techniques
 
 - **Runtime Node.js** : `pdfExtractionAI.ts` utilise `"use node";` pour le SDK Anthropic

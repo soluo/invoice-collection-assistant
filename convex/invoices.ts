@@ -572,6 +572,11 @@ export const deleteInvoice = mutation({
       await ctx.db.delete(event._id);
     }
 
+    // Supprimer le fichier PDF du storage
+    if (invoice.pdfStorageId) {
+      await ctx.storage.delete(invoice.pdfStorageId);
+    }
+
     await ctx.db.delete(args.invoiceId);
 
     return { success: true };
