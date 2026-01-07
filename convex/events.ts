@@ -225,6 +225,7 @@ export const getEventHistory = query({
         v.object({
           amount: v.optional(v.number()),
           reminderNumber: v.optional(v.number()),
+          reminderType: v.optional(v.string()),
           isAutomatic: v.optional(v.boolean()),
           previousSendStatus: v.optional(v.string()),
           previousPaymentStatus: v.optional(v.string()),
@@ -312,6 +313,7 @@ export const getByInvoice = query({
         v.object({
           amount: v.optional(v.number()),
           reminderNumber: v.optional(v.number()),
+          reminderType: v.optional(v.string()),
           isAutomatic: v.optional(v.boolean()),
           previousSendStatus: v.optional(v.string()),
           previousPaymentStatus: v.optional(v.string()),

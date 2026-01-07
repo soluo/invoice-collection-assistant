@@ -75,7 +75,7 @@ export function FollowUp() {
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className={`space-y-6 ${selectedReminders.length > 0 ? "pb-24" : ""}`}>
               {groupedReminders.overdue.length > 0 && (
                 <ReminderGroup
                   title="En retard"
@@ -156,16 +156,18 @@ export function FollowUp() {
         </TabsContent>
       </Tabs>
 
-      {/* Bouton flottant pour envoi en masse */}
+      {/* Barre d'action fixe pour envoi en masse */}
       {selectedReminders.length > 0 && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <Button
-            onClick={() => setShowBulkConfirm(true)}
-            className="bg-primary hover:bg-primary/90 shadow-lg px-6 py-3 text-lg"
-          >
-            <Mail className="h-5 w-5 mr-2" />
-            Envoyer {selectedReminders.length} relance{selectedReminders.length > 1 ? "s" : ""}
-          </Button>
+        <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-6 pointer-events-none">
+          <div className="bg-white/95 backdrop-blur-sm rounded-full shadow-lg border border-gray-200 px-2 py-2 pointer-events-auto">
+            <Button
+              onClick={() => setShowBulkConfirm(true)}
+              className="bg-primary hover:bg-primary/90 rounded-full px-6 py-2.5"
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Envoyer {selectedReminders.length} relance{selectedReminders.length > 1 ? "s" : ""}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -328,49 +330,69 @@ function ReminderCard({
   });
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 hover:border-gray-300 transition-colors">
-      <div className="flex items-center gap-4">
-        {/* Checkbox for selection */}
-        {isEmail && (
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={onToggleSelect}
-            className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
-          />
-        )}
-        {/* Icône neutre avec indicateur de sévérité */}
-        <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
-          {isEmail && <Mail className="h-5 w-5" />}
-          {isPhone && <Phone className="h-5 w-5" />}
-          {/* Dot de sévérité */}
-          <span className={`absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white ${getSeverityDot()}`} />
+    <div className="rounded-lg border border-gray-200 bg-white p-4 hover:border-gray-300 transition-colors">
+      {/* Mobile layout */}
+      <div className="flex flex-col gap-2.5 md:hidden">
+        {/* Ligne 1: icône + facture/client + montant */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
+            {isEmail && <Mail className="h-4 w-4" />}
+            {isPhone && <Phone className="h-4 w-4" />}
+            <span className={`absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${getSeverityDot()}`} />
+          </div>
+          <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+            <div className="min-w-0 truncate">
+              <a
+                href={`/invoices/${reminder.invoice?._id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-gray-900 hover:text-primary hover:underline"
+              >
+                {reminder.invoice?.invoiceNumber || "N/A"}
+              </a>
+              <span className="text-gray-500 ml-1.5">
+                {reminder.invoice?.clientName || "Client inconnu"}
+              </span>
+            </div>
+            <div className="flex-shrink-0 text-right">
+              <span className="font-semibold text-gray-900">
+                {reminder.invoice?.amountTTC.toFixed(2)} €
+              </span>
+              {reminder.daysOverdue !== undefined && reminder.daysOverdue > 0 && (
+                <span className="text-red-600 font-medium ml-1.5">+{reminder.daysOverdue}j</span>
+              )}
+            </div>
+          </div>
         </div>
-        <div>
-          <p className="font-semibold text-gray-900">
-            {reminder.invoice?.clientName || "Client inconnu"}
-            <span className="text-gray-500 font-normal ml-1">
-              ({reminder.invoice?.invoiceNumber || "N/A"})
-            </span>
+
+        {/* Ligne 2: sujet email ou type + métadonnées */}
+        <div className="pl-12 text-sm">
+          {isEmail && (
+            <p className="text-gray-600 truncate">"{reminder.data?.emailSubject || "Sans objet"}"</p>
+          )}
+          {isPhone && (
+            <p className="text-gray-600">Appel téléphonique</p>
+          )}
+          <p className="text-gray-400 text-xs mt-0.5">
+            {getSeverityLabel()} · {formattedDate}
           </p>
-          <p className="text-sm text-gray-600">
-            {isEmail && (
-              <>"{reminder.data?.emailSubject || "Sans objet"}"</>
-            )}
-            {isPhone && "Appel téléphonique"}
-            <span className="text-gray-400 ml-2">· {getSeverityLabel()}</span>
-          </p>
-          <p className="text-xs text-gray-400 mt-1">{formattedDate}</p>
         </div>
-      </div>
-      <div className="flex-shrink-0 text-right">
-        <p className="text-base font-semibold text-gray-900">
-          {reminder.invoice?.amountTTC.toFixed(2)} €
-        </p>
-        {reminder.daysOverdue !== undefined && reminder.daysOverdue > 0 && (
-          <p className="text-sm text-red-600 font-medium">+{reminder.daysOverdue} j</p>
-        )}
-        <div className="mt-2 flex gap-2 justify-end">
+
+        {/* Ligne 3: checkbox (si email) à gauche + action à droite */}
+        <div className="pl-12 flex items-center justify-between">
+          {isEmail ? (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={onToggleSelect}
+                className="h-4 w-4 rounded border-gray-300 accent-primary focus:ring-primary cursor-pointer"
+              />
+              <span className="text-sm text-gray-500">Sélectionner</span>
+            </label>
+          ) : (
+            <div />
+          )}
           {isEmail && (
             <Button variant="outline" size="sm" onClick={onPreview}>
               <Eye className="h-4 w-4 mr-1" />
@@ -383,6 +405,72 @@ function ReminderCard({
               Marquer fait
             </Button>
           )}
+        </div>
+      </div>
+
+      {/* Desktop layout */}
+      <div className="hidden md:flex md:items-center md:justify-between">
+        <div className="flex items-center gap-4 min-w-0 flex-1">
+          {isEmail ? (
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={onToggleSelect}
+              className="h-5 w-5 flex-shrink-0 rounded border-gray-300 accent-primary focus:ring-primary cursor-pointer"
+            />
+          ) : (
+            <div className="w-5 flex-shrink-0" />
+          )}
+          <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
+            {isEmail && <Mail className="h-5 w-5" />}
+            {isPhone && <Phone className="h-5 w-5" />}
+            <span className={`absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white ${getSeverityDot()}`} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-gray-900 truncate">
+              <a
+                href={`/invoices/${reminder.invoice?._id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-900 hover:text-primary hover:underline"
+              >
+                {reminder.invoice?.invoiceNumber || "N/A"}
+              </a>
+              <span className="text-gray-500 font-normal ml-2">
+                {reminder.invoice?.clientName || "Client inconnu"}
+              </span>
+            </p>
+            <p className="text-sm text-gray-600 truncate">
+              {isEmail && (
+                <>"{reminder.data?.emailSubject || "Sans objet"}"</>
+              )}
+              {isPhone && "Appel téléphonique"}
+              <span className="text-gray-400 ml-2">· {getSeverityLabel()}</span>
+            </p>
+            <p className="text-xs text-gray-400 mt-1">{formattedDate}</p>
+          </div>
+        </div>
+        <div className="flex-shrink-0 text-right ml-4">
+          <p className="text-base font-semibold text-gray-900">
+            {reminder.invoice?.amountTTC.toFixed(2)} €
+          </p>
+          {reminder.daysOverdue !== undefined && reminder.daysOverdue > 0 && (
+            <p className="text-sm text-red-600 font-medium">+{reminder.daysOverdue} j</p>
+          )}
+          <div className="mt-2 flex gap-2 justify-end">
+            {isEmail && (
+              <Button variant="outline" size="sm" onClick={onPreview}>
+                <Eye className="h-4 w-4 mr-1" />
+                Prévisualiser
+              </Button>
+            )}
+            {isPhone && (
+              <Button variant="outline" size="sm" onClick={onPhoneComplete}>
+                <Check className="h-4 w-4 mr-1" />
+                Marquer fait
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
