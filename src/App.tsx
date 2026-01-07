@@ -48,19 +48,22 @@ function Content() {
   const [isCreatingOrg, setIsCreatingOrg] = useState(false);
 
   useEffect(() => {
+    // Éviter les doubles exécutions pendant le processing
+    if (isCreatingOrg) return;
+
     // Flow d'inscription : création de l'organisation
     const pendingOrgDataRaw = sessionStorage.getItem("pendingOrgData");
     if (loggedInUser && pendingOrgDataRaw && !loggedInUser.organizationId) {
+      // Nettoyer IMMÉDIATEMENT pour éviter les doubles exécutions
+      sessionStorage.removeItem("pendingOrgData");
       const pendingOrgData = JSON.parse(pendingOrgDataRaw);
       const createOrg = async () => {
         setIsCreatingOrg(true);
         try {
           await createOrganization(pendingOrgData);
           toast.success("Organisation créée avec succès !");
-          sessionStorage.removeItem("pendingOrgData");
           setOrgSetupError(null);
           setIsCreatingOrg(false);
-          // Rediriger vers /invoices après la création de l'organisation
           void navigate("/invoices");
         } catch (error: any) {
           console.error("Erreur lors de la création de l'organisation:", error);
@@ -68,33 +71,26 @@ function Content() {
           toast.error(errorMessage);
           setOrgSetupError(errorMessage);
           setIsCreatingOrg(false);
-          // Déconnecter l'utilisateur pour permettre une nouvelle tentative
-          sessionStorage.removeItem("pendingOrgData");
           setTimeout(() => void signOut(), 2000);
         }
       };
       void createOrg();
-      return; // Un seul flow à la fois
+      return;
     }
 
     // Flow d'invitation : accepter l'invitation
-    const pendingInvitationDataRaw =
-      sessionStorage.getItem("pendingInvitationData");
-    if (
-      loggedInUser &&
-      pendingInvitationDataRaw &&
-      !loggedInUser.organizationId
-    ) {
+    const pendingInvitationDataRaw = sessionStorage.getItem("pendingInvitationData");
+    if (loggedInUser && pendingInvitationDataRaw && !loggedInUser.organizationId) {
+      // Nettoyer IMMÉDIATEMENT pour éviter les doubles exécutions
+      sessionStorage.removeItem("pendingInvitationData");
       const pendingInvitationData = JSON.parse(pendingInvitationDataRaw);
       const acceptInv = async () => {
         setIsCreatingOrg(true);
         try {
           await acceptInvitation(pendingInvitationData);
           toast.success("Vous avez rejoint l'organisation avec succès !");
-          sessionStorage.removeItem("pendingInvitationData");
           setOrgSetupError(null);
           setIsCreatingOrg(false);
-          // Rediriger vers /invoices après l'acceptation de l'invitation
           void navigate("/invoices");
         } catch (error: any) {
           console.error("Erreur lors de l'acceptation de l'invitation:", error);
@@ -102,14 +98,12 @@ function Content() {
           toast.error(errorMessage);
           setOrgSetupError(errorMessage);
           setIsCreatingOrg(false);
-          // Déconnecter l'utilisateur pour permettre une nouvelle tentative
-          sessionStorage.removeItem("pendingInvitationData");
           setTimeout(() => void signOut(), 2000);
         }
       };
       void acceptInv();
     }
-  }, [loggedInUser, createOrganization, acceptInvitation, signOut, navigate]);
+  }, [loggedInUser, createOrganization, acceptInvitation, signOut, navigate, isCreatingOrg]);
 
   // Rediriger automatiquement vers /invoices si l'utilisateur est déjà connecté
   // et se trouve sur /login ou /signup

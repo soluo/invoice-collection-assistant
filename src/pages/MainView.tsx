@@ -55,7 +55,7 @@ export default function MainView() {
       isAdmin && selectedUserId !== "all" ? (selectedUserId as any) : undefined,
   });
 
-  const teamMembers = useQuery(isAdmin ? api.users.listTeamMembers : "skip");
+  const teamMembers = useQuery(api.users.listTeamMembers, isAdmin ? {} : "skip");
 
   // Handlers
   const handleAction = (action: string, invoiceId: string) => {

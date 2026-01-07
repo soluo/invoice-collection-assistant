@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LogOut, FileText, Calendar, Settings, User, ChevronDown, Mail } from "lucide-react";
+import { LogOut, FileText, Calendar, Settings, User, ChevronDown, Mail, Users } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -130,21 +130,36 @@ export function Topbar() {
               </NavLink>
             );
           })}
-          {/* Settings button - visible only for admins on desktop */}
+          {/* Admin-only links */}
           {loggedInUser?.role === "admin" && (
-            <NavLink
-              to="/settings"
-              className={({ isActive }) =>
-                cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                  isActive
-                    ? "text-brand-600 bg-brand-50"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                )
-              }
-            >
-              Réglages
-            </NavLink>
+            <>
+              <NavLink
+                to="/team"
+                className={({ isActive }) =>
+                  cn(
+                    "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                    isActive
+                      ? "text-brand-600 bg-brand-50"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                  )
+                }
+              >
+                Équipe
+              </NavLink>
+              <NavLink
+                to="/settings"
+                className={({ isActive }) =>
+                  cn(
+                    "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                    isActive
+                      ? "text-brand-600 bg-brand-50"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                  )
+                }
+              >
+                Réglages
+              </NavLink>
+            </>
           )}
         </nav>
 
@@ -180,14 +195,16 @@ export function Topbar() {
                 )}
               </div>
               <div className="py-1">
-                <button
-                  type="button"
-                  onClick={() => handleNavigate("/settings")}
-                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
-                >
-                  <Settings size={18} />
-                  Réglages
-                </button>
+                {loggedInUser?.role === "admin" && (
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate("/settings")}
+                    className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                  >
+                    <Settings size={18} />
+                    Réglages
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => handleNavigate("/account")}

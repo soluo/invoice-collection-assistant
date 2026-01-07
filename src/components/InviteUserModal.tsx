@@ -65,24 +65,24 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full p-6 relative">
+      <div className="bg-white rounded-2xl max-w-md w-full p-6 relative shadow-xl">
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
         >
           <X size={20} />
         </button>
 
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <h2 className="text-xl font-bold text-slate-900 mb-6">
           Inviter un utilisateur
         </h2>
 
         {!invitationToken ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-semibold text-slate-700 mb-2"
               >
                 Email
               </label>
@@ -94,29 +94,29 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
                 onBlur={(e) => {
                   const value = e.target.value;
                   if (value && !validateEmail(value)) {
-                    setEmailError("Format d'email invalide (ex: utilisateur@example.com)");
+                    setEmailError("Format d'email invalide");
                   } else {
                     setEmailError(null);
                   }
                 }}
                 pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-colors ${
                   emailError
-                    ? "border-red-500 focus:ring-red-500"
-                    : "border-gray-300 focus:ring-blue-500"
+                    ? "border-red-300 focus:ring-red-500/20 focus:border-red-500"
+                    : "border-slate-200 focus:ring-brand-500/20 focus:border-brand-500"
                 }`}
                 placeholder="utilisateur@example.com"
                 required
               />
               {emailError && (
-                <p className="mt-1 text-sm text-red-600">{emailError}</p>
+                <p className="mt-2 text-sm text-red-600">{emailError}</p>
               )}
             </div>
 
             <div>
               <label
                 htmlFor="role"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-semibold text-slate-700 mb-2"
               >
                 Rôle
               </label>
@@ -124,66 +124,66 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
                 id="role"
                 value={role}
                 onChange={(e) => setRole(e.target.value as "admin" | "technicien")}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors bg-white"
               >
                 <option value="technicien">Technicien</option>
                 <option value="admin">Admin</option>
               </select>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-2 text-sm text-slate-500">
                 {role === "admin"
-                  ? "Admin : accès complet à toutes les factures et paramètres"
-                  : "Technicien : accès limité à ses propres factures"}
+                  ? "Accès complet à toutes les factures et paramètres"
+                  : "Accès limité à ses propres factures"}
               </p>
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-3 pt-2">
               <button
                 type="button"
                 onClick={handleClose}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="flex-1 px-4 py-3 border border-slate-200 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
               >
                 Annuler
               </button>
               <button
                 type="submit"
                 disabled={submitting || !!emailError || !email}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-3 bg-brand-500 text-white font-bold rounded-xl hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {submitting ? "Envoi..." : "Envoyer l'invitation"}
+                {submitting ? "Envoi..." : "Inviter"}
               </button>
             </div>
           </form>
         ) : (
-          <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-green-800 font-medium mb-2">
-                Invitation créée avec succès !
+          <div className="space-y-5">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+              <p className="text-emerald-800 font-semibold mb-1">
+                Invitation créée !
               </p>
-              <p className="text-green-700 text-sm">
-                Partagez ce lien avec {email} pour qu'il rejoigne votre organisation :
+              <p className="text-emerald-700 text-sm">
+                Partagez ce lien avec {email} pour qu'il rejoigne votre organisation.
               </p>
             </div>
 
-            <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
-              <p className="text-xs text-gray-600 mb-2 font-medium">
-                Lien d'invitation :
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <p className="text-xs text-slate-600 mb-2 font-semibold uppercase tracking-wide">
+                Lien d'invitation
               </p>
               <div className="flex gap-2 items-center">
-                <code className="flex-1 text-xs bg-white px-2 py-1.5 rounded border border-gray-200 overflow-x-auto">
+                <code className="flex-1 text-xs bg-white px-3 py-2 rounded-lg border border-slate-200 overflow-x-auto text-slate-700">
                   {window.location.origin}/accept-invitation/{invitationToken}
                 </code>
                 <button
                   onClick={copyInvitationLink}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded"
+                  className="p-2 text-slate-500 hover:text-slate-700 hover:bg-white rounded-lg border border-slate-200 transition-colors"
                   title="Copier le lien"
                 >
-                  {copied ? <Check size={18} className="text-green-600" /> : <Copy size={18} />}
+                  {copied ? <Check size={18} className="text-emerald-600" /> : <Copy size={18} />}
                 </button>
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-blue-800 text-sm">
+            <div className="bg-brand-50 border border-brand-200 rounded-xl p-4">
+              <p className="text-brand-800 text-sm">
                 <strong>Note :</strong> Le lien expire dans 7 jours. L'utilisateur devra créer son
                 compte avec l'email <strong>{email}</strong>.
               </p>
@@ -191,7 +191,7 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
 
             <button
               onClick={handleClose}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="w-full px-4 py-3 bg-brand-500 text-white font-bold rounded-xl hover:bg-brand-600 transition-colors"
             >
               Fermer
             </button>

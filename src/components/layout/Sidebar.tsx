@@ -7,6 +7,7 @@ import {
   Settings,
   User,
   Mail,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "convex/react";
@@ -84,12 +85,18 @@ export function Sidebar() {
               {mainNavItems.map((item) => (
                 <NavItem key={item.path} item={item} onClick={() => setOpenMobile(false)} />
               ))}
-              {/* Settings - visible only for admins */}
+              {/* Admin-only links */}
               {loggedInUser?.role === "admin" && (
-                <NavItem
-                  item={{ name: "Réglages", path: "/settings", icon: Settings }}
-                  onClick={() => setOpenMobile(false)}
-                />
+                <>
+                  <NavItem
+                    item={{ name: "Équipe", path: "/team", icon: Users }}
+                    onClick={() => setOpenMobile(false)}
+                  />
+                  <NavItem
+                    item={{ name: "Réglages", path: "/settings", icon: Settings }}
+                    onClick={() => setOpenMobile(false)}
+                  />
+                </>
               )}
             </SidebarMenu>
           </SidebarGroupContent>

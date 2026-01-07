@@ -18,7 +18,8 @@
       "Bash(pnpm dev)",
       "Bash(npx shadcn:*)",
       "Bash(find:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
