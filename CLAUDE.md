@@ -35,6 +35,8 @@ Utiliser des messages de commit clairs et concis :
 - `style: description courte` - Changements de style/formatage
 - `docs: description courte` - Documentation uniquement
 
+**IMPORTANT : Ne PAS ajouter de mention "Generated with Claude Code" ou "Co-Authored-By: Claude" dans les commits.**
+
 **Exemples :**
 ```bash
 git add .

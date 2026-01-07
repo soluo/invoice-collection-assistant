@@ -1196,11 +1196,22 @@ export const listInvoicesWithFilters = query({
     // Filtre recherche texte
     if (args.searchQuery) {
       const query = args.searchQuery.toLowerCase().trim();
-      invoicesWithDisplayInfo = invoicesWithDisplayInfo.filter(
-        (invoice) =>
+      invoicesWithDisplayInfo = invoicesWithDisplayInfo.filter((invoice) => {
+        // Recherche par numéro de facture ou nom client
+        if (
           invoice.invoiceNumber.toLowerCase().includes(query) ||
           invoice.clientName.toLowerCase().includes(query)
-      );
+        ) {
+          return true;
+        }
+        // Recherche par montant (ex: "1500" ou "1500.50")
+        const amountStr = invoice.amountTTC.toString();
+        const amountFormatted = invoice.amountTTC.toFixed(2);
+        if (amountStr.includes(query) || amountFormatted.includes(query)) {
+          return true;
+        }
+        return false;
+      });
     }
 
     // Filtre par statut simplifié

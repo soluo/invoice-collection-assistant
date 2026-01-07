@@ -68,16 +68,16 @@ export default function TabFilterBar({
         ))}
       </div>
 
-      {/* Right side: Search (mobile) + Filters */}
+      {/* Right side: Search + Filters */}
       <div className="flex items-center gap-3">
-        {/* Search bar (mobile only) */}
-        <div className="md:hidden relative w-full">
+        {/* Search bar */}
+        <div className="relative w-full md:w-64">
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
           <Input
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Rechercher..."
+            placeholder="Client, n° facture, montant..."
             className="w-full bg-slate-50 border-slate-200 rounded-lg py-2 pl-9 pr-3 text-sm"
           />
         </div>
