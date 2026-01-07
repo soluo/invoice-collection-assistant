@@ -2,12 +2,14 @@ import React, { useState, useRef, useEffect } from "react";
 import { useMutation, useAction, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
-import { Upload } from "lucide-react";
+import { Upload, FileText, Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Id } from "../../convex/_generated/dataModel";
 
 interface InvoiceUploadProps {
   onSuccess: () => void;
@@ -40,6 +42,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const [extractionSuccess, setExtractionSuccess] = useState(false);
+  const [confidenceScore, setConfidenceScore] = useState<number | null>(null);
 
   // ✅ V2 : S'assurer que TOUS les champs ont des valeurs initiales (pas undefined) pour éviter l'erreur React "uncontrolled to controlled"
   const [formData, setFormData] = useState({
@@ -58,6 +61,12 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
   const loggedInUser = useQuery(api.auth.loggedInUser);
   const users = useQuery(api.organizations.listUsers);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
+
+  // Récupérer l'URL du PDF pour la prévisualisation
+  const pdfUrl = useQuery(
+    api.invoices.getPdfUrl,
+    pdfStorageId ? { storageId: pdfStorageId as Id<"_storage"> } : "skip"
+  );
 
   // Détection mobile
   const [isMobile, setIsMobile] = useState(false);
@@ -160,15 +169,18 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
           dueDate: extractedData.dueDate || getDefaultDueDate(extractedInvoiceDate),
         });
 
+        // Stocker le score de confiance
+        setConfidenceScore(extractedData.confidence);
+
         // Afficher le message en fonction du score de confiance
         if (extractedData.confidence >= 80) {
           setExtractionSuccess(true);
-          toast.success(`✨ Extraction réussie (${extractedData.confidence}% de confiance)`);
+          toast.success(`Extraction réussie (${extractedData.confidence}% de confiance)`);
         } else if (extractedData.confidence >= 50) {
           setExtractionSuccess(true);
-          toast.warning(`⚠️ Extraction partielle (${extractedData.confidence}% de confiance). Vérifiez attentivement.`);
+          toast.warning(`Extraction partielle (${extractedData.confidence}% de confiance). Vérifiez attentivement.`);
         } else {
-          toast.error("🔍 Extraction difficile. Vérifiez et corrigez les données manuellement.");
+          toast.error("Extraction difficile. Vérifiez et corrigez les données manuellement.");
         }
 
         // ✅ Afficher le formulaire APRÈS avoir récupéré les données
@@ -207,6 +219,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
     setPdfStorageId(null);
     setUploadedFileName("");
     setExtractionSuccess(false);
+    setConfidenceScore(null);
     setShowManualEntry(false);
     const resetInvoiceDate = getTodayISO();
     setFormData({
@@ -269,115 +282,148 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
     }
   };
 
-  // ✅ V2 : Sur mobile, afficher directement le formulaire
-  if (isMobile && !showManualEntry) {
-    setShowManualEntry(true);
-  }
+  // Déterminer si on affiche le layout side-by-side (quand un PDF est uploadé ou en cours d'upload)
+  const showSideBySide = pdfStorageId || isUploading || isExtracting;
 
-  return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Importer une facture</h1>
-        <p className="mt-2 text-lg text-gray-600">Déposez votre PDF, nous lirons les informations pour vous.</p>
+  // Fonction helper pour obtenir la couleur du badge de confiance
+  const getConfidenceColor = (score: number) => {
+    if (score >= 80) return "bg-green-100 text-green-800 border-green-200";
+    if (score >= 50) return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    return "bg-red-100 text-red-800 border-red-200";
+  };
+
+  // Composant pour la zone de drop/preview
+  const renderDocumentPanel = () => (
+    <div className="flex flex-col h-full">
+      {/* Header du panneau document */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <FileText className="h-5 w-5 text-gray-500" />
+          <span className="font-medium text-gray-700">Document</span>
+        </div>
+        {pdfStorageId && !isExtracting && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleChangeFile}
+                  className="text-sm"
+                >
+                  <Upload className="h-4 w-4 mr-1" />
+                  Remplacer
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Uploader un autre document</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </div>
 
-      {/* ✅ V2 : Zone drag-drop avec design maquette (cachée sur mobile) */}
-      {!isMobile && !showManualEntry && (
-        <>
-          {/* Conteneur blanc pour la zone d'upload */}
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-            <div
-              className={`h-64 border-2 border-dashed rounded-lg transition-colors flex items-center justify-center cursor-pointer ${
-                isDragging
-                  ? "border-indigo-400 bg-indigo-100"
-                  : "border-indigo-300 bg-indigo-50 hover:bg-indigo-100"
-              }`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => !isUploading && !isExtracting && fileInputRef.current?.click()}
-            >
-              {isUploading || isExtracting ? (
-                <div className="space-y-3 text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-                  <p className="text-lg font-semibold text-indigo-700">
-                    {isUploading ? "Upload en cours..." : "Analyse de votre facture en cours..."}
+      {/* Zone de contenu : Drop zone OU Preview PDF */}
+      <div className="flex-1 min-h-0">
+        {pdfUrl ? (
+          // Preview PDF
+          <iframe
+            src={pdfUrl}
+            className="w-full h-full rounded-lg border border-gray-200"
+            title="Aperçu du PDF"
+          />
+        ) : (
+          // Zone de drop
+          <div
+            className={`h-full min-h-[300px] border-2 border-dashed rounded-lg transition-colors flex items-center justify-center cursor-pointer ${
+              isDragging
+                ? "border-primary bg-primary/10"
+                : "border-primary/50 bg-primary/5 hover:bg-primary/10"
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => !isUploading && !isExtracting && fileInputRef.current?.click()}
+          >
+            {isUploading ? (
+              <div className="space-y-3 text-center">
+                <Loader2 className="h-12 w-12 text-primary mx-auto animate-spin" />
+                <p className="text-lg font-semibold text-primary">Upload en cours...</p>
+                <p className="text-sm text-gray-500">{uploadedFileName}</p>
+              </div>
+            ) : (
+              <div className="text-center space-y-4 px-6">
+                <Upload className="h-12 w-12 text-primary mx-auto" />
+                <div>
+                  <p className="text-lg font-semibold text-primary">
+                    Glissez-déposez votre facture
                   </p>
-                  <p className="text-sm text-gray-500">Veuillez patienter.</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    ou cliquez pour sélectionner un fichier (PDF)
+                  </p>
                 </div>
-              ) : (
-                <div className="text-center space-y-4 px-6">
-                  <Upload className="h-12 w-12 text-indigo-500 mx-auto" />
-                  <div>
-                    <p className="text-lg font-semibold text-indigo-700">
-                      Glissez-déposez votre facture
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      ou cliquez pour sélectionner un fichier (PDF, JPG, PNG)
-                    </p>
-                  </div>
-                </div>
-              )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+    </div>
+  );
+
+  // Composant pour le formulaire
+  const renderFormPanel = () => (
+    <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col h-full">
+      {/* Header avec indicateur de confiance */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-medium text-gray-700">Informations de la facture</h3>
+        {confidenceScore !== null && !isExtracting && (
+          <span className={`px-3 py-1 text-sm font-medium rounded-full border ${getConfidenceColor(confidenceScore)}`}>
+            Confiance : {confidenceScore}%
+          </span>
+        )}
+      </div>
+
+      {/* Contenu du formulaire avec overlay pendant l'analyse */}
+      <div className="flex-1 min-h-0 overflow-y-auto relative">
+        {/* Overlay pendant l'extraction */}
+        {isExtracting && (
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+            <div className="text-center space-y-3">
+              <Loader2 className="h-10 w-10 text-primary mx-auto animate-spin" />
+              <p className="text-lg font-semibold text-gray-700">Analyse en cours...</p>
+              <p className="text-sm text-gray-500">Extraction des informations du document</p>
             </div>
           </div>
+        )}
 
-          {/* Lien manuel en dehors de la card */}
-          <div className="text-center mt-6">
-            <button
-              type="button"
-              onClick={() => setShowManualEntry(true)}
-              className="text-indigo-600 hover:text-indigo-800 font-medium"
-            >
-              ou entrer les informations manuellement
-            </button>
-          </div>
-        </>
-      )}
-
-      {/* ✅ V2 : Formulaire avec sections */}
-      {showManualEntry && (
-        <form onSubmit={(e) => void handleSubmit(e)} className="bg-white md:rounded-xl md:border p-4 -mx-4 lg:mx-0 lg:p-6 space-y-6">
-          {/* ✅ V2 : Bandeau succès */}
-          {extractionSuccess && (
-            <div className="p-4 bg-green-50 text-green-700 border border-green-200 rounded-lg">
-              <p className="font-medium">Données extraites !</p>
-              <p className="text-sm">Veuillez vérifier les informations ci-dessous avant de valider.</p>
+        <div className="space-y-6 pr-2">
+          {/* Bandeau succès */}
+          {extractionSuccess && !isExtracting && (
+            <div className="p-3 bg-green-50 text-green-700 border border-green-200 rounded-lg">
+              <p className="font-medium text-sm">Données extraites avec succès</p>
+              <p className="text-xs">Vérifiez les informations avant de valider.</p>
             </div>
           )}
 
-          {/* ✅ V2 : Affichage fichier uploadé */}
-          {uploadedFileName && (
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-              <p className="text-sm text-gray-700 font-medium">{uploadedFileName}</p>
-              <button
-                type="button"
-                onClick={handleChangeFile}
-                className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
-              >
-                Changer
-              </button>
-            </div>
-          )}
-
-          {/* ✅ V2 : Section 1 - Détails de la facture */}
+          {/* Section 1 - Détails de la facture */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <div className="flex shrink-0 size-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">1</div>
-              <h3 className="text-lg font-medium text-gray-900">Détails de la facture</h3>
+              <h3 className="text-base font-medium text-gray-900">Détails de la facture</h3>
             </div>
 
-            <div className="pl-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Ligne 1 : Numéro de facture | Montant TTC */}
-              <div className="space-y-2">
-                <Label htmlFor="invoiceNumber">Numéro de facture / Dossier <span className="text-red-500">*</span></Label>
+            <div className="pl-8 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="invoiceNumber" className="text-sm">Numéro de facture <span className="text-red-500">*</span></Label>
                 <Input
                   id="invoiceNumber"
                   type="text"
@@ -385,11 +431,12 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
                   onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
                   className="w-full"
                   required
+                  disabled={isExtracting}
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="amountTTC">Montant Total TTC <span className="text-red-500">*</span></Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="amountTTC" className="text-sm">Montant TTC <span className="text-red-500">*</span></Label>
                 <InputGroup>
                   <InputGroupAddon>€</InputGroupAddon>
                   <InputGroupInput
@@ -399,24 +446,25 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
                     value={formData.amountTTC}
                     onChange={(e) => setFormData({ ...formData, amountTTC: e.target.value })}
                     required
+                    disabled={isExtracting}
                   />
                 </InputGroup>
               </div>
 
-              {/* Ligne 2 : Date d'émission | Date d'échéance */}
-              <div className="space-y-2">
-                <Label htmlFor="invoiceDate">Date d'émission</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="invoiceDate" className="text-sm">Date d'émission</Label>
                 <Input
                   id="invoiceDate"
                   type="date"
                   value={formData.invoiceDate}
                   onChange={(e) => setFormData({ ...formData, invoiceDate: e.target.value })}
                   className="w-full block"
+                  disabled={isExtracting}
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="dueDate">Date d'échéance <span className="text-red-500">*</span></Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="dueDate" className="text-sm">Date d'échéance <span className="text-red-500">*</span></Label>
                 <Input
                   id="dueDate"
                   type="date"
@@ -424,19 +472,18 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                   className="w-full block"
                   required
+                  disabled={isExtracting}
                 />
               </div>
 
-              {/* Ligne 3 : Client / Donneur d'ordre | Responsable de la facture */}
-              <div className="space-y-2">
-                <Label htmlFor="clientName">Client / Donneur d'ordre <span className="text-red-500">*</span></Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="clientName" className="text-sm">Client <span className="text-red-500">*</span></Label>
                 <Input
                   id="clientName"
                   type="text"
                   value={formData.clientName}
                   onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
                   onBlur={(e) => {
-                    // ✅ V2 Phase 2.6 : Copier vers contactName uniquement si contactName est vide
                     if (e.target.value && !formData.contactName) {
                       setFormData(prev => ({ ...prev, contactName: e.target.value }));
                     }
@@ -444,21 +491,21 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
                   className="w-full"
                   placeholder="Nom du client ou agence"
                   required
+                  disabled={isExtracting}
                 />
               </div>
 
-              {/* Responsable de la facture (admins uniquement) */}
               {isAdmin && users && users.length > 0 && (
-                <div className="space-y-2">
-                  <Label htmlFor="responsible">Responsable de la facture</Label>
-                  <Select value={selectedUserId || undefined} onValueChange={setSelectedUserId}>
+                <div className="space-y-1.5">
+                  <Label htmlFor="responsible" className="text-sm">Responsable</Label>
+                  <Select value={selectedUserId || undefined} onValueChange={setSelectedUserId} disabled={isExtracting}>
                     <SelectTrigger id="responsible">
-                      <SelectValue placeholder="Sélectionner un responsable" />
+                      <SelectValue placeholder="Sélectionner" />
                     </SelectTrigger>
                     <SelectContent>
                       {users.map((user) => (
                         <SelectItem key={user._id} value={user._id}>
-                          {user.name || user.email} {user.role === "admin" ? "(Admin)" : "(Technicien)"}
+                          {user.name || user.email} {user.role === "admin" ? "(Admin)" : "(Tech)"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -468,75 +515,156 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
             </div>
           </div>
 
-          {/* ✅ V2 Phase 2.6 : Section 2 - Contact pour la relance */}
-          <div className="space-y-4 pt-2">
-            <div>
-              <div className="flex items-center gap-2">
-                <div className="flex shrink-0 size-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">2</div>
-                <h3 className="text-lg font-medium text-gray-900">Contact pour la relance (Recommandé)</h3>
-              </div>
-              <p className="ml-8 text-sm text-gray-500 mt-2">Qui devons-nous contacter ? (Ex: Sophie de l'agence, ou le client en direct)</p>
+          {/* Section 2 - Contact pour la relance */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="flex shrink-0 size-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">2</div>
+              <h3 className="text-base font-medium text-gray-900">Contact pour la relance</h3>
             </div>
 
-            <div className="pl-8 space-y-4">
-              {/* Nom du contact - Pleine largeur */}
-              <div className="space-y-2">
-                <Label htmlFor="contactName">Nom du contact</Label>
+            <div className="pl-8 space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="contactName" className="text-sm">Nom du contact</Label>
                 <Input
                   id="contactName"
                   type="text"
                   value={formData.contactName}
                   onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
                   className="w-full"
+                  disabled={isExtracting}
                 />
               </div>
 
-              {/* Email et Téléphone - 2 colonnes */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contactEmail">Email</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="contactEmail" className="text-sm">Email</Label>
                   <Input
                     id="contactEmail"
                     type="email"
                     value={formData.contactEmail}
                     onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
                     className="w-full"
+                    disabled={isExtracting}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="contactPhone">Téléphone</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="contactPhone" className="text-sm">Téléphone</Label>
                   <Input
                     id="contactPhone"
                     type="tel"
                     value={formData.contactPhone}
                     onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
                     className="w-full"
+                    disabled={isExtracting}
                   />
                 </div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Footer boutons */}
-          <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                handleChangeFile();
-                setShowManualEntry(false);
-              }}
-            >
-              Annuler
-            </Button>
-            <Button
-              type="submit"
-            >
-              Ajouter la facture
-            </Button>
+      {/* Footer boutons */}
+      <div className="flex items-center justify-end gap-3 pt-4 mt-4 border-t border-gray-200">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            handleChangeFile();
+            setShowManualEntry(false);
+          }}
+          disabled={isExtracting}
+        >
+          Annuler
+        </Button>
+        <Button type="submit" disabled={isExtracting}>
+          Ajouter la facture
+        </Button>
+      </div>
+    </form>
+  );
+
+  // Layout principal
+  return (
+    <div className="h-full">
+      {/* Header */}
+      <div className="mb-6 text-center">
+        <h1 className="text-3xl font-bold text-gray-900">Importer une facture</h1>
+      </div>
+
+      {/* Contenu principal */}
+      {!showSideBySide && !showManualEntry ? (
+        // Vue initiale : zone de drop centrée (sans le wrapper "Document")
+        <div className="max-w-2xl mx-auto space-y-6">
+          <div
+            className={`h-64 border-2 border-dashed rounded-xl transition-colors flex items-center justify-center cursor-pointer ${
+              isDragging
+                ? "border-primary bg-primary/10"
+                : "border-primary/50 bg-primary/5 hover:bg-primary/10"
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => !isUploading && fileInputRef.current?.click()}
+          >
+            {isUploading ? (
+              <div className="space-y-3 text-center">
+                <Loader2 className="h-12 w-12 text-primary mx-auto animate-spin" />
+                <p className="text-lg font-semibold text-primary">Upload en cours...</p>
+                <p className="text-sm text-gray-500">{uploadedFileName}</p>
+              </div>
+            ) : (
+              <div className="text-center space-y-4 px-6">
+                <Upload className="h-12 w-12 text-primary mx-auto" />
+                <div>
+                  <p className="text-lg font-semibold text-primary">
+                    Glissez-déposez votre facture
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    ou cliquez pour sélectionner un fichier (PDF)
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-        </form>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => setShowManualEntry(true)}
+              className="text-primary hover:text-primary/80 font-medium"
+            >
+              ou entrer les informations manuellement
+            </button>
+          </div>
+        </div>
+      ) : showManualEntry && !showSideBySide ? (
+        // Vue formulaire seul (saisie manuelle sans document)
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+            {renderFormPanel()}
+          </div>
+        </div>
+      ) : (
+        // Vue side-by-side (document + formulaire)
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-160px)]">
+          {/* Panneau document */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 flex flex-col min-h-[400px] lg:min-h-0">
+            {renderDocumentPanel()}
+          </div>
+
+          {/* Panneau formulaire */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 flex flex-col min-h-[500px] lg:min-h-0">
+            {renderFormPanel()}
+          </div>
+        </div>
       )}
     </div>
   );
