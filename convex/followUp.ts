@@ -401,7 +401,6 @@ export const completePhoneReminder = mutation({
   args: {
     reminderId: v.id("reminders"),
     outcome: v.union(
-      v.literal("completed"),
       v.literal("no_answer"),
       v.literal("voicemail"),
       v.literal("will_pay"),
@@ -448,27 +447,62 @@ export const completePhoneReminder = mutation({
       phoneCallNotes: args.notes,
     };
 
-    // Marquer comme effectuée
-    await ctx.db.patch(args.reminderId, {
-      completionStatus: "completed",
-      completedAt: Date.now(),
-      data: updatedData,
-    });
+    // Outcomes qui nécessitent un rappel (pas de contact réel)
+    const needsReschedule = args.outcome === "no_answer" || args.outcome === "voicemail";
 
-    // Créer un événement dans l'historique
-    await ctx.db.insert("events", {
-      organizationId: user.organizationId,
-      userId: user.userId,
-      invoiceId: reminder.invoiceId,
-      reminderId: args.reminderId,
-      eventType: "reminder_sent",
-      eventDate: Date.now(),
-      description: `Appel téléphonique effectué`,
-      metadata: {
-        reminderType: "phone",
-        isAutomatic: false,
-      },
-    });
+    if (needsReschedule) {
+      // Reprogrammer à +1 jour
+      const currentDate = new Date(reminder.reminderDate.replace(" ", "T"));
+      currentDate.setDate(currentDate.getDate() + 1);
+      const newReminderDate = currentDate.toISOString().replace("T", " ").slice(0, 19);
+
+      await ctx.db.patch(args.reminderId, {
+        reminderDate: newReminderDate,
+        data: updatedData,
+      });
+
+      // Créer un événement "tentative d'appel"
+      const outcomeLabel = args.outcome === "no_answer" ? "Pas de réponse" : "Message vocal laissé";
+      await ctx.db.insert("events", {
+        organizationId: user.organizationId,
+        userId: user.userId,
+        invoiceId: reminder.invoiceId,
+        reminderId: args.reminderId,
+        eventType: "reminder_sent",
+        eventDate: Date.now(),
+        description: `Tentative d'appel : ${outcomeLabel}${args.notes ? ` - ${args.notes}` : ""}`,
+        metadata: {
+          reminderType: "phone",
+          isAutomatic: false,
+        },
+      });
+    } else {
+      // Contact réel : marquer comme effectuée
+      await ctx.db.patch(args.reminderId, {
+        completionStatus: "completed",
+        completedAt: Date.now(),
+        data: updatedData,
+      });
+
+      // Créer un événement dans l'historique
+      const outcomeLabels: Record<string, string> = {
+        will_pay: "Client s'engage à payer",
+        dispute: "Litige signalé",
+      };
+      await ctx.db.insert("events", {
+        organizationId: user.organizationId,
+        userId: user.userId,
+        invoiceId: reminder.invoiceId,
+        reminderId: args.reminderId,
+        eventType: "reminder_sent",
+        eventDate: Date.now(),
+        description: `${outcomeLabels[args.outcome] || "Appel effectué"}${args.notes ? ` - ${args.notes}` : ""}`,
+        metadata: {
+          reminderType: "phone",
+          isAutomatic: false,
+        },
+      });
+    }
 
     return { success: true };
   },

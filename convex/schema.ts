@@ -169,11 +169,10 @@ const applicationTables = {
         phoneCallNotes: v.optional(v.string()),
         phoneCallOutcome: v.optional(
           v.union(
-            v.literal("completed"), // Contact établi avec succès
-            v.literal("no_answer"), // Pas de réponse
-            v.literal("voicemail"), // Messagerie
-            v.literal("will_pay"), // Client promet de payer
-            v.literal("dispute") // Litige/contestation
+            v.literal("no_answer"), // Pas de réponse → rappel +1j
+            v.literal("voicemail"), // Messagerie → rappel +1j
+            v.literal("will_pay"), // Client promet de payer → terminé
+            v.literal("dispute") // Litige/contestation → terminé
           )
         ),
       })

@@ -19,6 +19,7 @@ import { useState } from "react";
 import { EmailPreviewModalFollowUp } from "@/components/EmailPreviewModalFollowUp";
 import { EmailEditModal } from "@/components/EmailEditModal";
 import { BulkSendConfirmModal } from "@/components/BulkSendConfirmModal";
+import { PhoneCallCompleteModal } from "@/components/PhoneCallCompleteModal";
 
 export function FollowUp() {
   const upcomingReminders = useQuery(api.followUp.getUpcomingReminders);
@@ -28,6 +29,7 @@ export function FollowUp() {
   const [editReminder, setEditReminder] = useState<any | null>(null);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [selectedReminders, setSelectedReminders] = useState<string[]>([]);
+  const [phoneCallReminder, setPhoneCallReminder] = useState<any | null>(null);
 
   // Group upcoming reminders by date
   const groupedReminders = groupRemindersByDate(upcomingReminders || []);
@@ -85,6 +87,7 @@ export function FollowUp() {
                     );
                   }}
                   onPreview={setPreviewReminder}
+                  onPhoneComplete={setPhoneCallReminder}
                 />
               )}
               {groupedReminders.today.length > 0 && (
@@ -98,6 +101,7 @@ export function FollowUp() {
                     );
                   }}
                   onPreview={setPreviewReminder}
+                  onPhoneComplete={setPhoneCallReminder}
                 />
               )}
               {groupedReminders.tomorrow.length > 0 && (
@@ -111,6 +115,7 @@ export function FollowUp() {
                     );
                   }}
                   onPreview={setPreviewReminder}
+                  onPhoneComplete={setPhoneCallReminder}
                 />
               )}
               {groupedReminders.later.length > 0 && (
@@ -124,6 +129,7 @@ export function FollowUp() {
                     );
                   }}
                   onPreview={setPreviewReminder}
+                  onPhoneComplete={setPhoneCallReminder}
                 />
               )}
             </div>
@@ -199,6 +205,13 @@ export function FollowUp() {
           }}
         />
       )}
+
+      {phoneCallReminder && (
+        <PhoneCallCompleteModal
+          reminder={phoneCallReminder}
+          onClose={() => setPhoneCallReminder(null)}
+        />
+      )}
     </div>
   );
 }
@@ -244,13 +257,15 @@ function ReminderGroup({
   reminders,
   selectedReminders,
   onToggleSelect,
-  onPreview
+  onPreview,
+  onPhoneComplete
 }: {
   title: string;
   reminders: any[];
   selectedReminders: string[];
   onToggleSelect: (id: string) => void;
   onPreview: (reminder: any) => void;
+  onPhoneComplete: (reminder: any) => void;
 }) {
   return (
     <div>
@@ -263,6 +278,7 @@ function ReminderGroup({
             isSelected={selectedReminders.includes(reminder._id)}
             onToggleSelect={() => onToggleSelect(reminder._id)}
             onPreview={() => onPreview(reminder)}
+            onPhoneComplete={() => onPhoneComplete(reminder)}
           />
         ))}
       </div>
@@ -275,12 +291,14 @@ function ReminderCard({
   reminder,
   isSelected,
   onToggleSelect,
-  onPreview
+  onPreview,
+  onPhoneComplete
 }: {
   reminder: any;
   isSelected: boolean;
   onToggleSelect: () => void;
   onPreview: () => void;
+  onPhoneComplete: () => void;
 }) {
   const isEmail = reminder.reminderType === "email";
   const isPhone = reminder.reminderType === "phone";
@@ -360,7 +378,7 @@ function ReminderCard({
             </Button>
           )}
           {isPhone && (
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={onPhoneComplete}>
               <Check className="h-4 w-4 mr-1" />
               Marquer fait
             </Button>
