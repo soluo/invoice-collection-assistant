@@ -1,0 +1,81 @@
+# Workflow Status - BMad Method Brownfield
+# Tracks progress through BMM methodology phases
+# Generated: 2026-01-11
+
+generated: "2026-01-11"
+project: "Relance factures"
+project_type: "Application de gestion de recouvrement de factures"
+selected_track: "bmad-method"
+field_type: "brownfield"
+workflow_path: "method-brownfield.yaml"
+
+# Phase 0: Documentation (Prerequisite for brownfield)
+phase_0_documentation:
+  - id: "document-project"
+    name: "Document Project"
+    status: "docs/index.md"
+    agent: "analyst"
+    command: "/bmad:bmm:workflows:document-project"
+    purpose: "Analyze existing codebase and consolidate documentation for BMad Method"
+    output: "docs/ (7 files: index.md, project-overview.md, architecture.md, source-tree-analysis.md, data-models.md, component-inventory.md, development-guide.md)"
+    completed: "2026-01-11"
+
+# Phase 1: Analysis (Optional)
+phase_1_analysis:
+  - id: "brainstorm"
+    name: "Brainstorming"
+    status: optional
+    agent: "analyst"
+    command: "/bmad:core:workflows:brainstorming"
+  - id: "research"
+    name: "Research"
+    status: optional
+    agent: "analyst"
+    command: "/bmad:bmm:workflows:research"
+
+# Phase 2: Planning
+phase_2_planning:
+  - id: "prd"
+    name: "Product Requirements Document"
+    status: required
+    agent: "pm"
+    command: "/bmad:bmm:workflows:prd"
+    output: "PRD with FRs and NFRs"
+  - id: "create-ux-design"
+    name: "UX Design"
+    status: conditional  # if_has_ui
+    agent: "ux-designer"
+    command: "/bmad:bmm:workflows:create-ux-design"
+
+# Phase 3: Solutioning
+phase_3_solutioning:
+  - id: "create-architecture"
+    name: "Architecture Document"
+    status: required
+    agent: "architect"
+    command: "/bmad:bmm:workflows:create-architecture"
+    output: "System architecture document"
+  - id: "create-epics-and-stories"
+    name: "Epics & Stories"
+    status: required
+    agent: "pm"
+    command: "/bmad:bmm:workflows:create-epics-and-stories"
+  - id: "test-design"
+    name: "Test Design"
+    status: optional
+    agent: "tea"
+    command: "/bmad:bmm:workflows:testarch-test-design"
+  - id: "implementation-readiness"
+    name: "Implementation Readiness Check"
+    status: required
+    agent: "architect"
+    command: "/bmad:bmm:workflows:check-implementation-readiness"
+
+# Phase 4: Implementation
+phase_4_implementation:
+  - id: "sprint-planning"
+    name: "Sprint Planning"
+    status: required
+    agent: "sm"
+    command: "/bmad:bmm:workflows:sprint-planning"
+    note: "Creates sprint plan - subsequent work tracked in sprint-status.yaml"

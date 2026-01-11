@@ -1,0 +1,142 @@
+# Relance Factures - Project Overview
+
+**Generated:** 2026-01-11
+**Scan Level:** Deep
+**Project Type:** Web Application (Full-Stack)
+
+---
+
+## Executive Summary
+
+**Relance Factures** (also known as RelanceZen/ZenRelance) is a French invoice collection management application designed for artisans, SMEs (PME), and freelancers. The application automates the invoice reminder process through a multi-step follow-up system with email and phone reminders.
+
+### Key Capabilities
+
+- **PDF Invoice Import** with AI-powered data extraction (Claude 3.5 Haiku)
+- **Multi-organization/Multi-user** architecture with role-based access (admin/technicien)
+- **Automated Reminder System** with configurable email and phone follow-up steps
+- **Real-time Synchronization** via Convex backend
+- **OAuth Email Integration** (Microsoft, Google, Infomaniak)
+- **Payment Tracking** with partial payments and check management
+
+---
+
+## Technology Stack
+
+| Category | Technology | Version | Notes |
+|----------|------------|---------|-------|
+| **Frontend Framework** | React | 19.2.0 | Modern React with hooks |
+| **Language** | TypeScript | 5.7.3 | Strict mode enabled |
+| **Build Tool** | Vite | 6.4.1 | Fast HMR, optimized builds |
+| **CSS Framework** | Tailwind CSS | 4.1.15 | v4 with `@theme` config |
+| **UI Components** | Radix UI + Shadcn | Latest | Accessible component library |
+| **Backend** | Convex | 1.28.2 | Real-time BaaS |
+| **Authentication** | @convex-dev/auth | 0.0.80 | Email/password + OAuth |
+| **AI Integration** | Anthropic SDK | 0.63.1 | Claude for PDF extraction |
+| **Routing** | react-router-dom | 7.9.4 | File-based routing |
+| **Notifications** | Sonner | 2.0.7 | Toast notifications |
+| **Icons** | Lucide React | 0.546.0 | Icon library |
+| **Date Handling** | date-fns | 4.1.0 | Date utilities |
+
+---
+
+## Architecture Overview
+
+### Repository Type: **Monolith**
+
+Single cohesive codebase with frontend and backend in the same repository.
+
+```
+invoice-collection-assistant/
+├── src/                 # React Frontend
+├── convex/              # Convex Backend
+├── specs/               # Feature Specifications (V2, V3)
+├── docs/                # Generated Documentation
+└── _bmad-output/        # BMM Planning Artifacts
+```
+
+### Architecture Pattern
+
+- **Frontend:** Component-based SPA with React Router
+- **Backend:** Serverless functions with Convex (queries, mutations, actions)
+- **State Management:** Convex real-time hooks (`useQuery`, `useMutation`)
+- **Data Flow:** Client → Convex Functions → Database (real-time sync)
+
+---
+
+## Domain Model
+
+The application manages the invoice collection lifecycle:
+
+### Core Entities
+
+1. **Organizations** - Companies using the system
+2. **Users** - Team members (admins and technicians)
+3. **Invoices** - Invoices with 3-dimensional status tracking
+4. **Reminders** - Scheduled follow-up actions (email/phone)
+5. **Payments** - Payment records with partial payment support
+6. **Events** - Activity timeline for auditing
+
+### Invoice Status Dimensions
+
+| Dimension | States | Description |
+|-----------|--------|-------------|
+| **Send Status** | pending, sent | Whether invoice was sent to client |
+| **Payment Status** | unpaid, partial, pending_payment, paid | Payment state |
+| **Reminder Status** | reminder_1-4, manual_followup | Follow-up progression |
+
+---
+
+## Current Development State
+
+### Implemented Features (V2 Partial)
+
+- Multi-organization with role-based permissions
+- Invoice CRUD with PDF upload and AI extraction
+- Configurable reminder steps (email + phone)
+- Payment tracking with partial payments
+- OAuth email sending (Microsoft)
+- Team management and invitations
+- Event timeline for activity history
+
+### In Progress / Planned (V3 MVP)
+
+- Simplified UI design (Orange theme)
+- Streamlined user flows
+- Mobile-first responsive design
+- Landing page redesign
+
+---
+
+## Documentation Consolidation Notes
+
+### Sources Consolidated
+
+| Document | Status | Notes |
+|----------|--------|-------|
+| `ARCHITECTURE.md` | Partially outdated | References old file names |
+| `CONVENTIONS.md` | Current | Code conventions valid |
+| `DESIGN_GUIDELINES.md` | Current (Orange theme) | Source of truth for design |
+| `MULTI_USER_SPEC.md` | Partially implemented | Phases 1-5 delivered |
+| `specs/V2/` | Partially implemented | Some screens done |
+| `specs/v3/` | New direction | MVP mockups |
+
+### Theme Clarification
+
+- **Current Theme:** Orange (`#f97316`)
+- **V2 References:** Indigo theme is outdated
+- **Source of Truth:** `DESIGN_GUIDELINES.md` with brand colors
+
+---
+
+## Quick Links
+
+- [Architecture](./architecture.md) - Technical architecture details
+- [Source Tree](./source-tree-analysis.md) - Directory structure
+- [Data Models](./data-models.md) - Database schema
+- [Component Inventory](./component-inventory.md) - UI components
+- [Development Guide](./development-guide.md) - Setup and commands
+
+---
+
+*This document was generated by the BMM document-project workflow.*

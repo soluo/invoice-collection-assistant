@@ -1,0 +1,83 @@
+{
+  "workflow_version": "1.2.0",
+  "timestamps": {
+    "started": "2026-01-11T21:30:00Z",
+    "last_updated": "2026-01-11T21:55:00Z",
+    "completed": "2026-01-11T21:55:00Z"
+  },
+  "mode": "initial_scan",
+  "scan_level": "deep",
+  "status": "completed",
+  "project_root": "/Users/julien/POCs/invoice-collection-assistant",
+  "output_folder": "/Users/julien/POCs/invoice-collection-assistant/docs",
+  "completed_steps": [
+    {
+      "step": "step_1",
+      "status": "completed",
+      "summary": "Classified as monolith web app with React 19 + Convex backend"
+    },
+    {
+      "step": "step_2",
+      "status": "completed",
+      "summary": "Inventoried existing docs: ARCHITECTURE.md, CONVENTIONS.md, DESIGN_GUIDELINES.md, MULTI_USER_SPEC.md, specs/V2, specs/v3"
+    },
+    {
+      "step": "step_3",
+      "status": "completed",
+      "summary": "Deep scan of convex/schema.ts, src/App.tsx, component structure"
+    },
+    {
+      "step": "step_4",
+      "status": "completed",
+      "summary": "Generated 7 documentation files"
+    }
+  ],
+  "project_types": [
+    {
+      "part_id": "main",
+      "project_type_id": "web",
+      "display_name": "Web Application (Full-Stack)"
+    }
+  ],
+  "findings": {
+    "project_classification": {
+      "repository_type": "monolith",
+      "parts_count": 1,
+      "primary_tech": "React 19 + TypeScript + Convex",
+      "field_type": "brownfield"
+    },
+    "existing_docs_consolidated": [
+      "ARCHITECTURE.md",
+      "CONVENTIONS.md",
+      "DESIGN_GUIDELINES.md",
+      "MULTI_USER_SPEC.md",
+      "specs/V2/",
+      "specs/v3/"
+    ],
+    "theme_clarification": {
+      "current_theme": "Orange (#f97316)",
+      "outdated_theme": "Indigo (V2 references)",
+      "source_of_truth": "DESIGN_GUIDELINES.md"
+    },
+    "tech_stack": {
+      "frontend": "React 19.2.0",
+      "language": "TypeScript 5.7.3",
+      "build": "Vite 6.4.1",
+      "css": "Tailwind CSS 4.1.15",
+      "ui": "Shadcn/UI + Radix",
+      "backend": "Convex 1.28.2",
+      "auth": "@convex-dev/auth 0.0.80",
+      "ai": "Anthropic SDK 0.63.1"
+    }
+  },
+  "outputs_generated": [
+    "index.md",
+    "project-overview.md",
+    "architecture.md",
+    "source-tree-analysis.md",
+    "data-models.md",
+    "component-inventory.md",
+    "development-guide.md",
+    "project-scan-report.json"
+  ]
+}
