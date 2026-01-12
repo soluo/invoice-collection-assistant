@@ -509,6 +509,186 @@ export const completePhoneReminder = mutation({
 });
 
 /**
+ * ✅ Story 5.2 : Génère des relances simulées pour une date cible (admin uniquement)
+ * Permet de prévisualiser quelles relances seraient générées pour une date donnée
+ * Sans écrire dans la base de données
+ */
+export const generateSimulatedReminders = query({
+  args: { targetDate: v.string() }, // Format YYYY-MM-DD
+  returns: v.array(
+    v.object({
+      _id: v.string(), // Simulated ID (not a real reminder)
+      reminderDate: v.string(),
+      reminderStatus: v.string(),
+      reminderType: v.string(),
+      completionStatus: v.string(),
+      isSimulation: v.literal(true),
+      data: v.optional(
+        v.object({
+          emailSubject: v.optional(v.string()),
+          emailContent: v.optional(v.string()),
+          phoneCallNotes: v.optional(v.string()),
+          phoneCallOutcome: v.optional(v.string()),
+        })
+      ),
+      invoice: v.union(
+        v.object({
+          _id: v.id("invoices"),
+          invoiceNumber: v.string(),
+          clientName: v.string(),
+          contactEmail: v.optional(v.string()),
+          contactPhone: v.optional(v.string()),
+          amountTTC: v.number(),
+          dueDate: v.string(),
+          sendStatus: v.string(),
+          paymentStatus: v.string(),
+          reminderStatus: v.optional(v.string()),
+        }),
+        v.null()
+      ),
+      daysOverdue: v.optional(v.number()),
+    })
+  ),
+  handler: async (ctx, { targetDate }) => {
+    const user = await getUserWithOrg(ctx);
+
+    // Admin-only access
+    if (!isAdmin(user)) {
+      throw new Error("Accès réservé aux administrateurs");
+    }
+
+    // Get organization's reminder steps configuration
+    const org = await ctx.db.get(user.organizationId);
+    if (!org) {
+      throw new Error("Organisation introuvable");
+    }
+
+    const reminderSteps = org.reminderSteps || [];
+    if (reminderSteps.length === 0) {
+      return []; // No reminder steps configured
+    }
+
+    // Parse target date
+    const targetDateObj = new Date(targetDate + "T00:00:00");
+
+    // Find invoices that would trigger reminders on targetDate
+    // Criteria: sent + unpaid
+    const invoices = await ctx.db
+      .query("invoices")
+      .withIndex("by_organization", (q) => q.eq("organizationId", user.organizationId))
+      .collect();
+
+    // Filter to sent and unpaid invoices
+    const eligibleInvoices = invoices.filter(
+      (invoice) =>
+        invoice.sendStatus === "sent" &&
+        invoice.paymentStatus !== "paid"
+    );
+
+    // Generate simulated reminders based on due date + delay
+    const simulatedReminders: Array<{
+      _id: string;
+      reminderDate: string;
+      reminderStatus: string;
+      reminderType: string;
+      completionStatus: string;
+      isSimulation: true;
+      data?: {
+        emailSubject?: string;
+        emailContent?: string;
+        phoneCallNotes?: string;
+        phoneCallOutcome?: string;
+      };
+      invoice: {
+        _id: typeof invoices[0]["_id"];
+        invoiceNumber: string;
+        clientName: string;
+        contactEmail?: string;
+        contactPhone?: string;
+        amountTTC: number;
+        dueDate: string;
+        sendStatus: string;
+        paymentStatus: string;
+        reminderStatus?: string;
+      } | null;
+      daysOverdue?: number;
+    }> = [];
+
+    for (const invoice of eligibleInvoices) {
+      const dueDate = new Date(invoice.dueDate + "T00:00:00");
+
+      for (let stepIndex = 0; stepIndex < reminderSteps.length; stepIndex++) {
+        const step = reminderSteps[stepIndex];
+
+        // Calculate reminder date: due date + delay days
+        const reminderDate = new Date(dueDate);
+        reminderDate.setDate(reminderDate.getDate() + step.delay);
+
+        // Check if this step falls on target date
+        const reminderDateString = reminderDate.toISOString().split("T")[0];
+
+        if (reminderDateString === targetDate) {
+          // Replace placeholders in email templates
+          const emailSubject = step.emailSubject
+            ?.replace(/\{\{clientName\}\}/g, invoice.clientName)
+            ?.replace(/\{\{invoiceNumber\}\}/g, invoice.invoiceNumber)
+            ?.replace(/\{\{amount\}\}/g, invoice.amountTTC.toFixed(2) + " €")
+            ?.replace(/\{\{dueDate\}\}/g, invoice.dueDate);
+
+          const emailContent = step.emailTemplate
+            ?.replace(/\{\{clientName\}\}/g, invoice.clientName)
+            ?.replace(/\{\{invoiceNumber\}\}/g, invoice.invoiceNumber)
+            ?.replace(/\{\{amount\}\}/g, invoice.amountTTC.toFixed(2) + " €")
+            ?.replace(/\{\{dueDate\}\}/g, invoice.dueDate);
+
+          // Calculate days overdue
+          const daysOverdue = Math.max(
+            0,
+            Math.floor((targetDateObj.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
+          );
+
+          simulatedReminders.push({
+            _id: `sim-${invoice._id}-${step.id}`,
+            reminderDate: `${targetDate} 10:00:00`,
+            reminderStatus: `reminder_${stepIndex + 1}`,
+            reminderType: step.type,
+            completionStatus: "pending",
+            isSimulation: true,
+            data:
+              step.type === "email"
+                ? {
+                    emailSubject: emailSubject || "",
+                    emailContent: emailContent || "",
+                  }
+                : undefined,
+            invoice: {
+              _id: invoice._id,
+              invoiceNumber: invoice.invoiceNumber,
+              clientName: invoice.clientName,
+              contactEmail: invoice.contactEmail,
+              contactPhone: invoice.contactPhone,
+              amountTTC: invoice.amountTTC,
+              dueDate: invoice.dueDate,
+              sendStatus: invoice.sendStatus,
+              paymentStatus: invoice.paymentStatus,
+              reminderStatus: invoice.reminderStatus,
+            },
+            daysOverdue,
+          });
+        }
+      }
+    }
+
+    // Sort by reminder date (chronological)
+    return simulatedReminders.sort((a, b) => {
+      const dateA = new Date(a.reminderDate.replace(" ", "T"));
+      const dateB = new Date(b.reminderDate.replace(" ", "T"));
+      return dateA.getTime() - dateB.getTime();
+    });
+  },
+});
+
+/**
  * ✅ V2 Interface : Récupère les relances pour l'onglet "Relances auto"
  * Format simplifié pour l'interface V2
  */

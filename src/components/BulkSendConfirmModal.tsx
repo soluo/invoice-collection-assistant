@@ -20,19 +20,29 @@ export function BulkSendConfirmModal({
   const [isSending, setIsSending] = useState(false);
   const sendMultipleReminders = useAction(api.reminders.sendMultipleReminders);
 
-  const totalAmount = reminders.reduce(
+  // Filter out simulated reminders (defensive check)
+  const realReminders = reminders.filter(
+    (r) => !("isSimulation" in r && r.isSimulation === true)
+  );
+
+  const totalAmount = realReminders.reduce(
     (sum, r) => sum + (r.invoice?.amountTTC || 0),
     0
   );
 
   const handleConfirm = async () => {
+    if (realReminders.length === 0) {
+      toast.error("Aucune relance réelle à envoyer");
+      return;
+    }
+
     setIsSending(true);
     try {
-      const reminderIds = reminders.map((r) => r._id as Id<"reminders">);
+      const reminderIds = realReminders.map((r) => r._id as Id<"reminders">);
       await sendMultipleReminders({ reminderIds });
 
       toast.success(
-        `${reminders.length} relance${reminders.length > 1 ? "s" : ""} envoyée${reminders.length > 1 ? "s" : ""} avec succès`
+        `${realReminders.length} relance${realReminders.length > 1 ? "s" : ""} envoyée${realReminders.length > 1 ? "s" : ""} avec succès`
       );
       onSuccess?.();
       onClose();
@@ -69,7 +79,7 @@ export function BulkSendConfirmModal({
             <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-amber-800">
               <p className="font-medium mb-1">
-                Vous êtes sur le point d'envoyer {reminders.length} email{reminders.length > 1 ? "s" : ""} de relance.
+                Vous êtes sur le point d'envoyer {realReminders.length} email{realReminders.length > 1 ? "s" : ""} de relance.
               </p>
               <p>Cette action est irréversible.</p>
             </div>
@@ -83,7 +93,7 @@ export function BulkSendConfirmModal({
             <div className="space-y-2 text-sm text-gray-700">
               <div className="flex justify-between">
                 <span>Nombre de relances :</span>
-                <span className="font-semibold">{reminders.length}</span>
+                <span className="font-semibold">{realReminders.length}</span>
               </div>
               <div className="flex justify-between">
                 <span>Montant total :</span>
@@ -98,7 +108,7 @@ export function BulkSendConfirmModal({
               Relances concernées
             </h4>
             <div className="max-h-60 overflow-y-auto border rounded-lg divide-y">
-              {reminders.map((reminder) => (
+              {realReminders.map((reminder) => (
                 <div
                   key={reminder._id}
                   className="px-4 py-3 hover:bg-gray-50 flex items-center justify-between"
@@ -137,13 +147,13 @@ export function BulkSendConfirmModal({
           <Button
             type="button"
             onClick={handleConfirm}
-            disabled={isSending}
+            disabled={isSending || realReminders.length === 0}
             className="bg-primary hover:bg-primary/90"
           >
             <Mail className="h-4 w-4 mr-2" />
             {isSending
               ? "Envoi en cours..."
-              : `Confirmer l'envoi (${reminders.length})`}
+              : `Confirmer l'envoi (${realReminders.length})`}
           </Button>
         </div>
       </div>

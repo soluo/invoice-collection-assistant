@@ -26,12 +26,13 @@ export function EmailPreviewModalFollowUp({
 
   const isPending = reminder.completionStatus === "pending";
   const alreadySent = reminder.completionStatus === "completed";
-  const canSend = Boolean(reminder.invoice?.contactEmail) && !alreadySent;
+  const isSimulation = "isSimulation" in reminder && reminder.isSimulation === true;
+  const canSend = Boolean(reminder.invoice?.contactEmail) && !alreadySent && !isSimulation;
 
   // Permissions : admin OU createdBy de la facture
   const isAdmin = currentUser?.role === "admin";
   const isCreator = currentUser?._id === reminder.invoice?.createdBy;
-  const canEdit = isPending && (isAdmin || isCreator);
+  const canEdit = isPending && (isAdmin || isCreator) && !isSimulation;
 
   const recipientName = reminder.invoice?.clientName ?? "Client inconnu";
   const recipientEmail = reminder.invoice?.contactEmail ?? "Email indisponible";
@@ -113,7 +114,13 @@ export function EmailPreviewModalFollowUp({
           </div>
 
           {/* Status messages */}
-          {alreadySent && (
+          {isSimulation && (
+            <div className="text-sm text-purple-600 bg-purple-50 p-3 rounded-lg">
+              🔮 Prévisualisation en mode simulation — cet email ne peut pas être envoyé.
+            </div>
+          )}
+
+          {alreadySent && !isSimulation && (
             <div className="text-sm text-green-600 bg-green-50 p-3 rounded-lg">
               ✅ Cette relance a déjà été envoyée avec succès.
             </div>
@@ -153,15 +160,17 @@ export function EmailPreviewModalFollowUp({
             </Button>
           )}
 
-          <Button
-            type="button"
-            disabled={sending || !canSend}
-            onClick={handleSend}
-            className="bg-primary hover:bg-primary/90"
-          >
-            <Mail className="h-4 w-4 mr-2" />
-            {sending ? "Envoi..." : "Envoyer"}
-          </Button>
+          {!isSimulation && (
+            <Button
+              type="button"
+              disabled={sending || !canSend}
+              onClick={handleSend}
+              className="bg-primary hover:bg-primary/90"
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              {sending ? "Envoi..." : "Envoyer"}
+            </Button>
+          )}
         </div>
       </div>
     </div>

@@ -5,6 +5,12 @@ import { FunctionReturnType } from "convex/server";
 
 // Type pour les reminders retournés par getUpcomingReminders
 type UpcomingReminder = NonNullable<FunctionReturnType<typeof api.followUp.getUpcomingReminders>>[number];
+
+// Type pour les simulated reminders (avec isSimulation flag)
+type SimulatedReminder = NonNullable<FunctionReturnType<typeof api.followUp.generateSimulatedReminders>>[number];
+
+// Union type pour tous les reminders (réels ou simulés)
+type AnyReminder = UpcomingReminder | SimulatedReminder;
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,11 +22,15 @@ import {
   FileText,
   Check,
   Bell,
-  FileUp
+  FileUp,
+  CalendarDays,
+  X,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useState } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { EmailPreviewModalFollowUp } from "@/components/EmailPreviewModalFollowUp";
 import { EmailEditModal } from "@/components/EmailEditModal";
 import { BulkSendConfirmModal } from "@/components/BulkSendConfirmModal";
@@ -28,15 +38,38 @@ import { PhoneCallCompleteModal } from "@/components/PhoneCallCompleteModal";
 import { InvoiceDetailDrawer } from "@/components/InvoiceDetailDrawer";
 
 export function FollowUp() {
-  const upcomingReminders = useQuery(api.followUp.getUpcomingReminders);
-  const reminderHistory = useQuery(api.followUp.getReminderHistory);
+  // User and organization data
+  const currentUser = useQuery(api.auth.loggedInUser);
   const organization = useQuery(api.organizations.getCurrentOrganization);
-  const [previewReminder, setPreviewReminder] = useState<UpcomingReminder | null>(null);
-  const [editReminder, setEditReminder] = useState<UpcomingReminder | null>(null);
+
+  // Simulation state (admin only)
+  const [simulationDate, setSimulationDate] = useState<Date | null>(null);
+
+  // Format date for backend (YYYY-MM-DD)
+  const simulationDateString = simulationDate ? format(simulationDate, "yyyy-MM-dd") : null;
+
+  // Conditional queries - real vs simulated
+  const realReminders = useQuery(api.followUp.getUpcomingReminders);
+  const simulatedReminders = useQuery(
+    api.followUp.generateSimulatedReminders,
+    simulationDateString ? { targetDate: simulationDateString } : "skip"
+  );
+
+  // Use simulated reminders if in simulation mode, otherwise real reminders
+  const upcomingReminders = simulationDateString
+    ? (simulatedReminders as AnyReminder[] | undefined)
+    : (realReminders as AnyReminder[] | undefined);
+
+  const reminderHistory = useQuery(api.followUp.getReminderHistory);
+  const [previewReminder, setPreviewReminder] = useState<AnyReminder | null>(null);
+  const [editReminder, setEditReminder] = useState<AnyReminder | null>(null);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [selectedReminders, setSelectedReminders] = useState<string[]>([]);
-  const [phoneCallReminder, setPhoneCallReminder] = useState<UpcomingReminder | null>(null);
+  const [phoneCallReminder, setPhoneCallReminder] = useState<AnyReminder | null>(null);
   const [selectedInvoiceForDrawer, setSelectedInvoiceForDrawer] = useState<Id<"invoices"> | null>(null);
+
+  // Check if user is admin
+  const isAdmin = currentUser?.role === "admin";
 
   // Group upcoming reminders by date
   const groupedReminders = groupRemindersByDate(upcomingReminders || []);
@@ -51,7 +84,69 @@ export function FollowUp() {
             Suivez ce que le système fait pour vous et ce qui a été fait.
           </p>
         </div>
+
+        {/* Date picker for simulation (admin only) */}
+        {isAdmin && (
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <CalendarDays className="h-4 w-4 mr-2" />
+                  {simulationDate
+                    ? format(simulationDate, "d MMM yyyy", { locale: fr })
+                    : "Simuler une date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <CalendarComponent
+                  mode="single"
+                  selected={simulationDate ?? undefined}
+                  onSelect={(date) => setSimulationDate(date ?? null)}
+                  locale={fr}
+                  style={{ ["--cell-size" as string]: "2.75rem" }}
+                  classNames={{
+                    weekday: "w-10 text-center text-muted-foreground text-sm font-normal",
+                    day: "w-10 h-10 text-center p-0",
+                    week: "flex w-full mt-1",
+                    weekdays: "flex w-full",
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+            {simulationDate && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSimulationDate(null)}
+                className="px-2"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Simulation mode banner */}
+      {simulationDate && (
+        <div className="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-lg px-4 py-2">
+          <div className="flex items-center gap-2 text-purple-700">
+            <CalendarDays className="h-4 w-4" />
+            <span className="font-medium">Mode simulation</span>
+            <span className="text-purple-600">
+              Relances prévues pour le {format(simulationDate, "d MMMM yyyy", { locale: fr })}
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSimulationDate(null)}
+            className="text-purple-700 hover:text-purple-900 hover:bg-purple-100"
+          >
+            Quitter simulation
+          </Button>
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs defaultValue="upcoming" className="w-full">
@@ -77,10 +172,14 @@ export function FollowUp() {
             <div className="text-center py-12">
               <Bell className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-semibold text-gray-900">
-                Aucune relance en cours
+                {simulationDate
+                  ? "Aucune relance simulée pour cette date"
+                  : "Aucune relance en cours"}
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                Toutes vos relances sont à jour.
+                {simulationDate
+                  ? `Aucune facture ne génère de relance le ${format(simulationDate, "d MMMM yyyy", { locale: fr })}.`
+                  : "Toutes vos relances sont à jour."}
               </p>
             </div>
           ) : (
@@ -242,7 +341,7 @@ export function FollowUp() {
 }
 
 // Helper function to group reminders by date
-function groupRemindersByDate(reminders: UpcomingReminder[]) {
+function groupRemindersByDate(reminders: AnyReminder[]) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -287,11 +386,11 @@ function ReminderGroup({
   onInvoiceClick
 }: {
   title: string;
-  reminders: UpcomingReminder[];
+  reminders: AnyReminder[];
   selectedReminders: string[];
   onToggleSelect: (id: string) => void;
-  onPreview: (reminder: UpcomingReminder) => void;
-  onPhoneComplete: (reminder: UpcomingReminder) => void;
+  onPreview: (reminder: AnyReminder) => void;
+  onPhoneComplete: (reminder: AnyReminder) => void;
   onInvoiceClick: (invoiceId: string) => void;
 }) {
   return (
@@ -323,7 +422,7 @@ function ReminderCard({
   onPhoneComplete,
   onInvoiceClick
 }: {
-  reminder: UpcomingReminder;
+  reminder: AnyReminder;
   isSelected: boolean;
   onToggleSelect: () => void;
   onPreview: () => void;
@@ -332,6 +431,7 @@ function ReminderCard({
 }) {
   const isEmail = reminder.reminderType === "email";
   const isPhone = reminder.reminderType === "phone";
+  const isSimulation = "isSimulation" in reminder && reminder.isSimulation === true;
 
   // Indicateur de sévérité subtil (petit dot)
   const getSeverityDot = () => {
@@ -366,8 +466,19 @@ function ReminderCard({
   return (
     <div
       onClick={handleCardClick}
-      className="rounded-lg border border-gray-200 bg-white p-4 hover:border-gray-300 transition-colors cursor-pointer active:bg-gray-50"
+      className={`rounded-lg border p-4 transition-colors cursor-pointer active:bg-gray-50 ${
+        isSimulation
+          ? "border-purple-200 bg-purple-50/30 hover:border-purple-300"
+          : "border-gray-200 bg-white hover:border-gray-300"
+      }`}
     >
+      {/* Simulation badge */}
+      {isSimulation && (
+        <Badge className="bg-purple-100 text-purple-700 border-purple-200 mb-2 text-xs hover:bg-purple-100">
+          Simulation
+        </Badge>
+      )}
+
       {/* Mobile layout */}
       <div className="flex flex-col gap-2.5 md:hidden">
         {/* Ligne 1: icône + facture/client + montant */}
@@ -410,9 +521,9 @@ function ReminderCard({
           </p>
         </div>
 
-        {/* Ligne 3: checkbox (si email) à gauche + action à droite */}
+        {/* Ligne 3: checkbox (si email, non-simulation) à gauche + action à droite */}
         <div className="pl-12 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-          {isEmail ? (
+          {isEmail && !isSimulation ? (
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -431,7 +542,7 @@ function ReminderCard({
               Prévisualiser
             </Button>
           )}
-          {isPhone && (
+          {isPhone && !isSimulation && (
             <Button variant="outline" size="sm" onClick={onPhoneComplete}>
               <Check className="h-4 w-4 mr-1" />
               Marquer fait
@@ -443,7 +554,7 @@ function ReminderCard({
       {/* Desktop layout */}
       <div className="hidden md:flex md:items-center md:justify-between">
         <div className="flex items-center gap-4 min-w-0 flex-1">
-          {isEmail ? (
+          {isEmail && !isSimulation ? (
             <input
               type="checkbox"
               checked={isSelected}
@@ -492,7 +603,7 @@ function ReminderCard({
                 Prévisualiser
               </Button>
             )}
-            {isPhone && (
+            {isPhone && !isSimulation && (
               <Button variant="outline" size="sm" onClick={onPhoneComplete}>
                 <Check className="h-4 w-4 mr-1" />
                 Marquer fait
