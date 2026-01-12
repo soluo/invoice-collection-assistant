@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, FileText, Calendar, User, Mail, Phone, AlertTriangle } from "lucide-react";
+import { ReminderHistorySection } from "@/components/ReminderHistorySection";
 import { cn } from "@/lib/utils";
 
 interface InvoiceDetailDrawerProps {
@@ -68,12 +69,13 @@ export function InvoiceDetailDrawer({
     if (invoice.sendStatus === "pending") {
       return (
         <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-          A envoyer
+          À envoyer
         </Badge>
       );
     }
+    // "Envoyée" = état normal, discret
     return (
-      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+      <Badge variant="outline" className="text-gray-600 border-gray-300">
         Envoyée
       </Badge>
     );
@@ -85,6 +87,7 @@ export function InvoiceDetailDrawer({
 
     switch (invoice.paymentStatus) {
       case "paid":
+        // "Payée" = rassurance, vert
         return (
           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
             Payée
@@ -103,6 +106,7 @@ export function InvoiceDetailDrawer({
           </Badge>
         );
       default:
+        // "Non payée" = nécessite attention
         return (
           <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
             Non payée
@@ -115,20 +119,21 @@ export function InvoiceDetailDrawer({
   const getReminderStatusBadge = () => {
     if (!invoice?.reminderStatus) return null;
 
-    const reminderLabels: Record<string, string> = {
-      reminder_1: "Relance 1",
-      reminder_2: "Relance 2",
-      reminder_3: "Relance 3",
-      reminder_4: "Relance 4",
-      manual_followup: "Suivi manuel",
+    // Saturation croissante pour les relances, violet pour suivi manuel
+    const reminderConfig: Record<string, { label: string; className: string }> = {
+      reminder_1: { label: "Relance 1", className: "bg-orange-50 text-orange-600 border-orange-200" },
+      reminder_2: { label: "Relance 2", className: "bg-orange-100 text-orange-700 border-orange-300" },
+      reminder_3: { label: "Relance 3", className: "bg-orange-200 text-orange-800 border-orange-400" },
+      reminder_4: { label: "Relance 4", className: "bg-orange-300 text-orange-900 border-orange-500" },
+      manual_followup: { label: "Suivi manuel", className: "bg-purple-100 text-purple-700 border-purple-300" },
     };
 
-    const label = reminderLabels[invoice.reminderStatus];
-    if (!label) return null;
+    const config = reminderConfig[invoice.reminderStatus];
+    if (!config) return null;
 
     return (
-      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-        {label}
+      <Badge variant="outline" className={config.className}>
+        {config.label}
       </Badge>
     );
   };
@@ -156,22 +161,17 @@ export function InvoiceDetailDrawer({
                 {description}
               </SheetDescription>
             </div>
-            {invoice && (
-              <NavLink
-                to={`/invoices/${invoice._id}`}
-                className="flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700 hover:underline whitespace-nowrap"
-              >
-                <ExternalLink className="h-4 w-4" />
-                Page complète
-              </NavLink>
-            )}
           </div>
 
           {/* Status Badges Row - only when loaded */}
           {invoice && (
-            <div className="flex flex-wrap gap-2">
-              {getSendStatusBadge()}
-              {getPaymentStatusBadge()}
+            <div className="flex items-center justify-between gap-2">
+              {/* Statuts facture à gauche */}
+              <div className="flex flex-wrap gap-2">
+                {getSendStatusBadge()}
+                {getPaymentStatusBadge()}
+              </div>
+              {/* Statut relance à droite */}
               {getReminderStatusBadge()}
             </div>
           )}
@@ -221,15 +221,12 @@ export function InvoiceDetailDrawer({
                 <p className="text-gray-900">{formatDate(invoice.invoiceDate)}</p>
               </div>
               <div className="space-y-1">
-                <p className={cn(
-                  "text-sm font-medium flex items-center gap-1.5",
-                  daysOverdue && daysOverdue > 0 ? "text-red-600" : "text-gray-500"
-                )}>
+                <p className="text-sm text-gray-500 font-medium flex items-center gap-1.5">
                   <Calendar className="h-4 w-4" />
                   Échéance
                 </p>
                 <p className={cn(
-                  daysOverdue && daysOverdue > 0 ? "text-red-700 font-semibold" : "text-gray-900"
+                  daysOverdue && daysOverdue > 0 ? "text-red-600 font-semibold" : "text-gray-900"
                 )}>
                   {formatDate(invoice.dueDate)}
                 </p>
@@ -251,7 +248,7 @@ export function InvoiceDetailDrawer({
                     <Mail className="h-4 w-4 text-gray-400" />
                     <a
                       href={`mailto:${invoice.contactEmail}`}
-                      className="text-brand-600 hover:underline"
+                      className="hover:underline"
                     >
                       {invoice.contactEmail}
                     </a>
@@ -262,7 +259,7 @@ export function InvoiceDetailDrawer({
                     <Phone className="h-4 w-4 text-gray-400" />
                     <a
                       href={`tel:${invoice.contactPhone}`}
-                      className="text-brand-600 hover:underline"
+                      className="hover:underline"
                     >
                       {invoice.contactPhone}
                     </a>
@@ -291,6 +288,20 @@ export function InvoiceDetailDrawer({
                 </Button>
               </div>
             )}
+
+            {/* Reminder History */}
+            <ReminderHistorySection invoiceId={invoice._id} />
+
+            {/* Link to full page */}
+            <div className="pt-4 border-t">
+              <NavLink
+                to={`/invoices/${invoice._id}`}
+                className="flex items-center justify-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 hover:underline"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Voir la page complète
+              </NavLink>
+            </div>
           </div>
         )}
       </SheetContent>

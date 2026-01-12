@@ -43,7 +43,7 @@ development_status:
   # Epic 1: Invoice Detail View Enhancement (Priority 1)
   epic-1: in-progress
   1-1-invoice-detail-drawer-with-status-display: done
-  1-2-reminder-history-in-drawer: ready-for-dev
+  1-2-reminder-history-in-drawer: review
   1-3-mark-invoice-as-sent-action: backlog
   1-4-edit-due-date-action: backlog
   1-5-record-payment-actions: backlog
