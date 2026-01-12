@@ -6,6 +6,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 
 interface MarkAsSentModalProps {
@@ -65,20 +66,21 @@ export function MarkAsSentModal({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex-1"
           >
             Annuler
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={handleConfirm}
-            className="flex-1 px-4 py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 transition-colors"
+            className="flex-1"
           >
             Confirmer
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

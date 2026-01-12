@@ -1,6 +1,6 @@
 # Story 1.3: Mark Invoice as Sent Action
 
-Status: review
+Status: done
 
 ## Story
 
@@ -295,7 +295,41 @@ None required - straightforward integration task.
 ### Change Log
 
 - 2026-01-12: Story 1.3 implemented - Mark invoice as sent action in drawer
+- 2026-01-12: Code review completed - 4 issues fixed (2 HIGH, 2 MEDIUM)
 
 ### File List
 
 - `src/components/InvoiceDetailDrawer.tsx` (modified) - Added mark as sent button, modal integration, and sent date display
+- `src/components/MarkAsSentModal.tsx` (modified) - Replaced native buttons with shadcn Button components
+- `src/components/InvoicesList.tsx` (modified) - Removed unused `isPartiallyPaid` variable
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.5
+**Date:** 2026-01-12
+**Outcome:** ✅ APPROVED (after fixes)
+
+### Issues Found & Fixed
+
+| ID | Severity | Description | Status |
+|----|----------|-------------|--------|
+| HIGH-1 | 🔴 HIGH | Button condition used `!== "sent"` instead of `=== "pending"` per spec | ✅ Fixed |
+| HIGH-2 | 🔴 HIGH | Sent date displayed after Contact section instead of in Dates grid | ✅ Fixed |
+| MEDIUM-2 | 🟡 MEDIUM | Unused `isPartiallyPaid` variable in InvoicesList.tsx | ✅ Fixed |
+| MEDIUM-3 | 🟡 MEDIUM | Native buttons in MarkAsSentModal instead of shadcn Button | ✅ Fixed |
+
+### Issues Noted (Not Fixed - Tech Debt)
+
+| ID | Severity | Description | Reason |
+|----|----------|-------------|--------|
+| MEDIUM-1 | 🟡 MEDIUM | Badge functions duplicated between drawer and detail page | Pre-existing tech debt, out of scope |
+| MEDIUM-4 | 🟡 MEDIUM | Testing checklist in story not checked | Documentation - cannot verify |
+| LOW-1 | 🟢 LOW | TODO in MainView.tsx for recordPayment | Out of scope |
+| LOW-2 | 🟢 LOW | Type `any` used for invoice props in table components | Pre-existing, out of scope |
+
+### Verification
+
+- `pnpm lint` ✅ Passes
+- All HIGH issues resolved
+- All AC criteria verified in implementation
+- File List updated with all modified files

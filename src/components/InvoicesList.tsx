@@ -199,7 +199,6 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
                 const statusDisplay = getStatusDisplay(invoice);
                 // Solde dû vient du backend
                 const outstandingBalance = invoice.outstandingBalance ?? 0;
-                const isPartiallyPaid = invoice.hasPartialPayment || false;
 
                 return (
                   <tr key={invoice._id} className="hover:bg-gray-50">
@@ -303,7 +302,6 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
           const statusDisplay = getStatusDisplay(invoice);
           // ✅ V2 : Solde dû vient du backend
           const outstandingBalance = invoice.outstandingBalance ?? 0;
-          const isPartiallyPaid = invoice.hasPartialPayment || false;
 
           return (
             <div key={invoice._id} className="bg-white rounded-lg border p-4 space-y-3">

@@ -214,7 +214,7 @@ export function InvoiceDetailDrawer({
         {/* Action buttons - only when invoice is loaded */}
         {invoice && (
           <div className="flex flex-wrap items-center gap-2 py-4 border-b">
-            {invoice.sendStatus !== "sent" && (
+            {invoice.sendStatus === "pending" && (
               <Button
                 variant="outline"
                 size="sm"
@@ -287,6 +287,16 @@ export function InvoiceDetailDrawer({
                   {formatDate(invoice.dueDate)}
                 </p>
               </div>
+              {/* Sent Date (when invoice is sent) */}
+              {invoice.sendStatus === "sent" && invoice.sentDate && (
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-500 font-medium flex items-center gap-1.5">
+                    <Send className="h-4 w-4" />
+                    Date d'envoi
+                  </p>
+                  <p className="text-gray-900">{formatDate(invoice.sentDate)}</p>
+                </div>
+              )}
             </div>
 
             {/* Contact Info */}
@@ -321,17 +331,6 @@ export function InvoiceDetailDrawer({
                     </a>
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* Sent Date Display (when invoice is sent) */}
-            {invoice.sendStatus === "sent" && invoice.sentDate && (
-              <div className="space-y-1">
-                <p className="text-sm text-gray-500 font-medium flex items-center gap-1.5">
-                  <Send className="h-4 w-4" />
-                  Date d'envoi
-                </p>
-                <p className="text-gray-900">{formatDate(invoice.sentDate)}</p>
               </div>
             )}
 
