@@ -260,13 +260,41 @@ This document provides the complete epic and story breakdown for invoice-collect
 
 ---
 
-### Epic 6: Admin Demo Mode - ✅ MERGED INTO EPIC 5
+### Epic 6: Améliorations Post-Demo (Quick Wins)
 
-**Status:** Merged into Epic 5 for code reuse optimization.
+**Goal:** Corriger les bugs et améliorer l'UX suite aux retours de démo client.
 
-**Original FRs:** FR29, FR30, FR31, FR32 → Now covered by Epic 5 Stories 5.2 and 5.3
+**User Value:** Meilleure expérience utilisateur, correction de bugs bloquants.
 
-**Approach:** Instead of separate demo mode, admin gets a date picker on /follow-up to simulate any date, reusing existing components.
+**Priority:** High (bugs) to Medium (UX)
+
+---
+
+### Epic 7: Templates Email Avancés
+
+**Goal:** Améliorer les capacités d'email avec nouveaux templates, pièces jointes et signatures.
+
+**User Value:** Communication plus professionnelle et personnalisée.
+
+**Priority:** Medium
+
+---
+
+### Epic 8: Gestion Chèques Avancée
+
+**Goal:** Gérer le cas particulier des chèques en attente de vente avec workflow adapté.
+
+**User Value:** Support du processus métier spécifique aux chèques longue durée.
+
+**Priority:** Medium (specific use case)
+
+---
+
+### Backlog: Types de Clients A/B
+
+**Goal:** Séquences de relance différentes selon le type de client (notaires vs agences).
+
+**Status:** À prioriser après validation du besoin en production.
 
 ---
 
@@ -781,3 +809,284 @@ So that **I can demonstrate real emails to clients and leave no simulation data 
 **Given** I change the date picker back to "today"
 **When** the view refreshes
 **Then** I see only real reminders (simulations are hidden but not deleted until cleanup)
+
+---
+
+## Epic 6: Améliorations Post-Demo (Quick Wins)
+
+**Goal:** Corriger les bugs et améliorer l'UX suite aux retours de démo client.
+
+**User Value:** Meilleure expérience utilisateur, correction de bugs bloquants, et amélioration de la productivité au quotidien.
+
+**Priority:** High (bugs) to Medium (UX improvements)
+
+---
+
+### Story 6.1: Bug - Vérifier Invitations et Filtres Techniciens
+
+As an **admin**,
+I want **the invitation system and technician filters to work correctly**,
+So that **new team members can join and technicians see only their invoices**.
+
+**Acceptance Criteria:**
+
+**Given** I have sent an invitation to a new team member
+**When** the invitation is accepted
+**Then** the user status should update to "active"
+**And** the user should have proper access to the application
+
+**Given** I am a technician
+**When** I view the invoice list
+**Then** I should only see invoices I created
+**And** the filter should work correctly
+
+**Investigation needed:** Identify the specific bug - is it invitation acceptance, role assignment, or filter logic?
+
+---
+
+### Story 6.2: Échéance +30 Jours par Défaut
+
+As a **user**,
+I want **the due date to default to +30 days when adding a new invoice**,
+So that **I don't have to manually calculate and enter the standard payment term**.
+
+**Acceptance Criteria:**
+
+**Given** I am on the invoice upload/creation page
+**When** the invoice is extracted/created
+**Then** the due date field defaults to today + 30 days
+**And** I can still modify the due date if needed
+
+**Given** the AI extracts a due date from the PDF
+**When** a due date is found in the document
+**Then** use the extracted date instead of the default
+**And** only apply +30 days default when no due date is detected
+
+---
+
+### Story 6.3: Modifier et Ré-associer une Facture
+
+As a **user**,
+I want **to edit invoice details and reassign an invoice to another technician**,
+So that **I can correct mistakes or transfer responsibility when needed**.
+
+**Acceptance Criteria:**
+
+**Given** I have the invoice detail drawer open
+**When** I click an "Edit" action
+**Then** I can modify invoice fields (client name, amount, due date, etc.)
+
+**Given** I am an admin editing an invoice
+**When** I look at the edit options
+**Then** I see a dropdown to reassign the invoice to another technician
+**And** selecting a technician updates the invoice ownership
+
+**Given** I am a technician
+**When** I edit an invoice
+**Then** I cannot reassign it to another technician (admin only)
+
+---
+
+## Epic 7: Templates Email Avancés
+
+**Goal:** Améliorer les capacités d'email avec de nouveaux templates, pièces jointes et signatures personnalisées.
+
+**User Value:** Communication plus professionnelle et personnalisée avec les clients, meilleure image de marque.
+
+**Priority:** Medium
+
+---
+
+### Story 7.1: Template Envoi Initial Facture
+
+As a **user**,
+I want **to send the initial invoice email using a dedicated template**,
+So that **the first contact with the client is professional and includes all necessary information**.
+
+**Acceptance Criteria:**
+
+**Given** I have a new invoice that hasn't been sent
+**When** I click "Send invoice" action
+**Then** an email is generated using the "initial invoice" template
+**And** the template includes a professional introduction
+**And** the invoice PDF is attached automatically
+
+**Given** an admin configures email templates
+**When** they access template settings
+**Then** they can customize the "initial invoice" template content
+**And** variables like {client_name}, {invoice_number}, {amount}, {due_date} are supported
+
+---
+
+### Story 7.2: Template Email Invitation
+
+As an **admin**,
+I want **to customize the invitation email template**,
+So that **new team members receive a branded, professional invitation**.
+
+**Acceptance Criteria:**
+
+**Given** I invite a new team member
+**When** the invitation is sent
+**Then** it uses a customizable invitation template
+**And** the template includes organization name and branding
+
+**Given** I configure the invitation template
+**When** I save my changes
+**Then** future invitations use the updated template
+
+---
+
+### Story 7.3: Pièces Jointes aux Relances
+
+As a **user**,
+I want **to attach the invoice PDF to reminder emails**,
+So that **clients have easy access to the invoice without searching their archives**.
+
+**Acceptance Criteria:**
+
+**Given** a reminder email is being generated
+**When** the email is prepared for sending
+**Then** the invoice PDF is attached automatically
+
+**Given** an admin configures reminder settings
+**When** they access email settings
+**Then** they can toggle "Attach invoice PDF to reminders" on/off
+**And** the setting applies to all reminder emails for the organization
+
+---
+
+### Story 7.4: Signature Email avec Image
+
+As an **admin**,
+I want **to configure an email signature with an image (logo)**,
+So that **all outgoing emails look professional and branded**.
+
+**Acceptance Criteria:**
+
+**Given** I am in organization email settings
+**When** I configure the email signature
+**Then** I can enter text for the signature
+**And** I can upload an image (logo) to include in the signature
+
+**Given** a signature with image is configured
+**When** any email is sent from the organization
+**Then** the signature with image appears at the bottom of the email
+
+**Given** I upload a signature image
+**When** the upload is processed
+**Then** the image is resized/optimized for email (max width 300px)
+**And** the image is stored and included inline in emails
+
+---
+
+## Epic 8: Gestion Chèques Avancée
+
+**Goal:** Gérer le cas particulier des chèques en attente de vente avec un workflow adapté.
+
+**User Value:** Support complet du processus métier spécifique aux chèques longue durée, avec relances pour péremption et possibilité pour les techniciens de recevoir des paiements.
+
+**Priority:** Medium (specific use case)
+
+**Context:** Certains clients paient par chèques en attente de vente immobilière. Ces chèques ont un comportement différent :
+- L'enregistrement du chèque vaut "paiement" (plus besoin de relances standard)
+- Besoin de relancer pour chèques périmés (1 an + 1 jour)
+- Les techniciens peuvent recevoir des paiements directement
+
+---
+
+### Story 8.1: Statut Chèque en Attente + Notes
+
+As a **user**,
+I want **to mark a check as "pending sale" with associated notes**,
+So that **the system stops standard reminders and I can track the special context**.
+
+**Acceptance Criteria:**
+
+**Given** I record a check payment
+**When** I fill the payment form
+**Then** I see an option "Check pending sale" (checkbox)
+**And** I can add notes explaining the situation
+
+**Given** a check is marked as "pending sale"
+**When** the check is saved
+**Then** standard reminders stop for this invoice
+**And** the invoice status shows "Check pending" instead of "Unpaid"
+**And** notes are visible in the invoice detail
+
+**Given** an invoice has a "pending sale" check
+**When** I view the invoice detail
+**Then** I can see all notes related to this check
+**And** I can add additional notes over time
+
+---
+
+### Story 8.2: Relance Péremption Chèques
+
+As a **user**,
+I want **to be reminded when a check is about to expire (1 year + 1 day)**,
+So that **I can contact the client to get a replacement check before it becomes invalid**.
+
+**Acceptance Criteria:**
+
+**Given** a check is recorded with a date
+**When** the check approaches 1 year old (e.g., 30 days before expiration)
+**Then** a special reminder is generated: "Check expiration warning"
+**And** the reminder appears on /follow-up
+
+**Given** a check expiration reminder is displayed
+**When** I view the reminder details
+**Then** I see the original check date and expiration date
+**And** I see suggested action: "Contact client to replace check"
+
+**Given** I resolve the check expiration reminder
+**When** I record the outcome
+**Then** I can select: "Check replaced", "Check deposited", "Client contacted", "Other"
+**And** notes are added to the invoice
+
+---
+
+### Story 8.3: Paiement Reçu par Technicien
+
+As a **technician**,
+I want **to record that I received a payment directly from a client**,
+So that **the system reflects the actual payment flow in my business**.
+
+**Acceptance Criteria:**
+
+**Given** I am a technician viewing an invoice
+**When** I record a payment
+**Then** I see an option "Payment received by me" (in addition to "Bank transfer" and "Check")
+
+**Given** I select "Payment received by me"
+**When** I fill the payment details
+**Then** I enter the amount and payment method (cash, check, etc.)
+**And** I enter the date I received the payment
+**And** the payment is recorded with flag "receivedByTechnician: true"
+
+**Given** a payment was received by technician
+**When** admin views the payment history
+**Then** they can see which payments were received directly by technicians
+**And** this helps with accounting reconciliation
+
+---
+
+## Backlog (Future Considerations)
+
+### Types de Clients avec Séquences de Relance Différentes
+
+**Context:** Notaires et agences immobilières nécessitent parfois un traitement différent des autres clients.
+
+**Proposed Solution:**
+- Ajouter un champ "Client Type" avec valeurs A et B (ou configurable)
+- Permettre de définir une séquence de relance différente par type
+- Type A: Séquence standard (ex: J+7, J+14, J+30, appel)
+- Type B: Séquence adaptée (ex: J+30, J+60, appel seulement)
+
+**Stories à créer quand priorisé:**
+- Story: Configuration des types de clients
+- Story: Séquences de relance par type
+- Story: Attribution du type lors de la création client
+- Story: Migration des clients existants
+
+**Note:** À prioriser après validation du besoin réel en production.
