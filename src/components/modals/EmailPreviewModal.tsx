@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 
 interface EmailPreviewModalProps {
   open: boolean;
