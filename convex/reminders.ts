@@ -934,9 +934,15 @@ function replaceTemplatePlaceholders(
   daysPastDue: number,
   signature?: string
 ): string {
+  // Format amount in French locale (123,45)
+  const formattedAmount = invoice.amountTTC.toLocaleString("fr-FR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
   let result = template
     .replace(/{numero_facture}/g, invoice.invoiceNumber)
-    .replace(/{montant}/g, invoice.amountTTC.toString())
+    .replace(/{montant}/g, formattedAmount)
     .replace(/{date_facture}/g, invoice.invoiceDate)
     .replace(/{date_echeance}/g, invoice.dueDate)
     .replace(/{nom_client}/g, invoice.clientName)

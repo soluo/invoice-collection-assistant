@@ -44,6 +44,7 @@ export function FollowUp() {
 
   // Simulation state (admin only)
   const [simulationDate, setSimulationDate] = useState<Date | null>(null);
+  const [testSentIds, setTestSentIds] = useState<Set<string>>(new Set());
 
   // Format date for backend (YYYY-MM-DD)
   const simulationDateString = simulationDate ? format(simulationDate, "yyyy-MM-dd") : null;
@@ -70,6 +71,17 @@ export function FollowUp() {
 
   // Check if user is admin
   const isAdmin = currentUser?.role === "admin";
+
+  // Handler for when a test email is sent
+  const handleTestSent = (reminderId: string) => {
+    setTestSentIds((prev) => new Set([...prev, reminderId]));
+  };
+
+  // Handler for exiting simulation mode
+  const handleExitSimulation = () => {
+    setSimulationDate(null);
+    setTestSentIds(new Set());
+  };
 
   // Group upcoming reminders by date
   const groupedReminders = groupRemindersByDate(upcomingReminders || []);
@@ -117,7 +129,7 @@ export function FollowUp() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSimulationDate(null)}
+                onClick={handleExitSimulation}
                 className="px-2"
               >
                 <X className="h-4 w-4" />
@@ -140,7 +152,7 @@ export function FollowUp() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setSimulationDate(null)}
+            onClick={handleExitSimulation}
             className="text-purple-700 hover:text-purple-900 hover:bg-purple-100"
           >
             Quitter simulation
@@ -189,6 +201,7 @@ export function FollowUp() {
                   title="En retard"
                   reminders={groupedReminders.overdue}
                   selectedReminders={selectedReminders}
+                  testSentIds={testSentIds}
                   onToggleSelect={(id) => {
                     setSelectedReminders((prev) =>
                       prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
@@ -204,6 +217,7 @@ export function FollowUp() {
                   title="Aujourd'hui"
                   reminders={groupedReminders.today}
                   selectedReminders={selectedReminders}
+                  testSentIds={testSentIds}
                   onToggleSelect={(id) => {
                     setSelectedReminders((prev) =>
                       prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
@@ -219,6 +233,7 @@ export function FollowUp() {
                   title="Demain"
                   reminders={groupedReminders.tomorrow}
                   selectedReminders={selectedReminders}
+                  testSentIds={testSentIds}
                   onToggleSelect={(id) => {
                     setSelectedReminders((prev) =>
                       prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
@@ -234,6 +249,7 @@ export function FollowUp() {
                   title="Plus tard"
                   reminders={groupedReminders.later}
                   selectedReminders={selectedReminders}
+                  testSentIds={testSentIds}
                   onToggleSelect={(id) => {
                     setSelectedReminders((prev) =>
                       prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
@@ -296,6 +312,7 @@ export function FollowUp() {
             setEditReminder(previewReminder);
             setPreviewReminder(null);
           }}
+          onTestSent={handleTestSent}
         />
       )}
 
@@ -380,6 +397,7 @@ function ReminderGroup({
   title,
   reminders,
   selectedReminders,
+  testSentIds,
   onToggleSelect,
   onPreview,
   onPhoneComplete,
@@ -388,6 +406,7 @@ function ReminderGroup({
   title: string;
   reminders: AnyReminder[];
   selectedReminders: string[];
+  testSentIds: Set<string>;
   onToggleSelect: (id: string) => void;
   onPreview: (reminder: AnyReminder) => void;
   onPhoneComplete: (reminder: AnyReminder) => void;
@@ -402,6 +421,7 @@ function ReminderGroup({
             key={reminder._id}
             reminder={reminder}
             isSelected={selectedReminders.includes(reminder._id)}
+            testSent={testSentIds.has(reminder._id)}
             onToggleSelect={() => onToggleSelect(reminder._id)}
             onPreview={() => onPreview(reminder)}
             onPhoneComplete={() => onPhoneComplete(reminder)}
@@ -417,6 +437,7 @@ function ReminderGroup({
 function ReminderCard({
   reminder,
   isSelected,
+  testSent,
   onToggleSelect,
   onPreview,
   onPhoneComplete,
@@ -424,6 +445,7 @@ function ReminderCard({
 }: {
   reminder: AnyReminder;
   isSelected: boolean;
+  testSent?: boolean;
   onToggleSelect: () => void;
   onPreview: () => void;
   onPhoneComplete: () => void;
@@ -472,11 +494,21 @@ function ReminderCard({
           : "border-gray-200 bg-white hover:border-gray-300"
       }`}
     >
-      {/* Simulation badge */}
-      {isSimulation && (
-        <Badge className="bg-purple-100 text-purple-700 border-purple-200 mb-2 text-xs hover:bg-purple-100">
-          Simulation
-        </Badge>
+      {/* Simulation and Test Sent badges */}
+      {(isSimulation || testSent) && (
+        <div className="flex gap-2 mb-2">
+          {isSimulation && (
+            <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-xs hover:bg-purple-100">
+              Simulation
+            </Badge>
+          )}
+          {testSent && (
+            <Badge className="bg-green-100 text-green-700 border-green-200 text-xs hover:bg-green-100">
+              <Check className="h-3 w-3 mr-1" />
+              Test envoyé
+            </Badge>
+          )}
+        </div>
       )}
 
       {/* Mobile layout */}

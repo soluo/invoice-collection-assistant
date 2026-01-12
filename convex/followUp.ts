@@ -628,24 +628,36 @@ export const generateSimulatedReminders = query({
         const reminderDateString = reminderDate.toISOString().split("T")[0];
 
         if (reminderDateString === targetDate) {
-          // Replace placeholders in email templates
-          const emailSubject = step.emailSubject
-            ?.replace(/\{\{clientName\}\}/g, invoice.clientName)
-            ?.replace(/\{\{invoiceNumber\}\}/g, invoice.invoiceNumber)
-            ?.replace(/\{\{amount\}\}/g, invoice.amountTTC.toFixed(2) + " €")
-            ?.replace(/\{\{dueDate\}\}/g, invoice.dueDate);
-
-          const emailContent = step.emailTemplate
-            ?.replace(/\{\{clientName\}\}/g, invoice.clientName)
-            ?.replace(/\{\{invoiceNumber\}\}/g, invoice.invoiceNumber)
-            ?.replace(/\{\{amount\}\}/g, invoice.amountTTC.toFixed(2) + " €")
-            ?.replace(/\{\{dueDate\}\}/g, invoice.dueDate);
-
-          // Calculate days overdue
+          // Calculate days overdue first (needed for placeholder replacement)
           const daysOverdue = Math.max(
             0,
             Math.floor((targetDateObj.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
           );
+
+          // Format amount in French locale (123,45€)
+          const formattedAmount = invoice.amountTTC.toLocaleString("fr-FR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          });
+
+          // Replace placeholders in email templates using the same format as reminderDefaults.ts
+          const emailSubject = step.emailSubject
+            ?.replace(/{numero_facture}/g, invoice.invoiceNumber)
+            ?.replace(/{nom_client}/g, invoice.clientName)
+            ?.replace(/{montant}/g, formattedAmount)
+            ?.replace(/{date_echeance}/g, invoice.dueDate)
+            ?.replace(/{date_facture}/g, invoice.invoiceDate)
+            ?.replace(/{jours_retard}/g, daysOverdue.toString());
+
+          const emailContent = step.emailTemplate
+            ?.replace(/{numero_facture}/g, invoice.invoiceNumber)
+            ?.replace(/{nom_client}/g, invoice.clientName)
+            ?.replace(/{montant}/g, formattedAmount)
+            ?.replace(/{date_echeance}/g, invoice.dueDate)
+            ?.replace(/{date_facture}/g, invoice.invoiceDate)
+            ?.replace(/{jours_retard}/g, daysOverdue.toString());
+
+          // daysOverdue already calculated above
 
           simulatedReminders.push({
             _id: `sim-${invoice._id}-${step.id}`,

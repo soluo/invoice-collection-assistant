@@ -3,7 +3,17 @@ import { useAction, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { X, Eye, Edit, Mail } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { X, Edit, Mail, Send } from "lucide-react";
 import { toast } from "sonner";
 
 interface EmailPreviewModalFollowUpProps {
@@ -11,6 +21,7 @@ interface EmailPreviewModalFollowUpProps {
   organization: any; // Organisation info
   onClose: () => void;
   onEdit?: () => void; // Callback pour ouvrir le modal d'édition
+  onTestSent?: (reminderId: string) => void; // Callback when test email is sent
 }
 
 export function EmailPreviewModalFollowUp({
@@ -18,11 +29,18 @@ export function EmailPreviewModalFollowUp({
   organization,
   onClose,
   onEdit,
+  onTestSent,
 }: EmailPreviewModalFollowUpProps) {
   const sendReminder = useAction(api.reminders.sendReminderEmail);
+  const sendSimulatedTestEmail = useAction(api.emails.sendSimulatedTestEmail);
   const currentUser = useQuery(api.auth.loggedInUser);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+
+  // Test email dialog state
+  const [showTestEmailDialog, setShowTestEmailDialog] = useState(false);
+  const [testEmailAddress, setTestEmailAddress] = useState("");
+  const [isSendingTest, setIsSendingTest] = useState(false);
 
   const isPending = reminder.completionStatus === "pending";
   const alreadySent = reminder.completionStatus === "completed";
@@ -68,6 +86,56 @@ export function EmailPreviewModalFollowUp({
     } finally {
       setSending(false);
     }
+  };
+
+  // Handler for sending test email (simulation mode)
+  const handleSendTest = async () => {
+    if (!testEmailAddress) return;
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(testEmailAddress)) {
+      toast.error("Format d'adresse email invalide");
+      return;
+    }
+
+    setIsSendingTest(true);
+    try {
+      // Extract reminder step index from reminderStatus (e.g., "reminder_1" -> 0)
+      const reminderStatusMatch = reminder.reminderStatus?.match(/reminder_(\d+)/);
+      const reminderStepIndex = reminderStatusMatch
+        ? parseInt(reminderStatusMatch[1]) - 1
+        : 0;
+
+      await sendSimulatedTestEmail({
+        recipientEmail: testEmailAddress,
+        invoiceId: reminder.invoice._id as Id<"invoices">,
+        reminderStepIndex,
+      });
+
+      toast.success(`Email de test envoyé à ${testEmailAddress}`);
+
+      // Notify parent that test was sent (for badge tracking)
+      if (onTestSent && reminder._id) {
+        onTestSent(reminder._id);
+      }
+
+      setShowTestEmailDialog(false);
+      onClose();
+    } catch (error: any) {
+      console.error("Erreur envoi test:", error);
+      toast.error(error?.message || "Échec de l'envoi du test");
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
+
+  // Pre-fill test email with user's email if admin
+  const handleOpenTestEmailDialog = () => {
+    if (currentUser?.email && !testEmailAddress) {
+      setTestEmailAddress(currentUser.email);
+    }
+    setShowTestEmailDialog(true);
   };
 
   return (
@@ -116,7 +184,7 @@ export function EmailPreviewModalFollowUp({
           {/* Status messages */}
           {isSimulation && (
             <div className="text-sm text-purple-600 bg-purple-50 p-3 rounded-lg">
-              🔮 Prévisualisation en mode simulation — cet email ne peut pas être envoyé.
+              🔮 Mode simulation — vous pouvez envoyer un test à votre adresse email.
             </div>
           )}
 
@@ -171,8 +239,61 @@ export function EmailPreviewModalFollowUp({
               {sending ? "Envoi..." : "Envoyer"}
             </Button>
           )}
+
+          {/* Test send button for simulations - admin only */}
+          {isSimulation && isAdmin && (
+            <Button
+              type="button"
+              onClick={handleOpenTestEmailDialog}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Envoyer en test
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* Test Email Dialog */}
+      <Dialog open={showTestEmailDialog} onOpenChange={setShowTestEmailDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Envoyer un email de test</DialogTitle>
+            <DialogDescription>
+              L'email sera envoyé à l'adresse ci-dessous, pas au client réel ({recipientEmail}).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="test-email">Adresse email de test</Label>
+              <Input
+                id="test-email"
+                type="email"
+                placeholder="test@exemple.com"
+                value={testEmailAddress}
+                onChange={(e) => setTestEmailAddress(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && testEmailAddress) {
+                    handleSendTest();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTestEmailDialog(false)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handleSendTest}
+              disabled={!testEmailAddress || isSendingTest}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {isSendingTest ? "Envoi..." : "Envoyer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
