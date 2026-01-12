@@ -1,6 +1,6 @@
 # Story 1.2: Reminder History in Drawer
 
-Status: review
+Status: done
 
 ## Story
 
@@ -112,59 +112,56 @@ export function ReminderHistorySection({ invoiceId }: Props) {
 
 **Sorting:** The query returns reminders unsorted. Sort client-side by `reminderDate` descending (most recent first).
 
-### Visual Patterns from InvoiceTimeline (MUST FOLLOW)
+### Visual Patterns (Drawer-Specific - Compact Design)
 
-**Timeline Item Structure (from src/components/InvoiceTimeline.tsx:127-169):**
+**Design Decision:** The drawer uses a more compact visual style than InvoiceTimeline to fit the constrained space. This is intentional.
+
+**Timeline Item Structure (Drawer - Compact):**
 ```tsx
-<li className="flex gap-4 p-6">
-  {/* Circular icon container */}
-  <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${bgColor}`}>
-    <Icon className={`h-5 w-5 ${iconColor}`} />
+<li className="flex gap-3 items-start">
+  {/* Smaller circular icon container - 32x32 instead of 40x40 */}
+  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-100">
+    <Icon className="h-4 w-4 text-gray-500" />
   </div>
 
   {/* Content */}
-  <div className="flex-1">
-    <p className="text-sm text-gray-800">{description}</p>
-    <p className="mt-1 text-xs text-gray-500">{formattedDate}</p>
+  <div className="flex-1 min-w-0">
+    <p className="text-sm text-gray-900">{reminderStep} • {status}</p>
+    <p className="text-xs text-gray-400">{formattedDate}</p>
   </div>
 </li>
 ```
 
-**Color Scheme (from InvoiceTimeline EVENT_CONFIGS):**
+**Color Scheme (Drawer - Neutral Icons):**
 ```tsx
-// For reminders, use these colors to match InvoiceTimeline:
-reminder_email_completed: { bgColor: "bg-orange-100", iconColor: "text-orange-600" }
-reminder_email_pending: { bgColor: "bg-amber-100", iconColor: "text-amber-600" }
-reminder_email_failed: { bgColor: "bg-red-100", iconColor: "text-red-600" }
-reminder_phone: { bgColor: "bg-purple-100", iconColor: "text-purple-600" }
+// DESIGN DECISION: Use neutral gray icons to avoid "Christmas tree" effect
+// The drawer shows many reminders in a compact list - colored icons would be visually overwhelming
+// Status is communicated through text color instead:
+icon: { bgColor: "bg-gray-100", iconColor: "text-gray-500" }  // All types
+
+// Status text colors (completion info):
+pending: "text-gray-500"      // "En attente"
+completed: "text-gray-500"    // "Envoyée"
+failed: "text-red-600"        // "Échec"
+will_pay: "text-green-600"    // Phone outcome
+dispute: "text-red-600"       // Phone outcome
 ```
 
-**Date Formatting (from InvoiceTimeline:81-93):**
+**Date Formatting (Drawer - Compact):**
 ```tsx
-import { formatDistanceToNow } from "date-fns";
-import { fr } from "date-fns/locale";
-
-function formatEventDate(timestamp: number): string {
-  const date = new Date(timestamp);
-  const timeAgo = formatDistanceToNow(date, { addSuffix: true, locale: fr });
-  const fullDate = date.toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  return `${timeAgo} • ${fullDate}`;
-}
-
-// For reminderDate string format "2025-09-26 10:00:00":
-const date = new Date(reminderDate.replace(" ", "T"));
+// Shorter format for drawer (no hours, short month)
+const fullDate = date.toLocaleDateString("fr-FR", {
+  day: "numeric",
+  month: "short",   // "janv." instead of "janvier"
+  year: "numeric",
+  // No hour/minute - keeps it compact
+});
+return `${timeAgo} • ${fullDate}`;  // "il y a 2 jours • 12 janv. 2026"
 ```
 
-**Empty State (from InvoiceTimeline:105-113):**
+**Empty State:**
 ```tsx
-<p className="text-sm text-gray-500">Aucun événement pour le moment.</p>
-// Adapt to: "Aucune relance pour cette facture"
+<p className="text-sm text-gray-500">Aucune relance pour cette facture</p>
 ```
 
 ### Drawer Section Integration
@@ -183,11 +180,16 @@ const date = new Date(reminderDate.replace(" ", "T"));
 )}
 ```
 
-**Badge Pattern (for reminder step):**
+**Reminder Step Display (inline text, not Badge):**
 ```tsx
-<Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-  Relance 1
-</Badge>
+// DESIGN DECISION: Use inline text instead of Badge component for compact display
+// Badge would add visual noise in a timeline list
+<p className="text-sm text-gray-900">
+  {REMINDER_STATUS_LABELS[reminder.reminderStatus]}  {/* "Relance 1" */}
+  <span className={completionInfo.className}>
+    • {completionInfo.label}  {/* "En attente" / "Envoyée" / "Échec" */}
+  </span>
+</p>
 ```
 
 ### Technical Requirements
@@ -343,3 +345,10 @@ N/A
 ### Change Log
 
 - 2026-01-12: Implemented reminder history section in drawer (Story 1.2)
+- 2026-01-12: Code Review completed
+  - Updated Dev Notes to document intentional design decisions (compact drawer style)
+  - Neutral gray icons: avoids "Christmas tree" effect in dense list
+  - Smaller icons (32px vs 40px): fits compact drawer layout
+  - Short date format: space-efficient display
+  - Inline text instead of Badge: reduces visual noise
+  - Added `aria-expanded` to expand/collapse button for accessibility

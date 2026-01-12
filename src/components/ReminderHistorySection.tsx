@@ -177,6 +177,7 @@ export function ReminderHistorySection({ invoiceId }: ReminderHistorySectionProp
           size="sm"
           className="w-full text-gray-600 hover:text-gray-900"
           onClick={() => setShowAll(!showAll)}
+          aria-expanded={showAll}
         >
           {showAll ? (
             <>
