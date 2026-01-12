@@ -14,6 +14,7 @@ import InvoiceTableCard from "@/components/mainView/InvoiceTableCard";
 import EmailPreviewModal from "@/components/modals/EmailPreviewModal";
 import MarkAsPaidModal from "@/components/modals/MarkAsPaidModal";
 import RecordPaymentModal from "@/components/modals/RecordPaymentModal";
+import { MarkAsSentModal } from "@/components/MarkAsSentModal";
 import { InvoiceDetailDrawer } from "@/components/InvoiceDetailDrawer";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -40,6 +41,7 @@ export default function MainView() {
   const [emailPreviewOpen, setEmailPreviewOpen] = useState(false);
   const [markAsPaidOpen, setMarkAsPaidOpen] = useState(false);
   const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
+  const [markAsSentOpen, setMarkAsSentOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [selectedReminder, setSelectedReminder] = useState<{ emailSubject?: string; emailContent?: string } | null>(null);
 
@@ -48,6 +50,7 @@ export default function MainView() {
 
   // Mutations
   const markAsPaid = useMutation(api.invoices.markAsPaid);
+  const markAsSent = useMutation(api.invoices.markAsSent);
   const sendReminder = useMutation(api.invoices.sendReminder);
 
   // Queries
@@ -74,8 +77,7 @@ export default function MainView() {
     setSelectedInvoice(invoice);
 
     if (action === "markAsSent") {
-      // TODO: Ouvrir modal pour marquer comme envoyée
-      toast.info("Fonctionnalité à implémenter : marquer comme envoyée");
+      setMarkAsSentOpen(true);
     } else if (action === "recordPayment") {
       setRecordPaymentOpen(true);
     }
@@ -113,6 +115,23 @@ export default function MainView() {
       toast.success("Facture marquée comme payée");
     } catch (error: any) {
       toast.error(error.message || "Erreur lors de la mise à jour");
+    }
+  };
+
+  const handleConfirmMarkAsSent = async (sentDate: string) => {
+    if (!selectedInvoice) return;
+
+    try {
+      await markAsSent({
+        invoiceId: selectedInvoice._id,
+        sentDate,
+      });
+      toast.success("Facture marquée comme envoyée");
+      setMarkAsSentOpen(false);
+      setSelectedInvoice(null);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors de la mise à jour";
+      toast.error(errorMessage);
     }
   };
 
@@ -296,6 +315,19 @@ export default function MainView() {
         reminder={selectedReminder}
         onConfirm={handleConfirmEmailSend}
       />
+
+      {/* Mark as Sent Modal */}
+      {selectedInvoice && (
+        <MarkAsSentModal
+          isOpen={markAsSentOpen}
+          onClose={() => {
+            setMarkAsSentOpen(false);
+            setSelectedInvoice(null);
+          }}
+          onConfirm={handleConfirmMarkAsSent}
+          defaultDate={selectedInvoice.invoiceDate}
+        />
+      )}
 
       {/* Invoice Detail Drawer */}
       <InvoiceDetailDrawer

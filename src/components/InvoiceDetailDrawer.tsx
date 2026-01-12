@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Id } from "@convex/_generated/dataModel";
 import {
@@ -11,9 +12,11 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, FileText, Calendar, User, Mail, Phone, AlertTriangle } from "lucide-react";
+import { ExternalLink, FileText, Calendar, User, Mail, Phone, AlertTriangle, Send } from "lucide-react";
 import { ReminderHistorySection } from "@/components/ReminderHistorySection";
+import { MarkAsSentModal } from "@/components/MarkAsSentModal";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface InvoiceDetailDrawerProps {
   invoiceId: Id<"invoices"> | null;
@@ -26,6 +29,8 @@ export function InvoiceDetailDrawer({
   open,
   onOpenChange,
 }: InvoiceDetailDrawerProps) {
+  const [showMarkAsSentModal, setShowMarkAsSentModal] = useState(false);
+
   const invoice = useQuery(
     api.invoices.getById,
     invoiceId ? { invoiceId } : "skip"
@@ -35,6 +40,24 @@ export function InvoiceDetailDrawer({
     api.invoices.getPdfUrl,
     invoice?.pdfStorageId ? { storageId: invoice.pdfStorageId } : "skip"
   );
+
+  const markAsSent = useMutation(api.invoices.markAsSent);
+
+  const handleConfirmMarkAsSent = async (sentDate: string) => {
+    if (!invoice) return;
+
+    try {
+      await markAsSent({
+        invoiceId: invoice._id,
+        sentDate,
+      });
+      toast.success("Facture marquée comme envoyée");
+      setShowMarkAsSentModal(false);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors de la mise à jour";
+      toast.error(errorMessage);
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return amount.toLocaleString("fr-FR", {
@@ -145,6 +168,7 @@ export function InvoiceDetailDrawer({
   const description = invoice?.clientName || "Chargement...";
 
   return (
+    <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
@@ -186,6 +210,38 @@ export function InvoiceDetailDrawer({
             </div>
           )}
         </SheetHeader>
+
+        {/* Action buttons - only when invoice is loaded */}
+        {invoice && (
+          <div className="flex flex-wrap items-center gap-2 py-4 border-b">
+            {invoice.sendStatus !== "sent" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMarkAsSentModal(true)}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Marquer comme envoyée
+              </Button>
+            )}
+            {pdfUrl && (
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+              >
+                <a
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Voir le PDF
+                </a>
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* Content states */}
         {invoice === undefined ? (
@@ -268,24 +324,14 @@ export function InvoiceDetailDrawer({
               </div>
             )}
 
-            {/* PDF Button */}
-            {pdfUrl && (
-              <div className="pt-4 border-t">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  asChild
-                >
-                  <a
-                    href={pdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2"
-                  >
-                    <FileText className="h-4 w-4" />
-                    Voir le PDF
-                  </a>
-                </Button>
+            {/* Sent Date Display (when invoice is sent) */}
+            {invoice.sendStatus === "sent" && invoice.sentDate && (
+              <div className="space-y-1">
+                <p className="text-sm text-gray-500 font-medium flex items-center gap-1.5">
+                  <Send className="h-4 w-4" />
+                  Date d'envoi
+                </p>
+                <p className="text-gray-900">{formatDate(invoice.sentDate)}</p>
               </div>
             )}
 
@@ -306,5 +352,16 @@ export function InvoiceDetailDrawer({
         )}
       </SheetContent>
     </Sheet>
+
+    {/* Mark as Sent Modal - Outside Sheet for proper animation */}
+    {invoice && (
+      <MarkAsSentModal
+        isOpen={showMarkAsSentModal}
+        onClose={() => setShowMarkAsSentModal(false)}
+        onConfirm={handleConfirmMarkAsSent}
+        defaultDate={invoice.invoiceDate}
+      />
+    )}
+    </>
   );
 }

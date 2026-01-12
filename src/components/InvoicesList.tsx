@@ -269,7 +269,7 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               onClick={() => handleMarkAsSent(invoice)}
-                              disabled={invoice.sendStatus !== "pending"}
+                              disabled={invoice.sendStatus === "sent"}
                             >
                               Marquer comme envoyée
                             </DropdownMenuItem>

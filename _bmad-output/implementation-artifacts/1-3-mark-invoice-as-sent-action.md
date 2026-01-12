@@ -1,6 +1,6 @@
 # Story 1.3: Mark Invoice as Sent Action
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -30,35 +30,35 @@ So that **I can track when the invoice was delivered to the client and start the
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add "Mark as sent" action button in drawer (AC: #1, #3)
-  - [ ] Add button below PDF section, inside a new "Actions" section
-  - [ ] Conditionally render only when `invoice.sendStatus === "pending"`
-  - [ ] Use Lucide `Send` icon with "Marquer comme envoyee" label
-  - [ ] Style: `variant="outline"` with full width like PDF button
+- [x] Task 1: Add "Mark as sent" action button in drawer (AC: #1, #3)
+  - [x] Add button below PDF section, inside a new "Actions" section
+  - [x] Conditionally render only when `invoice.sendStatus === "pending"`
+  - [x] Use Lucide `Send` icon with "Marquer comme envoyée" label
+  - [x] Style: `variant="outline"` with full width like PDF button
 
-- [ ] Task 2: Integrate MarkAsSentModal into drawer (AC: #1, #2)
-  - [ ] Import existing `MarkAsSentModal` component
-  - [ ] Add state: `showMarkAsSentModal: boolean`
-  - [ ] On button click, open modal with `defaultDate={invoice.invoiceDate}`
-  - [ ] Handle confirm: call `markAsSent` mutation with invoiceId and selected date
+- [x] Task 2: Integrate MarkAsSentModal into drawer (AC: #1, #2)
+  - [x] Import existing `MarkAsSentModal` component
+  - [x] Add state: `showMarkAsSentModal: boolean`
+  - [x] On button click, open modal with `defaultDate={invoice.invoiceDate}`
+  - [x] Handle confirm: call `markAsSent` mutation with invoiceId and selected date
 
-- [ ] Task 3: Handle mutation and feedback (AC: #2)
-  - [ ] Use `useMutation(api.invoices.markAsSent)`
-  - [ ] On success: close modal, show toast "Facture marquee comme envoyee"
-  - [ ] On error: show toast with error message
-  - [ ] Drawer auto-refreshes via Convex real-time (no manual refresh needed)
+- [x] Task 3: Handle mutation and feedback (AC: #2)
+  - [x] Use `useMutation(api.invoices.markAsSent)`
+  - [x] On success: close modal, show toast "Facture marquée comme envoyée"
+  - [x] On error: show toast with error message
+  - [x] Drawer auto-refreshes via Convex real-time (no manual refresh needed)
 
-- [ ] Task 4: Display sent date when invoice is sent (AC: #3)
-  - [ ] Add conditional display of "Date d'envoi" after invoice date
-  - [ ] Show `formatDate(invoice.sentDate)` when sendStatus is "sent"
-  - [ ] Use same date format as other dates in drawer
+- [x] Task 4: Display sent date when invoice is sent (AC: #3)
+  - [x] Add conditional display of "Date d'envoi" after invoice date
+  - [x] Show `formatDate(invoice.sentDate)` when sendStatus is "sent"
+  - [x] Use same date format as other dates in drawer
 
-- [ ] Task 5: Test and polish (AC: #1, #2, #3)
-  - [ ] Test with pending invoice - button should appear
-  - [ ] Test with sent invoice - button should NOT appear
-  - [ ] Test modal date selection and confirmation
-  - [ ] Verify real-time update after marking as sent
-  - [ ] Run `pnpm lint` to validate
+- [x] Task 5: Test and polish (AC: #1, #2, #3)
+  - [x] Test with pending invoice - button should appear
+  - [x] Test with sent invoice - button should NOT appear
+  - [x] Test modal date selection and confirmation
+  - [x] Verify real-time update after marking as sent
+  - [x] Run `pnpm lint` to validate
 
 ## Dev Notes
 
@@ -275,10 +275,27 @@ No new dependencies required.
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+None required - straightforward integration task.
+
 ### Completion Notes List
 
+- Integrated existing `MarkAsSentModal` component into `InvoiceDetailDrawer`
+- Added "Marquer comme envoyée" button visible only when `sendStatus === "pending"` (AC #1, #3)
+- Added `showMarkAsSentModal` state and `markAsSent` mutation
+- Implemented `handleConfirmMarkAsSent` with toast notifications for success/error (AC #2)
+- Added "Date d'envoi" display when invoice is sent with Send icon (AC #3)
+- All lint checks pass (`pnpm lint` successful)
+- Modal uses `invoice.invoiceDate` as default date
+- Real-time update via Convex - no manual refresh needed
+
+### Change Log
+
+- 2026-01-12: Story 1.3 implemented - Mark invoice as sent action in drawer
+
 ### File List
+
+- `src/components/InvoiceDetailDrawer.tsx` (modified) - Added mark as sent button, modal integration, and sent date display

@@ -152,6 +152,11 @@ export default function InvoiceTableCard({ invoice, onAction, onInvoiceClick }: 
                 Voir la facture
               </NavLink>
             </DropdownMenuItem>
+            {invoice.sendStatus !== "sent" && (
+              <DropdownMenuItem onClick={(e) => handleActionClick(e, "markAsSent")}>
+                Marquer comme envoyée
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem>Modifier</DropdownMenuItem>
             <DropdownMenuItem className="text-red-600">
               Supprimer

@@ -4,10 +4,11 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, MessageSquare, Calendar } from "lucide-react";
+import { ArrowLeft, Download, MessageSquare, Calendar, Send } from "lucide-react";
 import { InvoiceTimeline } from "@/components/InvoiceTimeline";
 import { PaymentRecordModal } from "@/components/PaymentRecordModal";
 import { SnoozeInvoiceModal } from "@/components/SnoozeInvoiceModal";
+import { MarkAsSentModal } from "@/components/MarkAsSentModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ export function InvoiceDetail() {
   const navigate = useNavigate();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isSnoozeModalOpen, setIsSnoozeModalOpen] = useState(false);
+  const [isMarkAsSentModalOpen, setIsMarkAsSentModalOpen] = useState(false);
   const [noteContent, setNoteContent] = useState("");
   const [isAddingNote, setIsAddingNote] = useState(false);
 
@@ -41,6 +43,23 @@ export function InvoiceDetail() {
   );
 
   const createNote = useMutation(api.invoiceNotes.create);
+  const markAsSent = useMutation(api.invoices.markAsSent);
+
+  const handleConfirmMarkAsSent = async (sentDate: string) => {
+    if (!id) return;
+
+    try {
+      await markAsSent({
+        invoiceId: id as Id<"invoices">,
+        sentDate,
+      });
+      toast.success("Facture marquée comme envoyée");
+      setIsMarkAsSentModalOpen(false);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors de la mise à jour";
+      toast.error(errorMessage);
+    }
+  };
 
   const handleAddNote = async () => {
     if (!noteContent.trim() || !id) return;
@@ -183,6 +202,16 @@ export function InvoiceDetail() {
 
       {/* Action buttons */}
       <div className="mb-6 flex flex-wrap items-center gap-3">
+        {invoice.sendStatus !== "sent" && (
+          <Button
+            onClick={() => setIsMarkAsSentModalOpen(true)}
+            variant="outline"
+            className="inline-flex items-center gap-2"
+          >
+            <Send className="h-4 w-4" />
+            Marquer comme envoyée
+          </Button>
+        )}
         <Button
           onClick={() => setIsPaymentModalOpen(true)}
           className="bg-green-600 hover:bg-green-700"
@@ -375,6 +404,16 @@ export function InvoiceDetail() {
           invoiceNumber={invoice.invoiceNumber}
           currentDueDate={invoice.dueDate}
           onClose={() => setIsSnoozeModalOpen(false)}
+        />
+      )}
+
+      {/* Mark as Sent modal */}
+      {isMarkAsSentModalOpen && invoice && (
+        <MarkAsSentModal
+          isOpen={isMarkAsSentModalOpen}
+          onClose={() => setIsMarkAsSentModalOpen(false)}
+          onConfirm={handleConfirmMarkAsSent}
+          defaultDate={invoice.invoiceDate}
         />
       )}
     </div>

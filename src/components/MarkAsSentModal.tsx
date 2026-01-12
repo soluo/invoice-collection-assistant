@@ -26,8 +26,7 @@ export function MarkAsSentModal({
     return new Date(defaultDate + "T00:00:00");
   });
 
-  // Min date = invoice date, Max date = today
-  const minDate = new Date(defaultDate + "T00:00:00");
+  // No min date (can be sent before invoice date), Max date = today
   const maxDate = new Date();
 
   const handleConfirm = () => {
@@ -52,8 +51,7 @@ export function MarkAsSentModal({
             selected={selectedDate}
             onSelect={(date) => date && setSelectedDate(date)}
             captionLayout="dropdown"
-            disabled={(date) => date < minDate || date > maxDate}
-            startMonth={minDate}
+            disabled={(date) => date > maxDate}
             endMonth={maxDate}
             defaultMonth={selectedDate}
             fixedWeeks
@@ -77,7 +75,7 @@ export function MarkAsSentModal({
           <button
             type="button"
             onClick={handleConfirm}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="flex-1 px-4 py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 transition-colors"
           >
             Confirmer
           </button>
