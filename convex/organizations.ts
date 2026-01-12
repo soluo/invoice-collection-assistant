@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { normalizeEmail } from "./utils";
 import { getDefaultReminderSteps } from "./reminderDefaults";
+import { validationError, ErrorCodes } from "./errors";
 
 /**
  * Mutation pour créer une organisation et son premier utilisateur admin
@@ -78,7 +79,11 @@ export const inviteUser = mutation({
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const normalizedEmail = normalizeEmail(args.email);
     if (!emailRegex.test(normalizedEmail)) {
-      throw new Error("Format d'email invalide");
+      throw validationError(
+        ErrorCodes.INVALID_EMAIL_FORMAT,
+        "Format d'email invalide",
+        "email"
+      );
     }
 
     // Récupérer l'utilisateur et vérifier qu'il est admin
@@ -107,7 +112,11 @@ export const inviteUser = mutation({
       existingUserWithEmail &&
       existingUserWithEmail.organizationId === user.organizationId
     ) {
-      throw new Error("Un utilisateur avec cet email existe déjà dans votre organisation");
+      throw validationError(
+        ErrorCodes.EMAIL_ALREADY_EXISTS,
+        "Un utilisateur avec cet email existe déjà dans votre organisation",
+        "email"
+      );
     }
 
     // Vérifier qu'il n'y a pas déjà une invitation en attente pour cet email
@@ -136,7 +145,11 @@ export const inviteUser = mutation({
     }
 
     if (existingInvitation) {
-      throw new Error("Une invitation est déjà en attente pour cet email");
+      throw validationError(
+        ErrorCodes.INVITATION_PENDING,
+        "Une invitation est déjà en attente pour cet email",
+        "email"
+      );
     }
 
     // Générer un token unique

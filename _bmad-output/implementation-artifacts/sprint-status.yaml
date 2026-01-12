@@ -80,7 +80,7 @@ development_status:
 
   # Epic 6: Améliorations Post-Demo - Quick Wins (Priority: High for bugs)
   epic-6: in-progress
-  6-1-bug-verify-invitations-and-technician-filters: ready-for-dev
+  6-1-bug-verify-invitations-and-technician-filters: done
   6-2-default-due-date-plus-30-days: backlog
   6-3-edit-and-reassign-invoice: backlog
   epic-6-retrospective: optional

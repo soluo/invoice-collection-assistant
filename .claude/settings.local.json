@@ -24,7 +24,10 @@
       "Bash(npx shadcn@latest add:*)",
       "Bash(npx tsc:*)",
       "Bash(mgrep:*)",
-      "mcp__context7__query-docs"
+      "mcp__context7__query-docs",
+      "mcp__context7__resolve-library-id",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm exec convex dev:*)"
     ],
     "deny": [],
     "ask": []

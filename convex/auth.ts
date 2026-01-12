@@ -30,7 +30,25 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         return;
       }
 
-      // Créer une nouvelle organisation par défaut
+      // Vérifier si l'utilisateur a une invitation en attente
+      // Si oui, NE PAS créer d'organisation par défaut - laisser acceptInvitation gérer
+      if (user.email) {
+        const normalizedEmail = normalizeEmail(user.email);
+        const pendingInvitation = await ctx.db
+          .query("invitations")
+          .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
+          .filter((q) => q.eq(q.field("status"), "pending"))
+          .first();
+
+        if (pendingInvitation) {
+          // L'utilisateur a une invitation en attente
+          // On ne crée pas d'organisation par défaut
+          // La mutation acceptInvitation gérera l'assignation à l'organisation invitante
+          return;
+        }
+      }
+
+      // Inscription normale sans invitation : créer une organisation par défaut
       const organizationId = await ctx.db.insert("organizations", {
         name: "Ma société",
         createdAt: Date.now(),

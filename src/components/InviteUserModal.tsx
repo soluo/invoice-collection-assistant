@@ -1,8 +1,10 @@
 import { useMutation } from "convex/react";
+import { ConvexError } from "convex/values";
 import { useState } from "react";
 import { X, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
+import type { ValidationErrorData } from "../../convex/errors";
 
 interface InviteUserModalProps {
   isOpen: boolean;
@@ -29,15 +31,26 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setEmailError(null);
 
     try {
       const result = await inviteUser({ email, role });
       setInvitationToken(result.token);
       toast.success("Invitation créée avec succès !");
       setEmail("");
-    } catch (error: any) {
-      console.error("Erreur lors de l'invitation:", error);
-      toast.error(error.message || "Erreur lors de l'invitation");
+    } catch (error) {
+      // Gérer les erreurs de validation structurées (ConvexError)
+      if (error instanceof ConvexError) {
+        const data = error.data as ValidationErrorData;
+        if (data.field === "email") {
+          setEmailError(data.message);
+        } else {
+          toast.error(data.message);
+        }
+      } else {
+        // Erreur inattendue
+        toast.error("Une erreur inattendue s'est produite");
+      }
     } finally {
       setSubmitting(false);
     }

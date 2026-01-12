@@ -10,12 +10,38 @@ import { Label } from "@/components/ui/label";
 import { Mail, User, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle, Users } from "lucide-react";
 import { SplitAuthLayout } from "@/components/auth/SplitAuthLayout";
 
+// Helper pour parser les erreurs et les associer aux champs
+function parseFieldError(errorMessage: string): { field: "email" | "password" | "general"; message: string } {
+  const lowerMessage = errorMessage.toLowerCase();
+
+  // Erreurs liées à l'email
+  if (
+    lowerMessage.includes("email") &&
+    (lowerMessage.includes("already") || lowerMessage.includes("existe") || lowerMessage.includes("déjà"))
+  ) {
+    return { field: "email", message: "Cet email est déjà utilisé" };
+  }
+  if (lowerMessage.includes("email") && lowerMessage.includes("invalid")) {
+    return { field: "email", message: "Email invalide" };
+  }
+
+  // Erreurs liées au mot de passe
+  if (lowerMessage.includes("password") || lowerMessage.includes("mot de passe")) {
+    if (lowerMessage.includes("short") || lowerMessage.includes("court") || lowerMessage.includes("6")) {
+      return { field: "password", message: "Le mot de passe doit contenir au moins 6 caractères" };
+    }
+    return { field: "password", message: "Mot de passe invalide" };
+  }
+
+  return { field: "general", message: errorMessage };
+}
+
 export function AcceptInvitation() {
   const { token } = useParams<{ token: string }>();
   const { signIn } = useAuthActions();
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
 
   const invitationDetails = useQuery(
     api.organizations.getInvitationByToken,
@@ -26,7 +52,7 @@ export function AcceptInvitation() {
     e.preventDefault();
     if (!token || !invitationDetails) return;
     setSubmitting(true);
-    setErrorMessage(null);
+    setErrors({});
 
     const formData = new FormData(e.target as HTMLFormElement);
     const email = invitationDetails.email;
@@ -52,10 +78,16 @@ export function AcceptInvitation() {
 
       // La redirection et l'acceptation de l'invitation sont gérées dans App.tsx
     } catch (error: any) {
-      console.error("Erreur lors de l'inscription:", error);
       const message = error.message || "Erreur lors de l'inscription";
-      setErrorMessage(message);
-      toast.error(message);
+      const { field, message: fieldMessage } = parseFieldError(message);
+
+      if (field === "general") {
+        setErrors({ general: fieldMessage });
+        toast.error(fieldMessage);
+      } else {
+        setErrors({ [field]: fieldMessage });
+      }
+
       setSubmitting(false);
       sessionStorage.removeItem("pendingInvitationData");
     }
@@ -149,7 +181,7 @@ export function AcceptInvitation() {
             </Label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail className="w-4 h-4 text-slate-400" />
+                <Mail className={`w-4 h-4 ${errors.email ? "text-red-400" : "text-slate-400"}`} />
               </div>
               <Input
                 id="email"
@@ -157,12 +189,21 @@ export function AcceptInvitation() {
                 name="email"
                 defaultValue={invitationDetails.email}
                 readOnly
-                className="w-full pl-10 pr-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 cursor-not-allowed"
+                className={`w-full pl-10 pr-4 py-3 bg-slate-100 border rounded-xl text-slate-600 cursor-not-allowed ${
+                  errors.email ? "border-red-300 bg-red-50" : "border-slate-200"
+                }`}
               />
             </div>
-            <p className="text-xs text-slate-500 mt-1.5">
-              Cet email est lié à l'invitation et ne peut pas être modifié.
-            </p>
+            {errors.email ? (
+              <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                {errors.email}
+              </p>
+            ) : (
+              <p className="text-xs text-slate-500 mt-1.5">
+                Cet email est lié à l'invitation et ne peut pas être modifié.
+              </p>
+            )}
           </div>
 
           {/* Name Field */}
@@ -192,7 +233,7 @@ export function AcceptInvitation() {
             </Label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="w-4 h-4 text-slate-400" />
+                <Lock className={`w-4 h-4 ${errors.password ? "text-red-400" : "text-slate-400"}`} />
               </div>
               <Input
                 id="password"
@@ -201,7 +242,9 @@ export function AcceptInvitation() {
                 placeholder="••••••••"
                 required
                 minLength={6}
-                className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all"
+                className={`w-full pl-10 pr-10 py-3 bg-slate-50 border rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all ${
+                  errors.password ? "border-red-300 bg-red-50" : "border-slate-200"
+                }`}
               />
               <button
                 type="button"
@@ -211,14 +254,21 @@ export function AcceptInvitation() {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            <p className="text-xs text-slate-500 mt-1.5">Minimum 6 caractères</p>
+            {errors.password ? (
+              <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                {errors.password}
+              </p>
+            ) : (
+              <p className="text-xs text-slate-500 mt-1.5">Minimum 6 caractères</p>
+            )}
           </div>
 
-          {/* Error Message */}
-          {errorMessage && (
+          {/* Error Message (general errors only) */}
+          {errors.general && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-start gap-2">
               <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <span>{errorMessage}</span>
+              <span>{errors.general}</span>
             </div>
           )}
 
