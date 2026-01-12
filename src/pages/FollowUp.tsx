@@ -1,5 +1,10 @@
 import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
+import { Id, Doc } from "@convex/_generated/dataModel";
+import { FunctionReturnType } from "convex/server";
+
+// Type pour les reminders retournés par getUpcomingReminders
+type UpcomingReminder = NonNullable<FunctionReturnType<typeof api.followUp.getUpcomingReminders>>[number];
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,16 +25,18 @@ import { EmailPreviewModalFollowUp } from "@/components/EmailPreviewModalFollowU
 import { EmailEditModal } from "@/components/EmailEditModal";
 import { BulkSendConfirmModal } from "@/components/BulkSendConfirmModal";
 import { PhoneCallCompleteModal } from "@/components/PhoneCallCompleteModal";
+import { InvoiceDetailDrawer } from "@/components/InvoiceDetailDrawer";
 
 export function FollowUp() {
   const upcomingReminders = useQuery(api.followUp.getUpcomingReminders);
   const reminderHistory = useQuery(api.followUp.getReminderHistory);
   const organization = useQuery(api.organizations.getCurrentOrganization);
-  const [previewReminder, setPreviewReminder] = useState<any | null>(null);
-  const [editReminder, setEditReminder] = useState<any | null>(null);
+  const [previewReminder, setPreviewReminder] = useState<UpcomingReminder | null>(null);
+  const [editReminder, setEditReminder] = useState<UpcomingReminder | null>(null);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [selectedReminders, setSelectedReminders] = useState<string[]>([]);
-  const [phoneCallReminder, setPhoneCallReminder] = useState<any | null>(null);
+  const [phoneCallReminder, setPhoneCallReminder] = useState<UpcomingReminder | null>(null);
+  const [selectedInvoiceForDrawer, setSelectedInvoiceForDrawer] = useState<Id<"invoices"> | null>(null);
 
   // Group upcoming reminders by date
   const groupedReminders = groupRemindersByDate(upcomingReminders || []);
@@ -90,6 +97,7 @@ export function FollowUp() {
                   }}
                   onPreview={setPreviewReminder}
                   onPhoneComplete={setPhoneCallReminder}
+                  onInvoiceClick={(id) => setSelectedInvoiceForDrawer(id as Id<"invoices">)}
                 />
               )}
               {groupedReminders.today.length > 0 && (
@@ -104,6 +112,7 @@ export function FollowUp() {
                   }}
                   onPreview={setPreviewReminder}
                   onPhoneComplete={setPhoneCallReminder}
+                  onInvoiceClick={(id) => setSelectedInvoiceForDrawer(id as Id<"invoices">)}
                 />
               )}
               {groupedReminders.tomorrow.length > 0 && (
@@ -118,6 +127,7 @@ export function FollowUp() {
                   }}
                   onPreview={setPreviewReminder}
                   onPhoneComplete={setPhoneCallReminder}
+                  onInvoiceClick={(id) => setSelectedInvoiceForDrawer(id as Id<"invoices">)}
                 />
               )}
               {groupedReminders.later.length > 0 && (
@@ -132,6 +142,7 @@ export function FollowUp() {
                   }}
                   onPreview={setPreviewReminder}
                   onPhoneComplete={setPhoneCallReminder}
+                  onInvoiceClick={(id) => setSelectedInvoiceForDrawer(id as Id<"invoices">)}
                 />
               )}
             </div>
@@ -153,7 +164,10 @@ export function FollowUp() {
               </p>
             </div>
           ) : (
-            <EventTimeline events={reminderHistory} />
+            <EventTimeline
+              events={reminderHistory}
+              onInvoiceClick={(id) => setSelectedInvoiceForDrawer(id as Id<"invoices">)}
+            />
           )}
         </TabsContent>
       </Tabs>
@@ -216,12 +230,19 @@ export function FollowUp() {
           onClose={() => setPhoneCallReminder(null)}
         />
       )}
+
+      {/* Invoice Detail Drawer */}
+      <InvoiceDetailDrawer
+        invoiceId={selectedInvoiceForDrawer}
+        open={selectedInvoiceForDrawer !== null}
+        onOpenChange={(open) => !open && setSelectedInvoiceForDrawer(null)}
+      />
     </div>
   );
 }
 
 // Helper function to group reminders by date
-function groupRemindersByDate(reminders: any[]) {
+function groupRemindersByDate(reminders: UpcomingReminder[]) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -262,14 +283,16 @@ function ReminderGroup({
   selectedReminders,
   onToggleSelect,
   onPreview,
-  onPhoneComplete
+  onPhoneComplete,
+  onInvoiceClick
 }: {
   title: string;
-  reminders: any[];
+  reminders: UpcomingReminder[];
   selectedReminders: string[];
   onToggleSelect: (id: string) => void;
-  onPreview: (reminder: any) => void;
-  onPhoneComplete: (reminder: any) => void;
+  onPreview: (reminder: UpcomingReminder) => void;
+  onPhoneComplete: (reminder: UpcomingReminder) => void;
+  onInvoiceClick: (invoiceId: string) => void;
 }) {
   return (
     <div>
@@ -283,6 +306,7 @@ function ReminderGroup({
             onToggleSelect={() => onToggleSelect(reminder._id)}
             onPreview={() => onPreview(reminder)}
             onPhoneComplete={() => onPhoneComplete(reminder)}
+            onInvoiceClick={onInvoiceClick}
           />
         ))}
       </div>
@@ -296,13 +320,15 @@ function ReminderCard({
   isSelected,
   onToggleSelect,
   onPreview,
-  onPhoneComplete
+  onPhoneComplete,
+  onInvoiceClick
 }: {
-  reminder: any;
+  reminder: UpcomingReminder;
   isSelected: boolean;
   onToggleSelect: () => void;
   onPreview: () => void;
   onPhoneComplete: () => void;
+  onInvoiceClick: (invoiceId: string) => void;
 }) {
   const isEmail = reminder.reminderType === "email";
   const isPhone = reminder.reminderType === "phone";
@@ -331,8 +357,17 @@ function ReminderCard({
     minute: "2-digit",
   });
 
+  const handleCardClick = () => {
+    if (reminder.invoice?._id) {
+      onInvoiceClick(reminder.invoice._id);
+    }
+  };
+
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 hover:border-gray-300 transition-colors">
+    <div
+      onClick={handleCardClick}
+      className="rounded-lg border border-gray-200 bg-white p-4 hover:border-gray-300 transition-colors cursor-pointer active:bg-gray-50"
+    >
       {/* Mobile layout */}
       <div className="flex flex-col gap-2.5 md:hidden">
         {/* Ligne 1: icône + facture/client + montant */}
@@ -344,21 +379,16 @@ function ReminderCard({
           </div>
           <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
             <div className="min-w-0 truncate">
-              <a
-                href={`/invoices/${reminder.invoice?._id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-gray-900 hover:text-primary hover:underline"
-              >
+              <span className="font-semibold text-gray-900">
                 {reminder.invoice?.invoiceNumber || "N/A"}
-              </a>
+              </span>
               <span className="text-gray-500 ml-1.5">
                 {reminder.invoice?.clientName || "Client inconnu"}
               </span>
             </div>
             <div className="flex-shrink-0 text-right">
               <span className="font-semibold text-gray-900">
-                {reminder.invoice?.amountTTC.toFixed(2)} €
+                {reminder.invoice ? `${reminder.invoice.amountTTC.toFixed(2)} €` : "—"}
               </span>
               {reminder.daysOverdue !== undefined && reminder.daysOverdue > 0 && (
                 <span className="text-red-600 font-medium ml-1.5">+{reminder.daysOverdue}j</span>
@@ -381,7 +411,7 @@ function ReminderCard({
         </div>
 
         {/* Ligne 3: checkbox (si email) à gauche + action à droite */}
-        <div className="pl-12 flex items-center justify-between">
+        <div className="pl-12 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
           {isEmail ? (
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -418,6 +448,7 @@ function ReminderCard({
               type="checkbox"
               checked={isSelected}
               onChange={onToggleSelect}
+              onClick={(e) => e.stopPropagation()}
               className="h-5 w-5 flex-shrink-0 rounded border-gray-300 accent-primary focus:ring-primary cursor-pointer"
             />
           ) : (
@@ -430,14 +461,9 @@ function ReminderCard({
           </div>
           <div className="min-w-0 flex-1">
             <p className="font-semibold text-gray-900 truncate">
-              <a
-                href={`/invoices/${reminder.invoice?._id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-900 hover:text-primary hover:underline"
-              >
+              <span className="text-gray-900">
                 {reminder.invoice?.invoiceNumber || "N/A"}
-              </a>
+              </span>
               <span className="text-gray-500 font-normal ml-2">
                 {reminder.invoice?.clientName || "Client inconnu"}
               </span>
@@ -454,12 +480,12 @@ function ReminderCard({
         </div>
         <div className="flex-shrink-0 text-right ml-4">
           <p className="text-base font-semibold text-gray-900">
-            {reminder.invoice?.amountTTC.toFixed(2)} €
+            {reminder.invoice ? `${reminder.invoice.amountTTC.toFixed(2)} €` : "—"}
           </p>
           {reminder.daysOverdue !== undefined && reminder.daysOverdue > 0 && (
             <p className="text-sm text-red-600 font-medium">+{reminder.daysOverdue} j</p>
           )}
-          <div className="mt-2 flex gap-2 justify-end">
+          <div className="mt-2 flex gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
             {isEmail && (
               <Button variant="outline" size="sm" onClick={onPreview}>
                 <Eye className="h-4 w-4 mr-1" />
@@ -480,7 +506,7 @@ function ReminderCard({
 }
 
 // Component for event timeline
-function EventTimeline({ events }: { events: any[] }) {
+function EventTimeline({ events, onInvoiceClick }: { events: any[]; onInvoiceClick: (invoiceId: string) => void }) {
   // Group events by date
   const groupedEvents = groupEventsByDate(events);
 
@@ -500,7 +526,7 @@ function EventTimeline({ events }: { events: any[] }) {
           {/* Events column */}
           <div className="flex-1 space-y-3">
             {dateEvents.map((event: any) => (
-              <EventCard key={event._id} event={event} />
+              <EventCard key={event._id} event={event} onInvoiceClick={onInvoiceClick} />
             ))}
           </div>
         </div>
@@ -539,7 +565,7 @@ function formatEventDateMonth(dateString: string) {
 }
 
 // Component for a single event card
-function EventCard({ event }: { event: any }) {
+function EventCard({ event, onInvoiceClick }: { event: any; onInvoiceClick: (invoiceId: string) => void }) {
   const getEventIcon = () => {
     switch (event.eventType) {
       case "invoice_imported":
@@ -621,23 +647,27 @@ function EventCard({ event }: { event: any }) {
     }
   };
 
+  const handleCardClick = () => {
+    if (event.invoice?._id) {
+      onInvoiceClick(event.invoice._id);
+    }
+  };
+
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-4 hover:border-gray-300 transition-colors">
+    <div
+      onClick={handleCardClick}
+      className="flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-4 hover:border-gray-300 transition-colors cursor-pointer active:bg-gray-50"
+    >
       <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${iconClasses}`}>
         {getEventIcon()}
       </div>
       <div className="min-w-0 flex-1">
-        {/* Ligne 1: Facture cliquable + client */}
+        {/* Ligne 1: Facture + client */}
         {event.invoice && (
           <div className="flex items-center gap-2 mb-1">
-            <a
-              href={`/invoices/${event.invoice._id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-gray-900 hover:text-primary hover:underline"
-            >
+            <span className="font-semibold text-gray-900">
               {event.invoice.invoiceNumber}
-            </a>
+            </span>
             <span className="text-gray-500 text-sm">
               {event.invoice.clientName}
             </span>
@@ -656,30 +686,3 @@ function EventCard({ event }: { event: any }) {
   );
 }
 
-// Get default description for event
-function getDefaultEventDescription(event: any) {
-  const invoiceInfo = event.invoice
-    ? `${event.invoice.clientName} (${event.invoice.invoiceNumber})`
-    : "";
-  const amount = event.metadata?.amount ? ` pour ${event.metadata.amount.toFixed(2)} €` : "";
-
-  switch (event.eventType) {
-    case "invoice_imported":
-      return `Facture ${invoiceInfo} importée${amount}`;
-    case "invoice_sent":
-      return `Facture ${invoiceInfo} envoyée${amount}`;
-    case "invoice_marked_sent":
-      return `Facture ${invoiceInfo} marquée comme envoyée${amount}`;
-    case "reminder_sent":
-      if (event.metadata?.reminderType === "phone") {
-        return `Appel téléphonique effectué pour ${invoiceInfo}${amount}`;
-      }
-      return `Relance email envoyée à ${invoiceInfo}${amount}`;
-    case "payment_registered":
-      return `Paiement enregistré pour ${invoiceInfo}${amount}`;
-    case "invoice_marked_paid":
-      return `Facture ${invoiceInfo} marquée comme payée${amount}`;
-    default:
-      return event.eventType;
-  }
-}

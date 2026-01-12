@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 interface InvoiceTableRowProps {
   invoice: any; // Enriched with nextReminderDate
   onAction: (action: string, invoiceId: string) => void;
+  onInvoiceClick?: (invoiceId: string) => void;
 }
 
 /**
@@ -34,7 +35,7 @@ function getReminderName(reminderStatus: string | undefined): string {
   return names[reminderStatus || ""] || "Relance prévue";
 }
 
-export default function InvoiceTableRow({ invoice, onAction }: InvoiceTableRowProps) {
+export default function InvoiceTableRow({ invoice, onAction, onInvoiceClick }: InvoiceTableRowProps) {
   const status = getInvoiceSimplifiedStatus(invoice);
 
   const formatDate = (dateString: string) => {
@@ -49,16 +50,26 @@ export default function InvoiceTableRow({ invoice, onAction }: InvoiceTableRowPr
     });
   };
 
+  const handleRowClick = () => {
+    onInvoiceClick?.(invoice._id);
+  };
+
+  // Stop propagation pour les actions qui ne doivent pas ouvrir le drawer
+  const handleActionClick = (e: React.MouseEvent, action: string) => {
+    e.stopPropagation();
+    onAction(action, invoice._id);
+  };
+
   return (
-    <div className="grid grid-cols-[2fr_1fr_1fr_1.5fr_1.2fr_1.5fr] gap-4 px-6 py-4 border-b border-slate-100 hover:bg-slate-50 transition-colors items-center">
+    <div
+      onClick={handleRowClick}
+      className="grid grid-cols-[2fr_1fr_1fr_1.5fr_1.2fr_1.5fr] gap-4 px-6 py-4 border-b border-slate-100 hover:bg-slate-50 transition-colors items-center cursor-pointer"
+    >
       {/* Col 1: Facture / Client */}
       <div>
-        <NavLink
-          to={`/invoices/${invoice._id}`}
-          className="font-bold text-gray-900 hover:text-primary hover:underline"
-        >
+        <span className="font-bold text-gray-900">
           {invoice.invoiceNumber}
-        </NavLink>
+        </span>
         <div className="text-sm text-gray-500">{invoice.clientName}</div>
       </div>
 
@@ -116,13 +127,13 @@ export default function InvoiceTableRow({ invoice, onAction }: InvoiceTableRowPr
       </div>
 
       {/* Col 6: Actions */}
-      <div className="flex items-center gap-2 justify-end">
+      <div className="flex items-center gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
         {/* Bouton "Envoyer" pour brouillons */}
         {status === "a-envoyer" && (
           <Button
             variant="default"
             size="sm"
-            onClick={() => onAction("markAsSent", invoice._id)}
+            onClick={(e) => handleActionClick(e, "markAsSent")}
             className="whitespace-nowrap"
           >
             <Send className="w-4 h-4 mr-1" />
@@ -135,7 +146,7 @@ export default function InvoiceTableRow({ invoice, onAction }: InvoiceTableRowPr
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onAction("recordPayment", invoice._id)}
+            onClick={(e) => handleActionClick(e, "recordPayment")}
             className="whitespace-nowrap"
           >
             Paiement

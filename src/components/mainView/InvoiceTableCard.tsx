@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 interface InvoiceTableCardProps {
   invoice: any; // Enriched with nextReminderDate
   onAction: (action: string, invoiceId: string) => void;
+  onInvoiceClick?: (invoiceId: string) => void;
 }
 
 /**
@@ -34,7 +35,7 @@ function getReminderName(reminderStatus: string | undefined): string {
   return names[reminderStatus || ""] || "Relance prévue";
 }
 
-export default function InvoiceTableCard({ invoice, onAction }: InvoiceTableCardProps) {
+export default function InvoiceTableCard({ invoice, onAction, onInvoiceClick }: InvoiceTableCardProps) {
   const status = getInvoiceSimplifiedStatus(invoice);
 
   const formatDate = (dateString: string) => {
@@ -49,17 +50,27 @@ export default function InvoiceTableCard({ invoice, onAction }: InvoiceTableCard
     });
   };
 
+  const handleCardClick = () => {
+    onInvoiceClick?.(invoice._id);
+  };
+
+  // Stop propagation pour les actions qui ne doivent pas ouvrir le drawer
+  const handleActionClick = (e: React.MouseEvent, action: string) => {
+    e.stopPropagation();
+    onAction(action, invoice._id);
+  };
+
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-card hover:border-brand-200 transition-colors">
+    <div
+      onClick={handleCardClick}
+      className="bg-white border border-slate-200 rounded-xl p-4 shadow-card hover:border-brand-200 transition-colors cursor-pointer active:bg-slate-50"
+    >
       {/* Header: Facture + Status */}
       <div className="flex items-start justify-between mb-3">
         <div>
-          <NavLink
-            to={`/invoices/${invoice._id}`}
-            className="font-bold text-slate-900 hover:text-brand-600 hover:underline"
-          >
+          <span className="font-bold text-slate-900">
             {invoice.invoiceNumber}
-          </NavLink>
+          </span>
           <p className="text-sm text-slate-500 mt-1">{invoice.clientName}</p>
         </div>
         <span
@@ -103,13 +114,13 @@ export default function InvoiceTableCard({ invoice, onAction }: InvoiceTableCard
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
         {/* Bouton "Envoyer" pour brouillons */}
         {status === "a-envoyer" && (
           <Button
             variant="default"
             size="sm"
-            onClick={() => onAction("markAsSent", invoice._id)}
+            onClick={(e) => handleActionClick(e, "markAsSent")}
             className="flex-1"
           >
             <Send className="w-4 h-4 mr-1" />
@@ -122,7 +133,7 @@ export default function InvoiceTableCard({ invoice, onAction }: InvoiceTableCard
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onAction("recordPayment", invoice._id)}
+            onClick={(e) => handleActionClick(e, "recordPayment")}
             className="flex-1"
           >
             Paiement

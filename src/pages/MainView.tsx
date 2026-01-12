@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
+import { Id } from "@convex/_generated/dataModel";
+import { FunctionReturnType } from "convex/server";
+
+// Types inférés depuis les queries Convex
+type Invoice = NonNullable<FunctionReturnType<typeof api.invoices.listInvoicesWithFilters>>[number];
 import StatsCards from "@/components/mainView/StatsCards";
 import TabFilterBar from "@/components/mainView/TabFilterBar";
 import InvoiceTableRow from "@/components/mainView/InvoiceTableRow";
@@ -9,6 +14,7 @@ import InvoiceTableCard from "@/components/mainView/InvoiceTableCard";
 import EmailPreviewModal from "@/components/modals/EmailPreviewModal";
 import MarkAsPaidModal from "@/components/modals/MarkAsPaidModal";
 import RecordPaymentModal from "@/components/modals/RecordPaymentModal";
+import { InvoiceDetailDrawer } from "@/components/InvoiceDetailDrawer";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -34,8 +40,11 @@ export default function MainView() {
   const [emailPreviewOpen, setEmailPreviewOpen] = useState(false);
   const [markAsPaidOpen, setMarkAsPaidOpen] = useState(false);
   const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
-  const [selectedReminder, setSelectedReminder] = useState<any>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [selectedReminder, setSelectedReminder] = useState<{ emailSubject?: string; emailContent?: string } | null>(null);
+
+  // État pour le drawer de détail facture
+  const [selectedInvoiceForDrawer, setSelectedInvoiceForDrawer] = useState<Id<"invoices"> | null>(null);
 
   // Mutations
   const markAsPaid = useMutation(api.invoices.markAsPaid);
@@ -70,6 +79,10 @@ export default function MainView() {
     } else if (action === "recordPayment") {
       setRecordPaymentOpen(true);
     }
+  };
+
+  const handleInvoiceClick = (invoiceId: string) => {
+    setSelectedInvoiceForDrawer(invoiceId as Id<"invoices">);
   };
 
   // Handlers pour les confirmations des modals
@@ -185,6 +198,7 @@ export default function MainView() {
                     key={invoice._id}
                     invoice={invoice}
                     onAction={handleAction}
+                    onInvoiceClick={handleInvoiceClick}
                   />
                 ))}
               </div>
@@ -236,6 +250,7 @@ export default function MainView() {
                   key={invoice._id}
                   invoice={invoice}
                   onAction={handleAction}
+                  onInvoiceClick={handleInvoiceClick}
                 />
               ))}
             </div>
@@ -280,6 +295,13 @@ export default function MainView() {
         }}
         reminder={selectedReminder}
         onConfirm={handleConfirmEmailSend}
+      />
+
+      {/* Invoice Detail Drawer */}
+      <InvoiceDetailDrawer
+        invoiceId={selectedInvoiceForDrawer}
+        open={selectedInvoiceForDrawer !== null}
+        onOpenChange={(open) => !open && setSelectedInvoiceForDrawer(null)}
       />
     </div>
   );

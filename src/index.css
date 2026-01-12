@@ -1,4 +1,9 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+/* Exclure les dossiers qui ne contiennent pas de classes Tailwind */
+@source not "../_bmad";
+@source not "../_bmad-output";
 
 @custom-variant dark (&:is(.dark *));
 
