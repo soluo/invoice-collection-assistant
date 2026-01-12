@@ -75,5 +75,5 @@ development_status:
   epic-5: in-progress
   5-1-send-test-email-to-custom-address: done
   5-2-admin-date-simulation-on-follow-up: done
-  5-3-test-send-and-cleanup-simulated-reminders: ready-for-dev
+  5-3-test-send-and-cleanup-simulated-reminders: review
   epic-5-retrospective: optional
