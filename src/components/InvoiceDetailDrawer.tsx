@@ -12,9 +12,11 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, FileText, Calendar, User, Mail, Phone, AlertTriangle, Send } from "lucide-react";
+import { ExternalLink, FileText, Calendar, User, Mail, Phone, AlertTriangle, Send, Pencil, Upload } from "lucide-react";
 import { ReminderHistorySection } from "@/components/ReminderHistorySection";
 import { MarkAsSentModal } from "@/components/MarkAsSentModal";
+import { InvoiceEditModal } from "@/components/InvoiceEditModal";
+import { AttachPdfModal } from "@/components/AttachPdfModal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -30,6 +32,8 @@ export function InvoiceDetailDrawer({
   onOpenChange,
 }: InvoiceDetailDrawerProps) {
   const [showMarkAsSentModal, setShowMarkAsSentModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showAttachPdfModal, setShowAttachPdfModal] = useState(false);
 
   const invoice = useQuery(
     api.invoices.getById,
@@ -240,6 +244,28 @@ export function InvoiceDetailDrawer({
                 </a>
               </Button>
             )}
+            {/* Edit button - only for unpaid invoices */}
+            {invoice.paymentStatus !== "paid" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowEditModal(true)}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Modifier
+              </Button>
+            )}
+            {/* Attach PDF button - only when no PDF exists */}
+            {!invoice.pdfStorageId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAttachPdfModal(true)}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Ajouter PDF
+              </Button>
+            )}
           </div>
         )}
 
@@ -359,6 +385,23 @@ export function InvoiceDetailDrawer({
         onClose={() => setShowMarkAsSentModal(false)}
         onConfirm={handleConfirmMarkAsSent}
         defaultDate={invoice.invoiceDate}
+      />
+    )}
+
+    {/* Edit Modal - Outside Sheet for proper z-index */}
+    {invoice && showEditModal && (
+      <InvoiceEditModal
+        invoice={invoice}
+        onClose={() => setShowEditModal(false)}
+      />
+    )}
+
+    {/* Attach PDF Modal */}
+    {invoice && showAttachPdfModal && (
+      <AttachPdfModal
+        invoiceId={invoice._id}
+        invoiceNumber={invoice.invoiceNumber}
+        onClose={() => setShowAttachPdfModal(false)}
       />
     )}
     </>

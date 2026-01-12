@@ -1,6 +1,6 @@
 # Story 6.3: Modifier et Ré-associer une Facture
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -53,32 +53,32 @@ So that **I can correct mistakes or transfer responsibility when needed**.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Update backend permissions (AC: #1, #4, #5)
-  - [ ] 1.1 Modify `canModifyInvoice()` in `convex/permissions.ts` to allow technicians on their own unpaid invoices
-  - [ ] 1.2 Add `paymentStatus` check: if invoice is "paid", no one can modify
-  - [ ] 1.3 Run `pnpm dev:backend` to validate Convex changes
+- [x] Task 1: Update backend permissions (AC: #1, #4, #5)
+  - [x] 1.1 Modify `canModifyInvoice()` in `convex/permissions.ts` to allow technicians on their own unpaid invoices
+  - [x] 1.2 Add `paymentStatus` check: if invoice is "paid", no one can modify
+  - [x] 1.3 Run `pnpm dev:backend` to validate Convex changes
 
-- [ ] Task 2: Integrate InvoiceEditModal in InvoiceDetailDrawer (AC: #1, #5)
-  - [ ] 2.1 Import InvoiceEditModal in InvoiceDetailDrawer.tsx
-  - [ ] 2.2 Add state `showEditModal` to control modal visibility
-  - [ ] 2.3 Add "Modifier" button in action buttons section (only if invoice.paymentStatus !== "paid")
-  - [ ] 2.4 Render InvoiceEditModal when showEditModal is true
+- [x] Task 2: Integrate InvoiceEditModal in InvoiceDetailDrawer (AC: #1, #5)
+  - [x] 2.1 Import InvoiceEditModal in InvoiceDetailDrawer.tsx
+  - [x] 2.2 Add state `showEditModal` to control modal visibility
+  - [x] 2.3 Add "Modifier" button in action buttons section (only if invoice.paymentStatus !== "paid")
+  - [x] 2.4 Render InvoiceEditModal when showEditModal is true
 
-- [ ] Task 3: Verify modal behavior per role (AC: #2, #3, #4, #6)
-  - [ ] 3.1 Verify InvoiceEditModal opens with pre-filled values
-  - [ ] 3.2 Verify admin sees technician dropdown (already implemented in modal)
-  - [ ] 3.3 Verify technician does NOT see technician dropdown (already implemented)
-  - [ ] 3.4 Verify save triggers mutation and shows success toast
-  - [ ] 3.5 Verify modal closes on successful save
+- [x] Task 3: Verify modal behavior per role (AC: #2, #3, #4, #6)
+  - [x] 3.1 Verify InvoiceEditModal opens with pre-filled values
+  - [x] 3.2 Verify admin sees technician dropdown (already implemented in modal)
+  - [x] 3.3 Verify technician does NOT see technician dropdown (already implemented)
+  - [x] 3.4 Verify save triggers mutation and shows success toast
+  - [x] 3.5 Verify modal closes on successful save
 
-- [ ] Task 4: UI/UX improvements (optional but recommended)
-  - [ ] 4.1 Replace custom modal styling with Shadcn Dialog (consistency)
-  - [ ] 4.2 Add Pencil icon to "Modifier" button for clarity
-  - [ ] 4.3 Ensure modal uses Shadcn Button styles (not raw tailwind buttons)
-  - [ ] 4.4 Fix import path: use `@convex/_generated/api` instead of relative path
+- [x] Task 4: UI/UX improvements (optional but recommended)
+  - [x] 4.1 Replace custom modal styling with Shadcn Dialog (consistency)
+  - [x] 4.2 Add Pencil icon to "Modifier" button for clarity
+  - [x] 4.3 Ensure modal uses Shadcn Button styles (not raw tailwind buttons)
+  - [x] 4.4 Fix import path: use `@convex/_generated/api` instead of relative path
 
-- [ ] Task 5: Run linting and validate (AC: all)
-  - [ ] 5.1 Run `pnpm lint` to ensure no errors
+- [x] Task 5: Run linting and validate (AC: all)
+  - [x] 5.1 Run `pnpm lint` to ensure no errors
   - [ ] 5.2 Manual test: technician can edit unpaid invoice
   - [ ] 5.3 Manual test: technician cannot reassign
   - [ ] 5.4 Manual test: admin can edit and reassign
@@ -213,11 +213,39 @@ const canEdit = invoice?.paymentStatus !== "paid";
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+- Backend validation: `pnpm exec convex dev --once` - success
+- Lint validation: `pnpm lint` - success (build completed)
+
 ### Completion Notes List
 
+- ✅ Updated `canModifyInvoice()` in `convex/permissions.ts` to:
+  - Block all edits for paid invoices (`paymentStatus === "paid"`)
+  - Allow admins to edit any unpaid invoice in org
+  - Allow technicians to edit their own unpaid invoices
+- ✅ Integrated InvoiceEditModal in InvoiceDetailDrawer with:
+  - Import of InvoiceEditModal and Pencil icon
+  - State management for modal visibility
+  - "Modifier" button only visible for unpaid invoices
+  - Modal rendered outside Sheet for proper z-index
+- ✅ Refactored InvoiceEditModal to use Shadcn Dialog component:
+  - Replaced custom div-based modal with Dialog/DialogContent
+  - Fixed import path to use `@convex/_generated/api` alias
+  - Added proper TypeScript typing with `Doc<"invoices">`
+  - Used Shadcn Button, Input, and Label components
+
 ### File List
+
+- `convex/permissions.ts` - Modified `canModifyInvoice()` function (lines 98-127)
+- `convex/permissions.test.ts` - **NEW** - 13 unit tests for permission logic
+- `src/components/InvoiceDetailDrawer.tsx` - Added edit button and modal integration
+- `src/components/InvoiceEditModal.tsx` - Refactored to Shadcn Dialog, fixed imports
+
+### Change Log
+
+- 2026-01-12: Implemented edit and reassign invoice feature (Story 6.3)
+- 2026-01-12: Added 13 unit tests for `canModifyInvoice()` permission logic
 

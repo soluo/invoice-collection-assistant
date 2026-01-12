@@ -99,8 +99,9 @@ export function canAccessInvoice(
  * Vérifie si l'utilisateur peut modifier une facture
  *
  * Règles :
- * - Admin : peut modifier toutes les factures de son organisation
- * - Technicien : AUCUNE modification (factures immutables après import)
+ * - Personne ne peut modifier une facture payée (paymentStatus === "paid")
+ * - Admin : peut modifier toutes les factures non payées de son organisation
+ * - Technicien : peut modifier uniquement ses propres factures non payées
  */
 export function canModifyInvoice(
   user: UserWithOrg,
@@ -111,8 +112,18 @@ export function canModifyInvoice(
     return false;
   }
 
-  // Seuls les admins peuvent modifier les factures
-  return isAdmin(user);
+  // Personne ne peut modifier une facture payée
+  if (invoice.paymentStatus === "paid") {
+    return false;
+  }
+
+  // Admin peut modifier toutes les factures non payées de l'org
+  if (isAdmin(user)) {
+    return true;
+  }
+
+  // Technicien peut modifier uniquement ses propres factures non payées
+  return invoice.userId === user.userId || invoice.createdBy === user.userId;
 }
 
 /**

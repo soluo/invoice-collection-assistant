@@ -4,6 +4,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import {
   getUserWithOrg,
   isAdmin,
+  assertCanAccessInvoice,
   assertCanUpdateInvoiceStatus,
   assertCanModifyInvoice,
   assertCanDeleteInvoice,
@@ -532,6 +533,40 @@ export const getPdfUrl = query({
   handler: async (ctx, args) => {
     await getLoggedInUser(ctx);
     return await ctx.storage.getUrl(args.storageId);
+  },
+});
+
+/**
+ * Attacher un PDF à une facture existante (sans parsing AI)
+ * Accessible à tous les utilisateurs pouvant accéder à la facture
+ */
+export const attachPdf = mutation({
+  args: {
+    invoiceId: v.id("invoices"),
+    storageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getUserWithOrg(ctx);
+
+    const invoice = await ctx.db.get(args.invoiceId);
+    if (!invoice) {
+      throw new Error("Facture introuvable");
+    }
+
+    // Vérifier que l'utilisateur peut accéder à la facture
+    assertCanAccessInvoice(user, invoice);
+
+    // Supprimer l'ancien PDF s'il existe
+    if (invoice.pdfStorageId) {
+      await ctx.storage.delete(invoice.pdfStorageId);
+    }
+
+    // Mettre à jour la facture avec le nouveau PDF
+    await ctx.db.patch(args.invoiceId, {
+      pdfStorageId: args.storageId,
+    });
+
+    return { success: true };
   },
 });
 

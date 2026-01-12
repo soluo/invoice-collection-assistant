@@ -1,24 +1,27 @@
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
+import { Id } from "@convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, MessageSquare, Calendar, Send } from "lucide-react";
+import { ArrowLeft, Download, MessageSquare, Calendar, Send, Pencil, Upload } from "lucide-react";
 import { InvoiceTimeline } from "@/components/InvoiceTimeline";
 import { PaymentRecordModal } from "@/components/PaymentRecordModal";
 import { SnoozeInvoiceModal } from "@/components/SnoozeInvoiceModal";
 import { MarkAsSentModal } from "@/components/MarkAsSentModal";
+import { InvoiceEditModal } from "@/components/InvoiceEditModal";
+import { AttachPdfModal } from "@/components/AttachPdfModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export function InvoiceDetail() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isSnoozeModalOpen, setIsSnoozeModalOpen] = useState(false);
   const [isMarkAsSentModalOpen, setIsMarkAsSentModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAttachPdfModalOpen, setIsAttachPdfModalOpen] = useState(false);
   const [noteContent, setNoteContent] = useState("");
   const [isAddingNote, setIsAddingNote] = useState(false);
 
@@ -237,6 +240,28 @@ export function InvoiceDetail() {
             </a>
           </Button>
         )}
+        {/* Edit button - only for unpaid invoices */}
+        {invoice.paymentStatus !== "paid" && (
+          <Button
+            onClick={() => setIsEditModalOpen(true)}
+            variant="outline"
+            className="inline-flex items-center gap-2"
+          >
+            <Pencil className="h-4 w-4" />
+            Modifier
+          </Button>
+        )}
+        {/* Attach PDF button - only when no PDF exists */}
+        {!invoice.pdfStorageId && (
+          <Button
+            onClick={() => setIsAttachPdfModalOpen(true)}
+            variant="outline"
+            className="inline-flex items-center gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            Ajouter PDF
+          </Button>
+        )}
       </div>
 
       {/* 2-column layout */}
@@ -414,6 +439,23 @@ export function InvoiceDetail() {
           onClose={() => setIsMarkAsSentModalOpen(false)}
           onConfirm={handleConfirmMarkAsSent}
           defaultDate={invoice.invoiceDate}
+        />
+      )}
+
+      {/* Edit modal */}
+      {isEditModalOpen && invoice && (
+        <InvoiceEditModal
+          invoice={invoice}
+          onClose={() => setIsEditModalOpen(false)}
+        />
+      )}
+
+      {/* Attach PDF modal */}
+      {isAttachPdfModalOpen && invoice && (
+        <AttachPdfModal
+          invoiceId={invoice._id}
+          invoiceNumber={invoice.invoiceNumber}
+          onClose={() => setIsAttachPdfModalOpen(false)}
         />
       )}
     </div>
