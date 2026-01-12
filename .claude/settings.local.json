@@ -22,7 +22,8 @@
       "Bash(grep:*)",
       "mcp__convex__status",
       "Bash(npx shadcn@latest add:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(mgrep:*)"
     ],
     "deny": [],
     "ask": []

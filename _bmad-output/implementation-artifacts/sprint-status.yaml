@@ -74,6 +74,6 @@ development_status:
   # Epic 5: Email Test & Admin Simulation (Priority 3)
   epic-5: in-progress
   5-1-send-test-email-to-custom-address: done
-  5-2-admin-date-simulation-on-follow-up: backlog
+  5-2-admin-date-simulation-on-follow-up: ready-for-dev
   5-3-test-send-and-cleanup-simulated-reminders: backlog
   epic-5-retrospective: optional
