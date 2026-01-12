@@ -23,7 +23,8 @@
       "mcp__convex__status",
       "Bash(npx shadcn@latest add:*)",
       "Bash(npx tsc:*)",
-      "Bash(mgrep:*)"
+      "Bash(mgrep:*)",
+      "mcp__context7__query-docs"
     ],
     "deny": [],
     "ask": []
