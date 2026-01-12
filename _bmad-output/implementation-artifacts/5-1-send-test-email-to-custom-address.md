@@ -1,6 +1,6 @@
 # Story 5.1: Send Test Email to Custom Address
 
-Status: ready
+Status: done
 
 ## Story
 
@@ -36,43 +36,92 @@ So that **I can verify email delivery works correctly before enabling automatic 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create sendTestEmail action in Convex (AC: #2, #3, #4)
-  - [ ] Create new action `sendTestEmail` in `convex/emails.ts` (new file)
-  - [ ] Accept parameters: `{ recipientEmail: string }`
-  - [ ] Verify user is admin (reuse pattern from other admin-only actions)
-  - [ ] Check OAuth tokens exist and are valid
-  - [ ] Refresh token if needed (reuse `refreshTokenIfNeeded` pattern)
-  - [ ] Send email via Microsoft Graph API with test content
-  - [ ] Return `{ success: true }` or throw error with details
-  - [ ] Run `pnpm dev:backend` to validate
+- [x] Task 1: Create sendTestEmail action in Convex (AC: #2, #3, #4)
+  - [x] Create new action `sendTestEmail` in `convex/emails.ts` (new file)
+  - [x] Accept parameters: `{ recipientEmail: string }`
+  - [x] Verify user is admin (reuse pattern from other admin-only actions)
+  - [x] Check OAuth tokens exist and are valid
+  - [x] Refresh token if needed (reuse `refreshTokenIfNeeded` pattern)
+  - [x] Send email via Microsoft Graph API with test content
+  - [x] Return `{ success: true }` or throw error with details
+  - [x] Run `pnpm dev:backend` to validate
 
-- [ ] Task 2: Create TestEmailSection component (AC: #1, #5)
-  - [ ] Create `/src/components/TestEmailSection.tsx`
-  - [ ] Accept `organization` and `user` props
-  - [ ] Only render if `user.role === "admin"`
-  - [ ] Input field for recipient email address
-  - [ ] "Send test email" button
-  - [ ] Loading state while sending
+- [x] Task 2: Create TestEmailSection component (AC: #1, #5)
+  - [x] Create `/src/components/TestEmailSection.tsx`
+  - [x] Accept `organization` and `user` props
+  - [x] Only render if `user.role === "admin"`
+  - [x] Input field for recipient email address
+  - [x] "Send test email" button
+  - [x] Loading state while sending
 
-- [ ] Task 3: Implement email sending logic (AC: #2, #3, #4)
-  - [ ] Call `api.emails.sendTestEmail` on button click
-  - [ ] Show success toast on completion ("Email de test envoyé!")
-  - [ ] Handle errors: show toast with error message
-  - [ ] Handle missing OAuth: show specific message + link to connect
-  - [ ] Disable button while sending (loading state)
+- [x] Task 3: Implement email sending logic (AC: #2, #3, #4)
+  - [x] Call `api.emails.sendTestEmail` on button click
+  - [x] Show success toast on completion ("Email de test envoyé!")
+  - [x] Handle errors: show toast with error message
+  - [x] Handle missing OAuth: show specific message + link to connect
+  - [x] Disable button while sending (loading state)
 
-- [ ] Task 4: Integrate into OrganizationSettings (AC: #1, #5)
-  - [ ] Import TestEmailSection into OrganizationSettings
-  - [ ] Add section after "Connexion email" block
-  - [ ] Only show if email provider is connected
-  - [ ] Use consistent card styling with other sections
+- [x] Task 4: Integrate into OrganizationSettings (AC: #1, #5)
+  - [x] Import TestEmailSection into OrganizationSettings
+  - [x] Add section after "Connexion email" block
+  - [x] Only show if email provider is connected
+  - [x] Use consistent card styling with other sections
 
-- [ ] Task 5: Test and validate (AC: #1-5)
-  - [ ] Test as admin with connected OAuth: verify email sends
-  - [ ] Test as admin without OAuth: verify error message
-  - [ ] Test as technician: verify section is not visible
-  - [ ] Test with invalid email: verify validation
-  - [ ] Run `pnpm lint` to verify no errors
+- [x] Task 5: Test and validate (AC: #1-5)
+  - [x] Test as admin with connected OAuth: verify email sends
+  - [x] Test as admin without OAuth: verify error message
+  - [x] Test as technician: verify section is not visible
+  - [x] Test with invalid email: verify validation
+  - [x] Run `pnpm lint` to verify no errors
+
+## Dev Agent Record
+
+### Implementation Plan
+- Created new `convex/emails.ts` with `sendTestEmail` action
+- Created `src/components/TestEmailSection.tsx` component
+- Integrated TestEmailSection into OrganizationSettings page
+
+### Completion Notes
+- ✅ All acceptance criteria satisfied
+- ✅ Admin-only access enforced in both backend and frontend
+- ✅ OAuth token refresh handled before sending
+- ✅ Error handling with specific messages for OAuth issues
+- ✅ Consistent UI styling with existing settings sections
+- ✅ pnpm lint passes without errors
+
+### File List
+- `convex/emails.ts` - NEW: sendTestEmail action
+- `convex/oauth.ts` - MODIFIED: Added performTokenRefresh internalAction (DRY refactor)
+- `src/components/TestEmailSection.tsx` - NEW: Test email UI component
+- `src/pages/OrganizationSettings.tsx` - MODIFIED: Added TestEmailSection import and integration + email-connection-section id
+
+### Change Log
+- 2026-01-12: Implemented Story 5.1 - Send Test Email to Custom Address
+- 2026-01-12: Code review fixes applied (see Senior Developer Review below)
+
+## Senior Developer Review (AI)
+
+**Review Date:** 2026-01-12
+**Reviewer:** Code Review Workflow (Adversarial)
+
+### Issues Found & Fixed
+
+| # | Severity | Issue | Resolution |
+|---|----------|-------|------------|
+| 1 | HIGH | Imports non-alias in TestEmailSection.tsx (lines 5, 9) | ✅ Fixed - Changed to `@convex/_generated/api` and `@convex/_generated/dataModel` |
+| 2 | HIGH | Missing server-side email validation in emails.ts | ✅ Fixed - Added regex validation before processing |
+| 3 | MEDIUM | AC#3 incomplete - No prompt to reconnect OAuth | ✅ Fixed - Added action button in toast to scroll to email connection section |
+| 4 | MEDIUM | Duplicate refresh token logic (DRY violation) | ✅ Fixed - Created shared `performTokenRefresh` internalAction in oauth.ts |
+| 5 | MEDIUM | Unvalidated Microsoft response type | ✅ Fixed - Added runtime type validation in performTokenRefresh |
+
+### Issues Not Fixed (LOW severity)
+- No rate limiting on sendTestEmail (acceptable for admin-only feature)
+- These are nice-to-have improvements for future iterations
+
+### Verification
+- ✅ `pnpm lint` passes
+- ✅ `pnpm dev:backend` compiles successfully
+- ✅ All HIGH and MEDIUM issues resolved
 
 ## Dev Notes
 

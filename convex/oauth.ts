@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { action, internalAction, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 
@@ -166,46 +166,15 @@ export const refreshTokenIfNeeded = action({
       };
     }
 
-    const clientId = process.env.MICROSOFT_CLIENT_ID;
-    const clientSecret = process.env.MICROSOFT_CLIENT_SECRET;
-    const tenantId = process.env.MICROSOFT_TENANT_ID || "common";
-
-    if (!clientId || !clientSecret) {
-      throw new Error("Configuration OAuth incomplète");
-    }
-
-    const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
-
-    const response: Response = await fetch(tokenUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: organization.emailRefreshToken,
-        grant_type: "refresh_token",
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Échec du refresh du token: ${error}`);
-    }
-
-    const data: any = await response.json();
-    const newExpiresAt = Date.now() + data.expires_in * 1000;
-
-    await ctx.runMutation(internal.oauth.updateAccessToken, {
+    // Use shared internal action for token refresh (DRY)
+    const result = await ctx.runAction(internal.oauth.performTokenRefresh, {
       organizationId: userInfo.organizationId,
-      accessToken: data.access_token,
-      expiresAt: newExpiresAt,
+      refreshToken: organization.emailRefreshToken,
     });
 
     return {
       refreshed: true,
-      expiresAt: newExpiresAt,
+      expiresAt: result.expiresAt,
     };
   },
 });
@@ -245,6 +214,73 @@ export const updateAccessToken = internalMutation({
       emailAccessToken: args.accessToken,
       emailTokenExpiresAt: args.expiresAt,
     });
+  },
+});
+
+/**
+ * Internal action to refresh OAuth token
+ * Shared by sendTestEmail and refreshTokenIfNeeded to avoid code duplication (DRY)
+ * Returns the new access token or throws an error
+ */
+export const performTokenRefresh = internalAction({
+  args: {
+    organizationId: v.id("organizations"),
+    refreshToken: v.string(),
+  },
+  returns: v.object({
+    accessToken: v.string(),
+    expiresAt: v.number(),
+  }),
+  handler: async (ctx, { organizationId, refreshToken }) => {
+    const clientId = process.env.MICROSOFT_CLIENT_ID;
+    const clientSecret = process.env.MICROSOFT_CLIENT_SECRET;
+    const tenantId = process.env.MICROSOFT_TENANT_ID || "common";
+
+    if (!clientId || !clientSecret) {
+      throw new Error("Configuration OAuth incomplète");
+    }
+
+    const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+
+    const response = await fetch(tokenUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Échec du renouvellement du token. Veuillez reconnecter votre compte email. (${errorText})`
+      );
+    }
+
+    // Validate response structure before using
+    const data = await response.json();
+    if (typeof data.access_token !== "string" || typeof data.expires_in !== "number") {
+      throw new Error("Réponse OAuth invalide de Microsoft");
+    }
+
+    const newExpiresAt = Date.now() + data.expires_in * 1000;
+
+    // Update token in database
+    await ctx.runMutation(internal.oauth.updateAccessToken, {
+      organizationId,
+      accessToken: data.access_token,
+      expiresAt: newExpiresAt,
+    });
+
+    return {
+      accessToken: data.access_token,
+      expiresAt: newExpiresAt,
+    };
   },
 });
 

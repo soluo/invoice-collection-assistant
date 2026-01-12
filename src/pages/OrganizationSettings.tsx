@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { ReminderStepModal, type ReminderStep } from "@/components/ReminderStepModal";
 import { ForbiddenPage } from "@/components/ForbiddenPage";
 import { Tooltip } from "@/components/ui/simple-tooltip";
+import { TestEmailSection } from "@/components/TestEmailSection";
 
 const TOKEN_REFRESH_THRESHOLD_MS = 10 * 60 * 1000;
 
@@ -338,7 +339,7 @@ export function OrganizationSettings() {
       </fieldset>
 
       {/* Block 2: Email Connection */}
-      <fieldset className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+      <fieldset id="email-connection-section" className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
         <legend className="text-lg font-semibold text-gray-900 px-2">
           Connexion du compte email
         </legend>
@@ -452,6 +453,9 @@ export function OrganizationSettings() {
           )}
         </div>
       </fieldset>
+
+      {/* Block: Test Email (admin only, shown only when email is connected) */}
+      <TestEmailSection organization={organization} user={loggedInUser} />
 
       {/* Block 3: Reminder Management */}
       <fieldset className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
