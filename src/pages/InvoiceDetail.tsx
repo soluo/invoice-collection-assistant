@@ -2,7 +2,6 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { getStatusDisplay } from "@/lib/invoiceStatus";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, MessageSquare, Calendar } from "lucide-react";
@@ -80,12 +79,77 @@ export function InvoiceDetail() {
     );
   }
 
-  const statusDisplay = getStatusDisplay(invoice);
+  // Badge statut envoi
+  const getSendStatusBadge = () => {
+    if (invoice.sendStatus === "pending") {
+      return (
+        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-sm px-3 py-1">
+          À envoyer
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="text-gray-600 border-gray-300 text-sm px-3 py-1">
+        Envoyée
+      </Badge>
+    );
+  };
 
-  // Get reminder badge if applicable
-  const reminderBadge = invoice.reminderStatus
-    ? invoice.reminderStatus.replace("reminder_", "Relance ")
-    : null;
+  // Badge statut paiement
+  const getPaymentStatusBadge = () => {
+    switch (invoice.paymentStatus) {
+      case "paid":
+        return (
+          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-sm px-3 py-1">
+            Payée
+          </Badge>
+        );
+      case "partial":
+        return (
+          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-sm px-3 py-1">
+            Partielle
+          </Badge>
+        );
+      case "pending_payment":
+        return (
+          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-sm px-3 py-1">
+            En attente
+          </Badge>
+        );
+      default:
+        // Inclure le nombre de jours de retard si applicable
+        const daysInfo = invoice.isOverdue && invoice.daysPastDue > 0
+          ? ` • ${invoice.daysPastDue}j`
+          : "";
+        return (
+          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-sm px-3 py-1">
+            Non payée{daysInfo}
+          </Badge>
+        );
+    }
+  };
+
+  // Badge statut relance (saturation croissante)
+  const getReminderStatusBadge = () => {
+    if (!invoice.reminderStatus) return null;
+
+    const reminderConfig: Record<string, { label: string; className: string }> = {
+      reminder_1: { label: "Relance 1", className: "bg-orange-50 text-orange-600 border-orange-200" },
+      reminder_2: { label: "Relance 2", className: "bg-orange-100 text-orange-700 border-orange-300" },
+      reminder_3: { label: "Relance 3", className: "bg-orange-200 text-orange-800 border-orange-400" },
+      reminder_4: { label: "Relance 4", className: "bg-orange-300 text-orange-900 border-orange-500" },
+      manual_followup: { label: "Suivi manuel", className: "bg-purple-100 text-purple-700 border-purple-300" },
+    };
+
+    const config = reminderConfig[invoice.reminderStatus];
+    if (!config) return null;
+
+    return (
+      <Badge variant="outline" className={`${config.className} text-sm px-3 py-1`}>
+        {config.label}
+      </Badge>
+    );
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
@@ -99,27 +163,21 @@ export function InvoiceDetail() {
       </Link>
 
       {/* Header */}
-      <div className="mb-6 flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-extrabold text-gray-900">
-            Facture #{invoice.invoiceNumber}
-          </h1>
-          <p className="mt-1 text-lg text-gray-600">{invoice.clientName}</p>
-        </div>
-        <div className="flex flex-col gap-2 items-end">
-          {/* Main status badge */}
-          <Badge variant="outline" className={`${statusDisplay.colorClass} text-base font-medium px-3 py-1.5`}>
-            {statusDisplay.badgeLabel}
-            {invoice.isOverdue && invoice.daysPastDue > 0 && (
-              <span className="ml-1">({invoice.daysPastDue} jours)</span>
-            )}
-          </Badge>
-          {/* Reminder badge if applicable */}
-          {reminderBadge && (
-            <Badge className="bg-yellow-100 text-yellow-800 text-sm px-3 py-1">
-              {reminderBadge}
-            </Badge>
-          )}
+      <div className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-extrabold text-gray-900 md:text-3xl">
+              Facture #{invoice.invoiceNumber}
+            </h1>
+            <p className="mt-1 text-base text-gray-600 md:text-lg">{invoice.clientName}</p>
+          </div>
+
+          {/* Badges : processus (envoi + relance) | résultat (paiement) */}
+          <div className="flex flex-wrap items-center gap-2">
+            {getSendStatusBadge()}
+            {getReminderStatusBadge()}
+            {getPaymentStatusBadge()}
+          </div>
         </div>
       </div>
 

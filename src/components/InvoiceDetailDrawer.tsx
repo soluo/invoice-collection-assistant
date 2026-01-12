@@ -68,14 +68,14 @@ export function InvoiceDetailDrawer({
 
     if (invoice.sendStatus === "pending") {
       return (
-        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-sm px-2.5 py-0.5">
           À envoyer
         </Badge>
       );
     }
     // "Envoyée" = état normal, discret
     return (
-      <Badge variant="outline" className="text-gray-600 border-gray-300">
+      <Badge variant="outline" className="text-gray-600 border-gray-300 text-sm px-2.5 py-0.5">
         Envoyée
       </Badge>
     );
@@ -89,26 +89,26 @@ export function InvoiceDetailDrawer({
       case "paid":
         // "Payée" = rassurance, vert
         return (
-          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-sm px-2.5 py-0.5">
             Payée
           </Badge>
         );
       case "partial":
         return (
-          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-sm px-2.5 py-0.5">
             Partielle
           </Badge>
         );
       case "pending_payment":
         return (
-          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-sm px-2.5 py-0.5">
             En attente
           </Badge>
         );
       default:
         // "Non payée" = nécessite attention
         return (
-          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-sm px-2.5 py-0.5">
             Non payée
           </Badge>
         );
@@ -132,7 +132,7 @@ export function InvoiceDetailDrawer({
     if (!config) return null;
 
     return (
-      <Badge variant="outline" className={config.className}>
+      <Badge variant="outline" className={`${config.className} text-sm px-2.5 py-0.5`}>
         {config.label}
       </Badge>
     );
@@ -157,7 +157,7 @@ export function InvoiceDetailDrawer({
               <SheetTitle className="text-2xl font-bold">
                 {title}
               </SheetTitle>
-              <SheetDescription className="text-base text-gray-600 mt-1">
+              <SheetDescription className="text-base text-gray-600 mt-1 text-left">
                 {description}
               </SheetDescription>
             </div>
@@ -166,13 +166,13 @@ export function InvoiceDetailDrawer({
           {/* Status Badges Row - only when loaded */}
           {invoice && (
             <div className="flex items-center justify-between gap-2">
-              {/* Statuts facture à gauche */}
+              {/* Processus : envoi + relance */}
               <div className="flex flex-wrap gap-2">
                 {getSendStatusBadge()}
-                {getPaymentStatusBadge()}
+                {getReminderStatusBadge()}
               </div>
-              {/* Statut relance à droite */}
-              {getReminderStatusBadge()}
+              {/* Résultat : paiement */}
+              {getPaymentStatusBadge()}
             </div>
           )}
 
