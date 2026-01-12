@@ -1,6 +1,6 @@
 import { convexAuth, getAuthUserId } from "@convex-dev/auth/server";
 import { Password } from "@convex-dev/auth/providers/Password";
-import { query } from "./_generated/server";
+import { query, MutationCtx } from "./_generated/server";
 import { normalizeEmail } from "./utils";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
@@ -18,6 +18,32 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       },
     }),
   ],
+  callbacks: {
+    async afterUserCreatedOrUpdated(ctx: MutationCtx, { userId }) {
+      const user = await ctx.db.get(userId);
+      if (!user) {
+        return;
+      }
+
+      // Si l'utilisateur a déjà une organisation, ne rien faire
+      if (user.organizationId) {
+        return;
+      }
+
+      // Créer une nouvelle organisation par défaut
+      const organizationId = await ctx.db.insert("organizations", {
+        name: "Ma société",
+        createdAt: Date.now(),
+        signature: "Cordialement,\nL'équipe de Ma société",
+      });
+
+      // Assigner l'utilisateur à cette organisation comme admin
+      await ctx.db.patch(userId, {
+        organizationId,
+        role: "admin",
+      });
+    },
+  },
 });
 
 export const loggedInUser = query({
