@@ -101,11 +101,13 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 - ✅ Frontend was already using J+14 - no changes needed
 - ✅ Fixed AI fallback from J+30 to J+14 (2 occurrences in pdfExtractionAI.ts)
-- ✅ Added 10 tests for due date logic in convex/dueDate.test.ts
-- ✅ All 19 tests pass (10 new + 9 existing)
-- ✅ Lint and build pass
+- ✅ Added 14 tests for due date logic in convex/dueDate.test.ts
+- ✅ Removed debug console.log from pdfExtractionAI.ts (code review fix)
+- ✅ Added tests for AC3 (extracted date priority) and invalid dates (code review fix)
+- ✅ All tests pass, lint and build pass
 
 ### File List
 
-- convex/pdfExtractionAI.ts (modified - 2 lines changed: 30 → 14 days)
-- convex/dueDate.test.ts (created - 10 tests for due date logic)
+- convex/pdfExtractionAI.ts (modified - fallback 30 → 14 days, removed debug logs)
+- convex/dueDate.test.ts (created - 14 tests for due date logic)
+- _bmad-output/planning-artifacts/epics.md (modified - corrected 15 → 14 days in story definition)

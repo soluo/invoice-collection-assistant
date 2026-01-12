@@ -155,10 +155,6 @@ Répondez UNIQUEMENT avec le JSON valide, sans markdown ni autre texte.`;
           extractedText: `Extraction IA Claude (${Math.min(confidence, 100)}% confiance)`
         };
 
-        console.log("=== RÉSULTAT FINAL ===");
-        console.log(JSON.stringify(result, null, 2));
-        console.log("=======================");
-
         return result;
 
       } catch (aiError) {

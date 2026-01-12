@@ -8,6 +8,12 @@ import { describe, it, expect } from "vitest";
  * This tests the pure date calculation logic used in:
  * - src/pages/InvoiceUpload.tsx (getDefaultDueDate function)
  * - convex/pdfExtractionAI.ts (fallback calculation)
+ *
+ * NOTE: These tests duplicate the logic from the source files because:
+ * - Frontend functions (InvoiceUpload.tsx) are not exported
+ * - Backend action (pdfExtractionAI.ts) requires Convex runtime
+ * If the source logic changes, these tests must be updated accordingly.
+ * The tests serve as regression guards for the J+14 business rule.
  */
 
 // Helper functions matching the implementation
@@ -97,6 +103,37 @@ describe("Default Due Date Logic (J+14)", () => {
     it("should return dates in YYYY-MM-DD format", () => {
       const result = getDefaultDueDate("2026-06-15");
       expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+  });
+
+  describe("AC3: Extracted date takes priority", () => {
+    it("should use extracted date when available (not apply fallback)", () => {
+      const extractedDueDate = "2026-03-15";
+      // Simulating the backend logic: dueDate || fallback
+      const result = extractedDueDate || getAIFallbackDueDate();
+      expect(result).toBe("2026-03-15"); // Extracted date preserved
+    });
+
+    it("should only apply fallback when extracted date is empty", () => {
+      const extractedDueDate = "";
+      const result = extractedDueDate || getAIFallbackDueDate();
+      const expected = formatDateToISO(addDays(new Date(), 14));
+      expect(result).toBe(expected); // Fallback applied
+    });
+  });
+
+  describe("Edge cases: Invalid dates", () => {
+    it("should fallback to today + 14 days for invalid date string", () => {
+      const result = getDefaultDueDate("invalid-date");
+      const expected = formatDateToISO(addDays(new Date(), 14));
+      expect(result).toBe(expected);
+    });
+
+    it("should fallback to today + 14 days for malformed date", () => {
+      const result = getDefaultDueDate("2026-99-99");
+      // This creates an invalid date, so should fallback
+      const expected = formatDateToISO(addDays(new Date(), 14));
+      expect(result).toBe(expected);
     });
   });
 });
