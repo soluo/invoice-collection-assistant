@@ -887,6 +887,87 @@ So that **I can correct mistakes or transfer responsibility when needed**.
 
 ---
 
+### Story 6.4: Historique Filtré sur /follow-up + Historique Complet sur InvoiceDetails
+
+As a **user**,
+I want **to see only reminder history on the /follow-up page, but full event history on invoice details**,
+So that **each view shows contextually relevant information without noise**.
+
+**Context:** Currently, the history on /follow-up shows all event types (invoice import, due date changes, payments, etc.) which is noisy for a page focused on follow-up actions. Meanwhile, InvoiceDetails should show the complete audit trail.
+
+**Acceptance Criteria:**
+
+**Given** I am on the /follow-up page in the History tab
+**When** I view the history list
+**Then** I see ONLY reminder-related events (emails sent, calls made, snoozes)
+**And** I do NOT see other event types (invoice created, payment recorded, due date modified, etc.)
+**And** each entry shows date, reminder type, invoice reference, and outcome
+
+**Given** I am viewing an invoice in the InvoiceDetails drawer or page
+**When** I look at the event history section
+**Then** I see ALL events for this invoice in chronological order
+**And** events include: invoice import/creation, due date modifications, payment recordings, reminders sent, notes added
+**And** each event shows the date, event type, description, and author (who performed the action)
+
+**Given** an invoice was imported via AI extraction
+**When** I view InvoiceDetails history
+**Then** I see an entry "Invoice imported" with the import date and the user who uploaded it
+
+**Given** someone modified the due date of an invoice
+**When** I view InvoiceDetails history
+**Then** I see an entry "Due date modified: [old date] → [new date]" with timestamp and author
+
+**Given** a payment was recorded
+**When** I view InvoiceDetails history
+**Then** I see an entry "Payment recorded: [amount] via [method]" with timestamp and author
+
+---
+
+**Technical Notes - Audit des Events Existants et Manquants:**
+
+**Events actuellement trackés (table `events` dans `convex/schema.ts:189-223`) :**
+
+| Event Type | Mutation | Fichier | Status |
+|------------|----------|---------|--------|
+| `invoice_imported` | `invoices.create` | `convex/invoices.ts:330` | ✅ OK |
+| `invoice_marked_sent` | `invoices.markAsSent` | `convex/invoices.ts:368` | ✅ OK |
+| `payment_registered` | `invoices.registerPayment`, `payments.recordPayment` | `convex/invoices.ts:422`, `convex/payments.ts:236` | ✅ OK |
+| `invoice_marked_paid` | `invoices.markAsPaid`, `payments.confirmCheckDeposit` | `convex/invoices.ts:460`, `convex/payments.ts:341` | ✅ OK |
+| `reminder_sent` | `reminders.markReminderSent`, `followUp.completePhoneReminder` | `convex/reminders.ts:258`, `convex/followUp.ts:466,492` | ✅ OK |
+| `invoice_sent` | N/A | `convex/events.ts` | ⏳ Défini, sera implémenté avec Epic 7 (Story 7.1 - Envoi initial facture) |
+
+**Events MANQUANTS à créer (priorité haute pour cette story) :**
+
+| Action | Mutation actuelle | Event à créer | Priorité |
+|--------|-------------------|---------------|----------|
+| Modification facture (montant, dates, contact) | `invoices.update` | `invoice_updated` | 🔴 HAUTE |
+| Report d'échéance | `invoices.snooze` | `invoice_due_date_changed` | 🔴 HAUTE |
+| Pause relance | `followUp.pauseReminder` | `reminder_paused` | 🟠 MOYENNE |
+| Reprise relance | `followUp.resumeReminder` | `reminder_resumed` | 🟠 MOYENNE |
+| Replanification relance | `followUp.rescheduleReminder` | `reminder_rescheduled` | 🟠 MOYENNE |
+
+**Events MANQUANTS (hors scope - audit sécurité futur) :**
+
+| Action | Mutation | Event suggéré | Priorité |
+|--------|----------|---------------|----------|
+| Suppression facture | `invoices.deleteInvoice` | `invoice_deleted` | 🔴 HAUTE |
+| Changement rôle utilisateur | `organizations.updateUserRole` | `user_role_changed` | 🔴 HAUTE |
+| Suppression utilisateur | `organizations.removeUser` | `user_removed` | 🔴 HAUTE |
+| Invitation utilisateur | `organizations.inviteUser` | `user_invited` | 🟠 MOYENNE |
+| Acceptation invitation | `organizations.acceptInvitation` | `user_joined` | 🟠 MOYENNE |
+| Modification config relances | `organizations.updateReminderSteps` | `reminder_config_changed` | 🟠 MOYENNE |
+| Ajout note | `invoiceNotes.create` | `invoice_note_added` | 🟢 BASSE |
+
+**Implémentation recommandée :**
+
+1. **Étendre le schema `events`** pour supporter les nouveaux types d'events
+2. **Créer les helper functions** dans `convex/events.ts` pour chaque nouveau type
+3. **Ajouter les appels** dans les mutations existantes (`invoices.update`, `invoices.snooze`, `followUp.*`)
+4. **Query `/follow-up` History** : filtrer par `eventType IN ('reminder_sent', 'reminder_paused', 'reminder_resumed', 'reminder_rescheduled')`
+5. **Query `InvoiceDetails` History** : récupérer tous les events pour l'invoice, triés par date décroissante
+
+---
+
 ## Epic 7: Templates Email Avancés
 
 **Goal:** Améliorer les capacités d'email avec de nouveaux templates, pièces jointes et signatures personnalisées.
@@ -1072,6 +1153,34 @@ So that **the system reflects the actual payment flow in my business**.
 ---
 
 ## Backlog (Future Considerations)
+
+### Audit Logging Complet (Sécurité & Compliance)
+
+**Context:** L'application dispose d'une table `events` mais plusieurs actions critiques ne génèrent pas d'event. Un audit logging complet est nécessaire pour la traçabilité et la conformité.
+
+**Events à implémenter :**
+
+| Priorité | Action | Mutation | Event suggéré |
+|----------|--------|----------|---------------|
+| 🔴 HAUTE | Suppression facture | `invoices.deleteInvoice` | `invoice_deleted` |
+| 🔴 HAUTE | Changement rôle utilisateur | `organizations.updateUserRole` | `user_role_changed` |
+| 🔴 HAUTE | Suppression utilisateur | `organizations.removeUser` | `user_removed` |
+| 🟠 MOYENNE | Invitation utilisateur | `organizations.inviteUser` | `user_invited` |
+| 🟠 MOYENNE | Acceptation invitation | `organizations.acceptInvitation` | `user_joined` |
+| 🟠 MOYENNE | Modification config relances | `organizations.updateReminderSteps` | `reminder_config_changed` |
+| 🟢 BASSE | Ajout note | `invoiceNotes.create` | `invoice_note_added` |
+| 🟢 BASSE | Modification nom orga | `organizations.updateOrganizationName` | `organization_updated` |
+| 🟢 BASSE | Annulation invitation | `organizations.deleteInvitation` | `invitation_cancelled` |
+
+**Stories à créer quand priorisé :**
+- Story: Events sécurité utilisateurs (role_changed, removed, invited, joined)
+- Story: Events administratifs (config_changed, organization_updated)
+- Story: Events factures complémentaires (deleted, note_added)
+- Story: Interface admin de consultation des logs d'audit
+
+**Note:** À prioriser selon besoins de conformité (RGPD, audit interne).
+
+---
 
 ### Types de Clients avec Séquences de Relance Différentes
 
