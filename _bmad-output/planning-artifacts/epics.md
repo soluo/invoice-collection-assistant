@@ -844,23 +844,23 @@ So that **new team members can join and technicians see only their invoices**.
 
 ---
 
-### Story 6.2: Échéance +30 Jours par Défaut
+### Story 6.2: Échéance +14 Jours par Défaut
 
 As a **user**,
-I want **the due date to default to +30 days when adding a new invoice**,
+I want **the due date to default to +14 days when adding a new invoice**,
 So that **I don't have to manually calculate and enter the standard payment term**.
 
 **Acceptance Criteria:**
 
 **Given** I am on the invoice upload/creation page
 **When** the invoice is extracted/created
-**Then** the due date field defaults to today + 30 days
+**Then** the due date field defaults to today + 14 days
 **And** I can still modify the due date if needed
 
 **Given** the AI extracts a due date from the PDF
 **When** a due date is found in the document
 **Then** use the extracted date instead of the default
-**And** only apply +30 days default when no due date is detected
+**And** only apply +14 days default when no due date is detected
 
 ---
 

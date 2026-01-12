@@ -150,7 +150,7 @@ Répondez UNIQUEMENT avec le JSON valide, sans markdown ni autre texte.`;
           invoiceNumber: invoiceNumber || `FAC-${Date.now().toString().slice(-6)}`,
           amountTTC: amountTTC,
           invoiceDate: invoiceDate || new Date().toISOString().split('T')[0],
-          dueDate: dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          dueDate: dueDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           confidence: Math.min(confidence, 100),
           extractedText: `Extraction IA Claude (${Math.min(confidence, 100)}% confiance)`
         };
@@ -176,7 +176,7 @@ Répondez UNIQUEMENT avec le JSON valide, sans markdown ni autre texte.`;
         invoiceNumber: `FAC-${Date.now().toString().slice(-6)}`,
         amountTTC: 0,
         invoiceDate: new Date().toISOString().split('T')[0],
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         confidence: 0,
         extractedText: `Erreur Claude: ${error instanceof Error ? error.message : String(error)}`
       };
