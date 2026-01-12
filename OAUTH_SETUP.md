@@ -43,7 +43,7 @@ Ce guide vous accompagne dans la configuration de l'authentification OAuth avec 
 # OAuth Microsoft
 MICROSOFT_CLIENT_ID=<votre-client-id>
 MICROSOFT_CLIENT_SECRET=<le-secret-que-vous-avez-copié>
-MICROSOFT_TENANT_ID=<votre-tenant-id>  # ou "common" si multi-tenant
+MICROSOFT_TENANT_ID=organizations  # IMPORTANT: Utiliser "organizations" pour accepter tous les comptes Azure AD
 
 # URI de redirection OAuth (où Microsoft redirige après autorisation)
 MICROSOFT_REDIRECT_URI=https://fabulous-dachshund-120.convex.site/oauth/microsoft/callback
@@ -51,6 +51,14 @@ MICROSOFT_REDIRECT_URI=https://fabulous-dachshund-120.convex.site/oauth/microsof
 # URL du frontend (où le backend redirige après traitement du callback)
 FRONTEND_URL=http://localhost:5173  # En dev, changez en prod selon votre domaine
 ```
+
+> ⚠️ **Configuration Multi-Tenant obligatoire**
+>
+> Pour que les utilisateurs de différentes organisations Azure AD puissent connecter leur compte Outlook :
+> 1. **Côté Convex** : `MICROSOFT_TENANT_ID=organizations`
+> 2. **Côté Azure Portal** : Dans Authentication → "Types de comptes pris en charge" → Sélectionner **"Comptes dans un annuaire d'organisation (tout locataire Microsoft Entra ID – Multilocataire)"**
+>
+> Si vous utilisez un tenant ID spécifique (ex: `b3a3a3a1-...`), seuls les utilisateurs de CE tenant pourront se connecter (erreur AADSTS50020).
 
 **Important :** Vérifiez qu'il n'y a pas d'espaces avant/après les valeurs !
 
