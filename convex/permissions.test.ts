@@ -525,8 +525,9 @@ describe("canModifyInvoice - Story 6.3", () => {
   });
 });
 
-describe("isAdmin helper", () => {
-  it("returns true for admin role", () => {
+
+describe("AC3 & AC4: Admin-only reassignment security", () => {
+  it("isAdmin returns true for admin role (required for reassignment)", () => {
     const adminUser: UserWithOrg = {
       userId: "dummy" as Id<"users">,
       role: "admin",
@@ -535,12 +536,63 @@ describe("isAdmin helper", () => {
     expect(isAdmin(adminUser)).toBe(true);
   });
 
-  it("returns false for technicien role", () => {
+  it("isAdmin returns false for technicien role (blocks reassignment)", () => {
     const techUser: UserWithOrg = {
       userId: "dummy" as Id<"users">,
       role: "technicien",
       organizationId: "dummy" as Id<"organizations">,
     };
+    expect(isAdmin(techUser)).toBe(false);
+  });
+
+  it("technician can modify own invoice but backend blocks reassignment via isAdmin check", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        createdAt: Date.now(),
+        signature: "Test Signature",
+      });
+    });
+
+    const techId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        email: "tech@test.com",
+        name: "Tech User",
+        role: "technicien",
+        organizationId: orgId,
+      });
+    });
+
+    const ownInvoice = await t.run(async (ctx) => {
+      const invoiceId = await ctx.db.insert("invoices", {
+        invoiceNumber: "INV-REASSIGN-TEST",
+        clientName: "Reassign Test Client",
+        amountTTC: 1000,
+        invoiceDate: "2026-01-01",
+        dueDate: "2026-01-31",
+        organizationId: orgId,
+        userId: techId,
+        createdBy: techId,
+        sendStatus: "pending",
+        paymentStatus: "unpaid",
+      });
+      return await ctx.db.get(invoiceId);
+    });
+
+    const techUser: UserWithOrg = {
+      userId: techId,
+      role: "technicien",
+      organizationId: orgId,
+      email: "tech@test.com",
+      name: "Tech User",
+    };
+
+    // Technician CAN modify their own unpaid invoice (edit fields)
+    expect(canModifyInvoice(techUser, ownInvoice as Doc<"invoices">)).toBe(true);
+
+    // But isAdmin check in update mutation will BLOCK reassignment
     expect(isAdmin(techUser)).toBe(false);
   });
 });

@@ -470,7 +470,15 @@ export const markAsPaid = mutation({
 });
 
 /**
- * Modifier les données d'une facture (admins uniquement)
+ * Modifier les données d'une facture
+ *
+ * Règles de permission (via assertCanModifyInvoice):
+ * - Personne ne peut modifier une facture payée (paymentStatus === "paid")
+ * - Admin peut modifier toutes les factures non payées de son organisation
+ * - Technicien peut modifier uniquement ses propres factures non payées
+ *
+ * Réassignation (assignToUserId):
+ * - Seuls les admins peuvent réassigner une facture à un autre utilisateur
  */
 export const update = mutation({
   args: {
@@ -495,7 +503,7 @@ export const update = mutation({
 
     assertCanModifyInvoice(user, invoice);
 
-    let updateData: any = {
+    const updateData: Partial<Doc<"invoices">> = {
       clientName: args.clientName,
       contactName: args.contactName,
       contactEmail: args.contactEmail,
@@ -506,7 +514,12 @@ export const update = mutation({
       dueDate: args.dueDate,
     };
 
+    // Seuls les admins peuvent réassigner une facture
     if (args.assignToUserId) {
+      if (!isAdmin(user)) {
+        throw new Error("Seuls les admins peuvent réassigner une facture");
+      }
+
       const assignedUser = await ctx.db.get(args.assignToUserId);
       if (!assignedUser || assignedUser.organizationId !== user.organizationId) {
         throw new Error("L'utilisateur assigné n'appartient pas à votre organisation");
