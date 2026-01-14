@@ -16,6 +16,7 @@ import MarkAsPaidModal from "@/components/modals/MarkAsPaidModal";
 import RecordPaymentModal from "@/components/modals/RecordPaymentModal";
 import { MarkAsSentModal } from "@/components/MarkAsSentModal";
 import { InvoiceDetailDrawer } from "@/components/InvoiceDetailDrawer";
+import { InvoiceEditModal } from "@/components/InvoiceEditModal";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,6 +43,7 @@ export default function MainView() {
   const [markAsPaidOpen, setMarkAsPaidOpen] = useState(false);
   const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
   const [markAsSentOpen, setMarkAsSentOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [selectedReminder, setSelectedReminder] = useState<{ emailSubject?: string; emailContent?: string } | null>(null);
 
@@ -80,6 +82,8 @@ export default function MainView() {
       setMarkAsSentOpen(true);
     } else if (action === "recordPayment") {
       setRecordPaymentOpen(true);
+    } else if (action === "edit") {
+      setEditModalOpen(true);
     }
   };
 
@@ -326,6 +330,17 @@ export default function MainView() {
           }}
           onConfirm={handleConfirmMarkAsSent}
           defaultDate={selectedInvoice.invoiceDate}
+        />
+      )}
+
+      {/* Edit Invoice Modal */}
+      {editModalOpen && selectedInvoice && (
+        <InvoiceEditModal
+          invoice={selectedInvoice}
+          onClose={() => {
+            setEditModalOpen(false);
+            setSelectedInvoice(null);
+          }}
         />
       )}
 

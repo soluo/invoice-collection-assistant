@@ -1,6 +1,6 @@
 # Story 6.4: Historique Filtré sur /follow-up + Historique Complet sur InvoiceDetails
 
-Status: review
+Status: done
 
 ## Story
 
@@ -239,9 +239,18 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
   - AC2: InvoiceDetailDrawer shows complete event history via new EventHistorySection
   - AC3-5: Invoice import, payment, and mark-as-sent events visible in EventHistorySection
 
+### Code Review Fixes (2026-01-14)
+
+- **M2: Query optimization** - `getReminderHistoryFiltered` now filters at database level using `.filter()` before `.take()` instead of filtering in JavaScript after `.collect()`
+- **L2: Centralized event config** - Created `src/lib/eventConfig.ts` to centralize EVENT_CONFIG used by EventHistorySection, InvoiceTimeline, and FollowUp
+- **L3: Phone icon consistency** - Added Phone icon support for phone reminders in InvoiceTimeline (was already in EventHistorySection)
+- **L4: Comment harmonization** - Converted French comments to English in EventHistorySection
+
 ### File List
 
-- `convex/followUp.ts` - Added `getReminderHistoryFiltered` query
+- `convex/followUp.ts` - Added `getReminderHistoryFiltered` query, optimized filtering
 - `src/pages/FollowUp.tsx` - Updated to use filtered query
-- `src/components/EventHistorySection.tsx` - NEW: Complete event history component
+- `src/components/EventHistorySection.tsx` - NEW: Complete event history component, refactored to use centralized config
 - `src/components/InvoiceDetailDrawer.tsx` - Integrated EventHistorySection
+- `src/components/InvoiceTimeline.tsx` - Refactored to use centralized config, added Phone icon for phone reminders
+- `src/lib/eventConfig.ts` - NEW: Centralized event type configuration

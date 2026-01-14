@@ -4,90 +4,15 @@ import { api } from "@convex/_generated/api";
 import { Id } from "@convex/_generated/dataModel";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
-import {
-  FileUp,
-  Mail,
-  Phone,
-  Check,
-  CreditCard,
-  Bell,
-  History,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { Phone, History, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getEventConfig, getReminderIcon } from "@/lib/eventConfig";
 
 interface EventHistorySectionProps {
   invoiceId: Id<"invoices">;
 }
 
-type EventType =
-  | "invoice_imported"
-  | "invoice_marked_sent"
-  | "invoice_sent"
-  | "payment_registered"
-  | "invoice_marked_paid"
-  | "reminder_sent";
-
-interface EventConfig {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  bgColor: string;
-  iconColor: string;
-}
-
-// Configuration des types d'événements avec icônes et labels français
-const EVENT_CONFIG: Record<EventType, EventConfig> = {
-  invoice_imported: {
-    icon: FileUp,
-    label: "Facture importée",
-    bgColor: "bg-blue-100",
-    iconColor: "text-blue-600",
-  },
-  invoice_marked_sent: {
-    icon: Mail,
-    label: "Facture marquée envoyée",
-    bgColor: "bg-gray-100",
-    iconColor: "text-gray-600",
-  },
-  invoice_sent: {
-    icon: Mail,
-    label: "Facture envoyée",
-    bgColor: "bg-green-100",
-    iconColor: "text-green-600",
-  },
-  payment_registered: {
-    icon: CreditCard,
-    label: "Paiement enregistré",
-    bgColor: "bg-green-100",
-    iconColor: "text-green-600",
-  },
-  invoice_marked_paid: {
-    icon: Check,
-    label: "Facture payée",
-    bgColor: "bg-green-100",
-    iconColor: "text-green-600",
-  },
-  reminder_sent: {
-    icon: Bell,
-    label: "Relance envoyée",
-    bgColor: "bg-orange-100",
-    iconColor: "text-orange-600",
-  },
-};
-
-function getEventConfig(eventType: string): EventConfig {
-  return (
-    EVENT_CONFIG[eventType as EventType] || {
-      icon: History,
-      label: eventType,
-      bgColor: "bg-gray-100",
-      iconColor: "text-gray-600",
-    }
-  );
-}
-
-// Formater la date de l'événement
+// Format event date with relative time and full date
 function formatEventDate(timestamp: number): string {
   const date = new Date(timestamp);
   const timeAgo = formatDistanceToNow(date, { addSuffix: true, locale: fr });
@@ -104,7 +29,7 @@ function formatEventDate(timestamp: number): string {
   return `${timeAgo} • ${fullDate} à ${time}`;
 }
 
-// Obtenir le nom de l'auteur de l'action
+// Get the author name for an event
 function getAuthorName(
   user: { name?: string; email?: string } | null,
   isAutomatic?: boolean
@@ -119,7 +44,7 @@ function getAuthorName(
     return user.name;
   }
   if (user.email) {
-    // Extraire le préfixe de l'email
+    // Extract email prefix
     return user.email.split("@")[0];
   }
   return "Système";
@@ -199,7 +124,7 @@ export function EventHistorySection({ invoiceId }: EventHistorySectionProps) {
                 <p className="text-sm text-gray-900">
                   {event.description || config.label}
                 </p>
-                {/* Metadata: montant pour les paiements */}
+                {/* Metadata: amount for payment events */}
                 {event.metadata?.amount !== undefined && (
                   <p className="text-xs text-gray-600">
                     Montant : {event.metadata.amount.toFixed(2)} €

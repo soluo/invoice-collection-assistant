@@ -178,24 +178,20 @@ export const getReminderHistoryFiltered = query({
   handler: async (ctx, args) => {
     const user = await getUserWithOrg(ctx);
 
-    // Récupérer les événements de l'organisation
-    const events = await ctx.db
+    // Fetch events filtered at database level for better performance
+    // Using .filter() before .collect() to filter in Convex instead of JS
+    const reminderEvents = await ctx.db
       .query("events")
       .withIndex("by_organization_and_date", (q) =>
         q.eq("organizationId", user.organizationId)
       )
+      .filter((q) => q.eq(q.field("eventType"), "reminder_sent"))
       .order("desc")
-      .collect();
+      .take(args.limit || 1000);
 
-    // ✅ Filtrer pour ne garder QUE les événements reminder_sent
-    const reminderEvents = events.filter((e) => e.eventType === "reminder_sent");
-
-    // Appliquer la limite
-    const limitedEvents = reminderEvents.slice(0, args.limit || 1000);
-
-    // Enrichir avec les données de factures et utilisateurs
+    // Enrich with invoice and user data
     const enrichedEvents = await Promise.all(
-      limitedEvents.map(async (event) => {
+      reminderEvents.map(async (event) => {
         const invoice = event.invoiceId ? await ctx.db.get(event.invoiceId) : null;
         const eventUser = await ctx.db.get(event.userId);
 

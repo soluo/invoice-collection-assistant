@@ -157,7 +157,9 @@ export default function InvoiceTableCard({ invoice, onAction, onInvoiceClick }: 
                 Marquer comme envoyée
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem>Modifier</DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => handleActionClick(e, "edit")}>
+              Modifier
+            </DropdownMenuItem>
             <DropdownMenuItem className="text-red-600">
               Supprimer
             </DropdownMenuItem>

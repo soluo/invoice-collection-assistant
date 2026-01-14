@@ -1,14 +1,7 @@
-import { Upload, Mail, User, Check, AlertTriangle } from "lucide-react";
+import { Phone } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
-
-type EventType =
-  | "invoice_imported"
-  | "invoice_marked_sent"
-  | "invoice_sent"
-  | "payment_registered"
-  | "invoice_marked_paid"
-  | "reminder_sent";
+import { getTimelineEventConfig, getReminderIcon } from "@/lib/eventConfig";
 
 type Event = {
   _id: string;
@@ -18,6 +11,7 @@ type Event = {
   metadata?: {
     amount?: number;
     reminderNumber?: number;
+    reminderType?: string;
     isAutomatic?: boolean;
     previousSendStatus?: string;
     previousPaymentStatus?: string;
@@ -28,55 +22,6 @@ type Event = {
     email?: string;
   } | null;
 };
-
-type EventConfig = {
-  icon: React.ComponentType<{ className?: string }>;
-  bgColor: string;
-  iconColor: string;
-};
-
-const EVENT_CONFIGS: Record<EventType, EventConfig> = {
-  invoice_imported: {
-    icon: Upload,
-    bgColor: "bg-gray-100",
-    iconColor: "text-gray-600",
-  },
-  invoice_marked_sent: {
-    icon: Mail,
-    bgColor: "bg-blue-100",
-    iconColor: "text-blue-600",
-  },
-  invoice_sent: {
-    icon: Mail,
-    bgColor: "bg-blue-100",
-    iconColor: "text-blue-600",
-  },
-  reminder_sent: {
-    icon: Mail,
-    bgColor: "bg-orange-100",
-    iconColor: "text-orange-600",
-  },
-  payment_registered: {
-    icon: Check,
-    bgColor: "bg-green-100",
-    iconColor: "text-green-600",
-  },
-  invoice_marked_paid: {
-    icon: Check,
-    bgColor: "bg-green-100",
-    iconColor: "text-green-600",
-  },
-};
-
-function getEventConfig(eventType: string): EventConfig {
-  return (
-    EVENT_CONFIGS[eventType as EventType] || {
-      icon: AlertTriangle,
-      bgColor: "bg-gray-100",
-      iconColor: "text-gray-600",
-    }
-  );
-}
 
 function formatEventDate(timestamp: number): string {
   const date = new Date(timestamp);
@@ -120,8 +65,13 @@ export function InvoiceTimeline({ events }: InvoiceTimelineProps) {
       </h2>
       <ul className="divide-y divide-gray-200">
         {events.map((event) => {
-          const config = getEventConfig(event.eventType);
-          const Icon = config.icon;
+          const config = getTimelineEventConfig(event.eventType);
+          // Use Phone icon for phone reminders
+          const Icon =
+            event.eventType === "reminder_sent" &&
+            event.metadata?.reminderType === "phone"
+              ? Phone
+              : config.icon;
           const userName = getUserName(event.user);
 
           return (
