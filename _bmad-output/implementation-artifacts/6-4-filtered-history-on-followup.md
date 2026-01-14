@@ -1,6 +1,6 @@
 # Story 6.4: Historique Filtré sur /follow-up + Historique Complet sur InvoiceDetails
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -45,31 +45,31 @@ Currently, the history on /follow-up shows ALL event types (invoice import, due 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create filtered query for /follow-up history (AC: #1)
-  - [ ] 1.1 Create new query `followUp.getReminderHistoryFiltered` that filters events by type
-  - [ ] 1.2 Filter to ONLY include `reminder_sent` events
-  - [ ] 1.3 Update `FollowUp.tsx` to use the new filtered query instead of `getReminderHistory`
-  - [ ] 1.4 Run `pnpm dev:backend` to validate Convex changes
+- [x] Task 1: Create filtered query for /follow-up history (AC: #1)
+  - [x] 1.1 Create new query `followUp.getReminderHistoryFiltered` that filters events by type
+  - [x] 1.2 Filter to ONLY include `reminder_sent` events
+  - [x] 1.3 Update `FollowUp.tsx` to use the new filtered query instead of `getReminderHistory`
+  - [x] 1.4 Run `pnpm dev:backend` to validate Convex changes
 
-- [ ] Task 2: Add EventHistorySection component for InvoiceDetails (AC: #2, #3, #4, #5)
-  - [ ] 2.1 Create new component `src/components/EventHistorySection.tsx`
-  - [ ] 2.2 Use `api.events.getByInvoice` query (already exists)
-  - [ ] 2.3 Display all event types with appropriate icons and labels
-  - [ ] 2.4 Show author name/email and formatted timestamp for each event
+- [x] Task 2: Add EventHistorySection component for InvoiceDetails (AC: #2, #3, #4, #5)
+  - [x] 2.1 Create new component `src/components/EventHistorySection.tsx`
+  - [x] 2.2 Use `api.events.getByInvoice` query (already exists)
+  - [x] 2.3 Display all event types with appropriate icons and labels
+  - [x] 2.4 Show author name/email and formatted timestamp for each event
 
-- [ ] Task 3: Integrate EventHistorySection in InvoiceDetailDrawer (AC: #2)
-  - [ ] 3.1 Add EventHistorySection below ReminderHistorySection in InvoiceDetailDrawer
-  - [ ] 3.2 Rename section header: "Historique des relances" → keep, add "Historique complet" section below
-  - [ ] 3.3 Verify proper loading and empty states
+- [x] Task 3: Integrate EventHistorySection in InvoiceDetailDrawer (AC: #2)
+  - [x] 3.1 Add EventHistorySection below ReminderHistorySection in InvoiceDetailDrawer
+  - [x] 3.2 Rename section header: "Historique des relances" → keep, add "Historique complet" section below
+  - [x] 3.3 Verify proper loading and empty states
 
-- [ ] Task 4: Integrate EventHistorySection in InvoiceDetail page (AC: #2)
-  - [ ] 4.1 Add EventHistorySection to the InvoiceDetail.tsx page
-  - [ ] 4.2 Ensure consistent UI with drawer version
+- [x] Task 4: Integrate EventHistorySection in InvoiceDetail page (AC: #2)
+  - [x] 4.1 Add EventHistorySection to the InvoiceDetail.tsx page (Already implemented via InvoiceTimeline)
+  - [x] 4.2 Ensure consistent UI with drawer version (InvoiceTimeline provides full history on detail page)
 
-- [ ] Task 5: Run linting and validate (AC: all)
-  - [ ] 5.1 Run `pnpm lint` to ensure no errors
-  - [ ] 5.2 Manual test: /follow-up History only shows reminder events
-  - [ ] 5.3 Manual test: InvoiceDetails shows all events
+- [x] Task 5: Run linting and validate (AC: all)
+  - [x] 5.1 Run `pnpm lint` to ensure no errors
+  - [x] 5.2 Manual test: /follow-up History only shows reminder events
+  - [x] 5.3 Manual test: InvoiceDetails shows all events
 
 ## Dev Notes
 
@@ -220,10 +220,28 @@ InvoiceDetailDrawer + InvoiceDetail page
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+- Convex backend validation passed successfully
+- Frontend build and lint passed with no errors
+
 ### Completion Notes List
 
+- Created `getReminderHistoryFiltered` query in `convex/followUp.ts` to filter events to only `reminder_sent` type
+- Updated `/follow-up` page to use the filtered query for the History tab
+- Created new `EventHistorySection` component for displaying complete event history in invoice details
+- Integrated `EventHistorySection` in `InvoiceDetailDrawer` below `ReminderHistorySection`
+- Verified `InvoiceDetail.tsx` already shows complete history via `InvoiceTimeline` component using `events.getByInvoice`
+- All acceptance criteria satisfied:
+  - AC1: /follow-up History now shows ONLY reminder events
+  - AC2: InvoiceDetailDrawer shows complete event history via new EventHistorySection
+  - AC3-5: Invoice import, payment, and mark-as-sent events visible in EventHistorySection
+
 ### File List
+
+- `convex/followUp.ts` - Added `getReminderHistoryFiltered` query
+- `src/pages/FollowUp.tsx` - Updated to use filtered query
+- `src/components/EventHistorySection.tsx` - NEW: Complete event history component
+- `src/components/InvoiceDetailDrawer.tsx` - Integrated EventHistorySection

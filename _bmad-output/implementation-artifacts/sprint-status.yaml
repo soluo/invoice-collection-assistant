@@ -83,5 +83,5 @@ development_status:
   6-1-bug-verify-invitations-and-technician-filters: done
   6-2-default-due-date-plus-14-days: done
   6-3-edit-and-reassign-invoice: done
-  6-4-filtered-history-on-followup: ready-for-dev
+  6-4-filtered-history-on-followup: review
   epic-6-retrospective: optional

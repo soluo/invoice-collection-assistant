@@ -61,7 +61,8 @@ export function FollowUp() {
     ? (simulatedReminders as AnyReminder[] | undefined)
     : (realReminders as AnyReminder[] | undefined);
 
-  const reminderHistory = useQuery(api.followUp.getReminderHistory);
+  // ✅ Story 6.4: Utiliser la query filtrée pour n'afficher QUE les reminder_sent
+  const reminderHistory = useQuery(api.followUp.getReminderHistoryFiltered);
   const [previewReminder, setPreviewReminder] = useState<AnyReminder | null>(null);
   const [editReminder, setEditReminder] = useState<AnyReminder | null>(null);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);

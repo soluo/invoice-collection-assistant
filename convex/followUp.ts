@@ -132,8 +132,106 @@ export const getUpcomingReminders = query({
 });
 
 /**
- * ✅ V2 : Query pour l'onglet "Historique" de la page Relances
- * Récupère les événements passés
+ * ✅ Story 6.4 : Query FILTRÉE pour l'onglet "Historique" de la page Relances
+ * Récupère UNIQUEMENT les événements de type reminder_sent
+ * Utilisé sur /follow-up pour n'afficher que les relances (pas les imports, paiements, etc.)
+ */
+export const getReminderHistoryFiltered = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("events"),
+      eventType: v.string(),
+      eventDate: v.number(),
+      description: v.optional(v.string()),
+      metadata: v.optional(
+        v.object({
+          amount: v.optional(v.number()),
+          reminderNumber: v.optional(v.number()),
+          reminderType: v.optional(v.string()),
+          isAutomatic: v.optional(v.boolean()),
+          previousSendStatus: v.optional(v.string()),
+          previousPaymentStatus: v.optional(v.string()),
+        })
+      ),
+      invoice: v.union(
+        v.object({
+          _id: v.id("invoices"),
+          invoiceNumber: v.string(),
+          clientName: v.string(),
+          amountTTC: v.number(),
+        }),
+        v.null()
+      ),
+      user: v.union(
+        v.object({
+          _id: v.id("users"),
+          name: v.optional(v.string()),
+          email: v.optional(v.string()),
+        }),
+        v.null()
+      ),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const user = await getUserWithOrg(ctx);
+
+    // Récupérer les événements de l'organisation
+    const events = await ctx.db
+      .query("events")
+      .withIndex("by_organization_and_date", (q) =>
+        q.eq("organizationId", user.organizationId)
+      )
+      .order("desc")
+      .collect();
+
+    // ✅ Filtrer pour ne garder QUE les événements reminder_sent
+    const reminderEvents = events.filter((e) => e.eventType === "reminder_sent");
+
+    // Appliquer la limite
+    const limitedEvents = reminderEvents.slice(0, args.limit || 1000);
+
+    // Enrichir avec les données de factures et utilisateurs
+    const enrichedEvents = await Promise.all(
+      limitedEvents.map(async (event) => {
+        const invoice = event.invoiceId ? await ctx.db.get(event.invoiceId) : null;
+        const eventUser = await ctx.db.get(event.userId);
+
+        return {
+          _id: event._id,
+          eventType: event.eventType,
+          eventDate: event.eventDate,
+          description: event.description,
+          metadata: event.metadata,
+          invoice: invoice
+            ? {
+                _id: invoice._id,
+                invoiceNumber: invoice.invoiceNumber,
+                clientName: invoice.clientName,
+                amountTTC: invoice.amountTTC,
+              }
+            : null,
+          user: eventUser
+            ? {
+                _id: eventUser._id,
+                name: eventUser.name,
+                email: eventUser.email,
+              }
+            : null,
+        };
+      })
+    );
+
+    return enrichedEvents;
+  },
+});
+
+/**
+ * ✅ V2 : Query pour l'onglet "Historique" de la page Relances (LEGACY - non filtré)
+ * Récupère TOUS les événements - conservé pour compatibilité
+ * @deprecated Utiliser getReminderHistoryFiltered pour /follow-up
  */
 export const getReminderHistory = query({
   args: {

@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, FileText, Calendar, User, Mail, Phone, AlertTriangle, Send, Pencil, Upload } from "lucide-react";
 import { ReminderHistorySection } from "@/components/ReminderHistorySection";
+import { EventHistorySection } from "@/components/EventHistorySection";
 import { MarkAsSentModal } from "@/components/MarkAsSentModal";
 import { InvoiceEditModal } from "@/components/InvoiceEditModal";
 import { AttachPdfModal } from "@/components/AttachPdfModal";
@@ -362,6 +363,9 @@ export function InvoiceDetailDrawer({
 
             {/* Reminder History */}
             <ReminderHistorySection invoiceId={invoice._id} />
+
+            {/* Event History - Story 6.4: Complete audit trail */}
+            <EventHistorySection invoiceId={invoice._id} />
 
             {/* Link to full page */}
             <div className="pt-4 border-t">
