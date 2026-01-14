@@ -19,9 +19,12 @@ export const clearAllTables = mutation({
       invoices: v.number(),
       reminders: v.number(),
       events: v.number(),
+      payments: v.number(),
+      invoiceNotes: v.number(),
       organizations: v.number(),
       invitations: v.number(),
       users: v.number(),
+      storageFiles: v.number(),
       authSessions: v.number(),
       authAccounts: v.number(),
       authRefreshTokens: v.number(),
@@ -47,9 +50,12 @@ export const clearAllTables = mutation({
       invoices: 0,
       reminders: 0,
       events: 0,
+      payments: 0,
+      invoiceNotes: 0,
       organizations: 0,
       invitations: 0,
       users: 0,
+      storageFiles: 0,
       authSessions: 0,
       authAccounts: 0,
       authRefreshTokens: 0,
@@ -74,21 +80,40 @@ export const clearAllTables = mutation({
         deletedCounts.events++;
       }
 
-      // 2. Invoices
+      const payments = await ctx.db.query("payments").collect();
+      for (const payment of payments) {
+        await ctx.db.delete(payment._id);
+        deletedCounts.payments++;
+      }
+
+      const invoiceNotes = await ctx.db.query("invoiceNotes").collect();
+      for (const note of invoiceNotes) {
+        await ctx.db.delete(note._id);
+        deletedCounts.invoiceNotes++;
+      }
+
+      // 2. Supprimer TOUS les fichiers storage (PDFs)
+      const allFiles = await ctx.db.system.query("_storage").collect();
+      for (const file of allFiles) {
+        await ctx.storage.delete(file._id);
+        deletedCounts.storageFiles++;
+      }
+
+      // 3. Invoices
       const invoices = await ctx.db.query("invoices").collect();
       for (const invoice of invoices) {
         await ctx.db.delete(invoice._id);
         deletedCounts.invoices++;
       }
 
-      // 3. Invitations
+      // 4. Invitations
       const invitations = await ctx.db.query("invitations").collect();
       for (const invitation of invitations) {
         await ctx.db.delete(invitation._id);
         deletedCounts.invitations++;
       }
 
-      // 4. Tables auth (dépendent de users)
+      // 5. Tables auth (dépendent de users)
       const authSessions = await ctx.db.query("authSessions").collect();
       for (const session of authSessions) {
         await ctx.db.delete(session._id);
@@ -125,14 +150,14 @@ export const clearAllTables = mutation({
         deletedCounts.authRateLimits++;
       }
 
-      // 5. Users
+      // 6. Users
       const users = await ctx.db.query("users").collect();
       for (const user of users) {
         await ctx.db.delete(user._id);
         deletedCounts.users++;
       }
 
-      // 6. Organizations (en dernier car référencé par users)
+      // 7. Organizations (en dernier car référencé par users)
       const organizations = await ctx.db.query("organizations").collect();
       for (const org of organizations) {
         await ctx.db.delete(org._id);
