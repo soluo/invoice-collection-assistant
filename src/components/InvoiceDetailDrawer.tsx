@@ -125,7 +125,8 @@ export function InvoiceDetailDrawer({
         });
       }
     } else if (invoice.sendStatus === "sent") {
-      // SENT BUT UNPAID: Primary = Snooze (Record Payment will be added in Story 1.5)
+      // SENT BUT UNPAID: Primary = Snooze
+      // TODO: Add "Enregistrer paiement" button here
       actions.push({
         key: "snooze",
         label: "Reporter échéance",

@@ -66,8 +66,7 @@ export function SnoozeInvoiceModal({
 
       toast.success(`Échéance reportée au ${formattedDate}`);
       onClose();
-    } catch (error) {
-      console.error("Erreur lors du report d'échéance:", error);
+    } catch {
       toast.error("Erreur lors du report d'échéance");
     } finally {
       setIsSubmitting(false);
@@ -113,7 +112,7 @@ export function SnoozeInvoiceModal({
               id="newDueDate"
               value={newDueDate}
               onChange={(e) => setNewDueDate(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               required
               disabled={isSubmitting}
             />
@@ -131,7 +130,7 @@ export function SnoozeInvoiceModal({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Ex: Accord client pour un délai de 30 jours supplémentaires"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[80px]"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 min-h-[80px]"
               disabled={isSubmitting}
             />
           </div>
@@ -148,9 +147,9 @@ export function SnoozeInvoiceModal({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-brand-500 hover:bg-brand-600"
             >
-              {isSubmitting ? "Report..." : "Confirmer le report"}
+              {isSubmitting ? "En cours..." : "Confirmer le report"}
             </Button>
           </DialogFooter>
         </form>

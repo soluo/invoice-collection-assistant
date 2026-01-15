@@ -652,6 +652,14 @@ export const snooze = mutation({
 
     assertCanModifyInvoice(user, invoice);
 
+    // Valider que la nouvelle date est dans le futur
+    const newDate = new Date(args.newDueDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (newDate < today) {
+      throw new Error("La nouvelle échéance doit être dans le futur");
+    }
+
     // Formater la nouvelle date pour affichage
     const newDueDateFormatted = new Date(args.newDueDate).toLocaleDateString("fr-FR", {
       day: "numeric",

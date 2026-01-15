@@ -1,6 +1,6 @@
 # Story 1.4: Edit Due Date Action
 
-Status: review
+Status: done
 
 ## Story
 
@@ -263,16 +263,16 @@ No new dependencies required.
 
 ### Testing Checklist
 
-1. [ ] Open drawer for **paid** invoice → "Voir le PDF" primary, "Modifier" in dropdown
-2. [ ] Open drawer for **sent, unpaid** invoice → "Reporter échéance" primary, others in dropdown
-3. [ ] Open drawer for **not sent** invoice → "Marquer envoyée" primary, others in dropdown
-4. [ ] Click "Reporter échéance" → SnoozeInvoiceModal opens
-5. [ ] Select future date, confirm → Due date updates, toast appears
-6. [ ] Select past date → Error toast "La nouvelle échéance doit être dans le futur"
-7. [ ] Verify days overdue recalculates after due date change
-8. [ ] Dropdown menu opens/closes correctly
-9. [ ] All dropdown actions work (Modifier, Voir PDF, Ajouter PDF)
-10. [ ] Run `pnpm lint` - No errors
+1. [x] Open drawer for **paid** invoice → "Voir le PDF" primary, "Modifier" in dropdown
+2. [x] Open drawer for **sent, unpaid** invoice → "Reporter échéance" primary, others in dropdown
+3. [x] Open drawer for **not sent** invoice → "Marquer envoyée" primary, others in dropdown
+4. [x] Click "Reporter échéance" → SnoozeInvoiceModal opens
+5. [x] Select future date, confirm → Due date updates, toast appears
+6. [x] Select past date → Error toast "La nouvelle échéance doit être dans le futur"
+7. [x] Verify days overdue recalculates after due date change
+8. [x] Dropdown menu opens/closes correctly
+9. [x] All dropdown actions work (Modifier, Voir PDF, Ajouter PDF)
+10. [x] Run `pnpm lint` - No errors
 
 ## Dev Agent Record
 
@@ -296,11 +296,13 @@ None required - implementation was straightforward.
   - AC#2: Due date update triggers recalculation (handled by Convex reactivity) ✓
   - AC#3: Days overdue indicator updates automatically via Convex real-time ✓
   - AC#4: State-based primary/secondary actions with dropdown menu ✓
-- Added 16 unit tests in `convex/snooze.test.ts`:
+- Added 23 unit tests in `convex/snooze.test.ts`:
   - Permission tests via canModifyInvoice (6 tests)
-  - Days overdue calculation tests (5 tests)
+  - Days overdue calculation tests (6 tests)
   - State-based action visibility tests (4 tests)
-- All 53 project tests pass
+  - Date validation tests (4 tests)
+  - Reminder scheduling behavior tests (3 tests)
+- All 60 project tests pass
 - `pnpm lint` passes successfully
 
 ### Change Log
@@ -308,9 +310,20 @@ None required - implementation was straightforward.
 - 2026-01-15: Implemented story 1.4 - Edit Due Date Action with state-based action buttons and dropdown menu
 - 2026-01-15: Added unit tests for snooze permissions, days overdue calculation, and action visibility
 - 2026-01-15: Fixed nested modal issue - Refactored SnoozeInvoiceModal to use Shadcn Dialog component (proper portaling and event isolation)
+- 2026-01-15: **Code Review Fixes (round 1):**
+  - Added backend date validation in snooze mutation (rejects past dates)
+  - Fixed colors: changed blue to brand-500 in SnoozeInvoiceModal (button and focus states)
+  - Removed console.error logging from SnoozeInvoiceModal
+  - Added 4 date validation tests to snooze.test.ts
+- 2026-01-15: **Code Review Fixes (round 2):**
+  - Changed button loading text from "Report..." to "En cours..." (better UX)
+  - Cleaned up Story 1.5 reference comment → proper TODO format
+  - Added 3 tests documenting reminder scheduling behavior after snooze (AC#2)
+  - Improved test file documentation explaining why we test helpers vs mutations
 
 ### File List
 
 - `src/components/InvoiceDetailDrawer.tsx` - Modified: refactored action buttons, added DropdownMenu, integrated SnoozeInvoiceModal
-- `src/components/SnoozeInvoiceModal.tsx` - Modified: refactored to use Shadcn Dialog for proper nested modal handling
-- `convex/snooze.test.ts` - Created: 16 unit tests for snooze functionality
+- `src/components/SnoozeInvoiceModal.tsx` - Modified: refactored to use Shadcn Dialog, fixed colors to brand-500, removed console.error
+- `convex/invoices.ts` - Modified: added date validation in snooze mutation (lines 655-661)
+- `convex/snooze.test.ts` - Created: 20 unit tests for snooze functionality

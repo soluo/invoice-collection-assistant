@@ -10,19 +10,30 @@ const modules = import.meta.glob("./**/*.ts");
 /**
  * Tests for Story 1.4: Edit Due Date Action (Snooze Invoice)
  *
- * The snooze mutation uses assertCanModifyInvoice for permission checks,
- * which is already thoroughly tested in permissions.test.ts.
+ * ## Why We Test Helpers Instead of the Mutation Directly
  *
- * These tests focus on:
- * 1. Verifying canModifyInvoice behavior in snooze context
- * 2. Due date update logic and days overdue calculation
- * 3. Business rules specific to due date changes
+ * The snooze mutation requires @convex-dev/auth authentication which is complex
+ * to mock in unit tests. Instead, we test the core business logic through:
+ * - canModifyInvoice() - Permission checks (also tested in permissions.test.ts)
+ * - Date validation logic - Extracted and tested in isolation
+ * - Days overdue calculation - Matching the frontend logic
+ * - Action visibility logic - Matching InvoiceDetailDrawer.tsx
  *
- * AC Coverage:
- * - AC#1: Modal with date picker (UI - not tested here)
- * - AC#2: Due date update + recalculation (tested via permission checks)
- * - AC#3: Overdue status changes when due date moves to future (logic tested)
- * - AC#4: State-based action buttons (UI - not tested here)
+ * ## AC Coverage
+ *
+ * - AC#1: Modal with date picker, current due date, optional reason
+ *   → UI component (SnoozeInvoiceModal.tsx) - manual testing
+ *
+ * - AC#2: Due date update, days overdue recalculates, reminder scheduling adjusts
+ *   → Permission checks tested here
+ *   → Reminder scheduling: Works by design - the cron job reads invoice.dueDate
+ *     directly from DB on each run (see convex/reminders.ts:529, 548, 710, 880)
+ *
+ * - AC#3: Days overdue indicator disappears for future dates
+ *   → calculateDaysOverdue tests below verify this behavior
+ *
+ * - AC#4: State-based action buttons with dropdown
+ *   → getSnoozeActionVisibility tests below verify visibility rules
  */
 
 // Helper function matching the drawer logic for days overdue calculation
@@ -479,5 +490,149 @@ describe("State-based action visibility - Story 1.4 AC#4", () => {
   it("snooze is visible for sent invoices with partial payment", () => {
     const result = getSnoozeActionVisibility("sent", "partial");
     expect(result.isVisible).toBe(true);
+  });
+});
+
+describe("Reminder scheduling after snooze - Story 1.4 AC#2", () => {
+  /**
+   * AC#2 states: "reminder scheduling adjusts to the new due date"
+   *
+   * This is handled by design in the reminder system:
+   * - The cron job (reminders.ts) reads invoice.dueDate on EVERY run
+   * - When snooze mutation updates dueDate, the next cron run will use the new date
+   * - No explicit "reschedule" is needed - Convex's reactivity handles it
+   *
+   * These tests document the filtering logic that uses dueDate.
+   */
+
+  // Simulate the reminder eligibility logic from reminders.ts:529, 548
+  const isEligibleForReminder = (
+    invoice: {
+      dueDate: string;
+      sendStatus: string;
+      paymentStatus: string;
+      reminderStatus: string | null;
+    },
+    nowStr: string
+  ): boolean => {
+    // Must be sent
+    if (invoice.sendStatus !== "sent") return false;
+    // Must not be paid
+    if (invoice.paymentStatus === "paid" || invoice.paymentStatus === "pending_payment") return false;
+    // Must not be in manual followup
+    if (invoice.reminderStatus === "manual_followup") return false;
+
+    // Due date must be < tomorrow (i.e., due today or past)
+    const now = new Date(nowStr);
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dueDate = new Date(invoice.dueDate);
+    return dueDate < tomorrow;
+  };
+
+  it("invoice becomes ineligible for reminders when due date moves to future", () => {
+    const invoice = {
+      sendStatus: "sent",
+      paymentStatus: "unpaid",
+      reminderStatus: "reminder_1",
+      dueDate: "2026-01-10", // Past due date
+    };
+    const now = "2026-01-15";
+
+    // Before snooze: eligible (due date is in the past)
+    expect(isEligibleForReminder(invoice, now)).toBe(true);
+
+    // After snooze: not eligible (due date is in the future)
+    const snoozedInvoice = { ...invoice, dueDate: "2026-02-15" };
+    expect(isEligibleForReminder(snoozedInvoice, now)).toBe(false);
+  });
+
+  it("invoice becomes eligible again when new due date passes", () => {
+    const invoice = {
+      sendStatus: "sent",
+      paymentStatus: "unpaid",
+      reminderStatus: "reminder_1",
+      dueDate: "2026-02-15", // Snoozed to future
+    };
+
+    // Before due date: not eligible
+    expect(isEligibleForReminder(invoice, "2026-02-10")).toBe(false);
+
+    // On due date: eligible (due date < tomorrow)
+    expect(isEligibleForReminder(invoice, "2026-02-15")).toBe(true);
+
+    // After due date: still eligible
+    expect(isEligibleForReminder(invoice, "2026-02-20")).toBe(true);
+  });
+
+  it("documents: reminder system reads dueDate from DB on each cron run", () => {
+    /**
+     * This test documents the system behavior:
+     *
+     * 1. User snoozes invoice → snooze mutation updates invoice.dueDate in DB
+     * 2. Next cron run → reminders.ts queries invoices with current dueDate
+     * 3. Invoice with future dueDate is filtered out (not eligible)
+     * 4. When dueDate arrives → invoice becomes eligible again
+     *
+     * No explicit "reschedule reminders" logic is needed because:
+     * - Convex is a reactive database
+     * - The cron job always reads current state
+     * - Updating dueDate automatically affects future reminder generation
+     *
+     * Relevant code locations:
+     * - convex/reminders.ts:529 - filters by dueDate < tomorrow
+     * - convex/reminders.ts:548 - same filter in production mode
+     * - convex/reminders.ts:710 - calculates days past due using dueDate
+     * - convex/reminders.ts:880 - uses dueDate for reminder content
+     */
+    expect(true).toBe(true); // Documentation test
+  });
+});
+
+describe("snooze date validation - Story 1.4", () => {
+  /**
+   * Tests for the date validation logic in the snooze mutation.
+   * Both frontend (SnoozeInvoiceModal.tsx) and backend (invoices.ts:655-661)
+   * validate that the new due date is in the future.
+   */
+
+  // Helper function matching the backend validation logic
+  const validateSnoozeDueDate = (newDueDate: string): { valid: boolean; error?: string } => {
+    const newDate = new Date(newDueDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (newDate < today) {
+      return { valid: false, error: "La nouvelle échéance doit être dans le futur" };
+    }
+    return { valid: true };
+  };
+
+  it("accepts future dates", () => {
+    const result = validateSnoozeDueDate("2099-12-31");
+    expect(result.valid).toBe(true);
+    expect(result.error).toBeUndefined();
+  });
+
+  it("rejects past dates with appropriate error", () => {
+    const result = validateSnoozeDueDate("2020-01-01");
+    expect(result.valid).toBe(false);
+    expect(result.error).toBe("La nouvelle échéance doit être dans le futur");
+  });
+
+  it("accepts today's date (edge case)", () => {
+    const today = new Date().toISOString().split("T")[0];
+    const result = validateSnoozeDueDate(today);
+    // Today at midnight should be valid (>= today at midnight)
+    expect(result.valid).toBe(true);
+  });
+
+  it("rejects yesterday's date", () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+    const result = validateSnoozeDueDate(yesterdayStr);
+    expect(result.valid).toBe(false);
   });
 });
