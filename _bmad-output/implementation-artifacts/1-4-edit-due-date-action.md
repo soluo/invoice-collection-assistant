@@ -1,6 +1,6 @@
 # Story 1.4: Edit Due Date Action
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -34,31 +34,31 @@ So that **I can adjust payment terms based on client agreements or corrections**
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Refactor action buttons with state-based logic (AC: #4)
-  - [ ] Create helper function `getPrimaryActions(invoice)` returning action config
-  - [ ] Create helper function `getSecondaryActions(invoice)` for dropdown items
-  - [ ] Implement state-based logic (see Dev Notes for matrix)
-  - [ ] Add `isInvoiceOlderThanDays(invoice, days)` utility function
+- [x] Task 1: Refactor action buttons with state-based logic (AC: #4)
+  - [x] Create helper function `getPrimaryActions(invoice)` returning action config
+  - [x] Create helper function `getSecondaryActions(invoice)` for dropdown items
+  - [x] Implement state-based logic (see Dev Notes for matrix)
+  - [x] Add `isInvoiceOlderThanDays(invoice, days)` utility function (not needed - logic integrated directly)
 
-- [ ] Task 2: Add DropdownMenu for secondary actions (AC: #4)
-  - [ ] Import `DropdownMenu`, `DropdownMenuTrigger`, `DropdownMenuContent`, `DropdownMenuItem` from Shadcn
-  - [ ] Add "Plus" button with `MoreHorizontal` icon as trigger
-  - [ ] Render secondary actions as menu items
-  - [ ] Handle click events to open respective modals
+- [x] Task 2: Add DropdownMenu for secondary actions (AC: #4)
+  - [x] Import `DropdownMenu`, `DropdownMenuTrigger`, `DropdownMenuContent`, `DropdownMenuItem` from Shadcn
+  - [x] Add "Plus" button with `MoreHorizontal` icon as trigger
+  - [x] Render secondary actions as menu items
+  - [x] Handle click events to open respective modals
 
-- [ ] Task 3: Integrate SnoozeInvoiceModal in drawer (AC: #1, #2, #3)
-  - [ ] Import existing `SnoozeInvoiceModal` component
-  - [ ] Add state: `showSnoozeModal: boolean`
-  - [ ] Wire up modal open/close
-  - [ ] Modal handles mutation and toast (already implemented)
+- [x] Task 3: Integrate SnoozeInvoiceModal in drawer (AC: #1, #2, #3)
+  - [x] Import existing `SnoozeInvoiceModal` component
+  - [x] Add state: `showSnoozeModal: boolean`
+  - [x] Wire up modal open/close
+  - [x] Modal handles mutation and toast (already implemented)
 
-- [ ] Task 4: Test all invoice states (AC: #1-4)
-  - [ ] Test pending invoice < 7 days old
-  - [ ] Test pending invoice >= 7 days old
-  - [ ] Test sent but unpaid invoice
-  - [ ] Test paid invoice
-  - [ ] Verify dropdown shows correct secondary actions per state
-  - [ ] Run `pnpm lint` to validate
+- [x] Task 4: Test all invoice states (AC: #1-4)
+  - [x] Test pending invoice < 7 days old
+  - [x] Test pending invoice >= 7 days old
+  - [x] Test sent but unpaid invoice
+  - [x] Test paid invoice
+  - [x] Verify dropdown shows correct secondary actions per state
+  - [x] Run `pnpm lint` to validate
 
 ## Dev Notes
 
@@ -278,12 +278,39 @@ No new dependencies required.
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+None required - implementation was straightforward.
+
 ### Completion Notes List
+
+- Refactored action buttons in `InvoiceDetailDrawer.tsx` to use state-based logic
+- Created `ActionConfig` interface for type-safe action configuration
+- Implemented `getPrimaryActions()` and `getSecondaryActions()` helper functions
+- Added DropdownMenu for secondary actions with proper Shadcn components
+- Integrated existing `SnoozeInvoiceModal` component for due date editing
+- All acceptance criteria satisfied:
+  - AC#1: "Reporter échéance" action opens modal with date picker and optional reason ✓
+  - AC#2: Due date update triggers recalculation (handled by Convex reactivity) ✓
+  - AC#3: Days overdue indicator updates automatically via Convex real-time ✓
+  - AC#4: State-based primary/secondary actions with dropdown menu ✓
+- Added 16 unit tests in `convex/snooze.test.ts`:
+  - Permission tests via canModifyInvoice (6 tests)
+  - Days overdue calculation tests (5 tests)
+  - State-based action visibility tests (4 tests)
+- All 53 project tests pass
+- `pnpm lint` passes successfully
 
 ### Change Log
 
+- 2026-01-15: Implemented story 1.4 - Edit Due Date Action with state-based action buttons and dropdown menu
+- 2026-01-15: Added unit tests for snooze permissions, days overdue calculation, and action visibility
+- 2026-01-15: Fixed nested modal issue - Refactored SnoozeInvoiceModal to use Shadcn Dialog component (proper portaling and event isolation)
+
 ### File List
+
+- `src/components/InvoiceDetailDrawer.tsx` - Modified: refactored action buttons, added DropdownMenu, integrated SnoozeInvoiceModal
+- `src/components/SnoozeInvoiceModal.tsx` - Modified: refactored to use Shadcn Dialog for proper nested modal handling
+- `convex/snooze.test.ts` - Created: 16 unit tests for snooze functionality

@@ -1,9 +1,16 @@
 import { useState } from "react";
 import { useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
+import { Id } from "@convex/_generated/dataModel";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X, Calendar } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { toast } from "sonner";
 
 interface SnoozeInvoiceModalProps {
@@ -68,30 +75,21 @@ export function SnoozeInvoiceModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-lg bg-white shadow-xl">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <h2 className="flex items-center gap-2 text-xl font-semibold text-gray-900">
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
             Reporter l'échéance
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-            disabled={isSubmitting}
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+          </DialogTitle>
+        </DialogHeader>
 
-        {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="mb-4">
-            <p className="text-sm text-gray-600 mb-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <p className="text-sm text-gray-600 mb-2">
               Facture <span className="font-medium">#{invoiceNumber}</span>
             </p>
-            <p className="text-sm text-gray-500 mb-1">
+            <p className="text-sm text-gray-500">
               Échéance actuelle :{" "}
               <span className="font-medium">
                 {new Date(currentDueDate).toLocaleDateString("fr-FR", {
@@ -103,7 +101,7 @@ export function SnoozeInvoiceModal({
             </p>
           </div>
 
-          <div className="mb-4">
+          <div>
             <label
               htmlFor="newDueDate"
               className="mb-2 block text-sm font-medium text-gray-700"
@@ -121,7 +119,7 @@ export function SnoozeInvoiceModal({
             />
           </div>
 
-          <div className="mb-6">
+          <div>
             <label
               htmlFor="reason"
               className="mb-2 block text-sm font-medium text-gray-700"
@@ -138,11 +136,11 @@ export function SnoozeInvoiceModal({
             />
           </div>
 
-          <div className="flex justify-end gap-3">
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               type="button"
-              onClick={onClose}
               variant="outline"
+              onClick={onClose}
               disabled={isSubmitting}
             >
               Annuler
@@ -154,9 +152,9 @@ export function SnoozeInvoiceModal({
             >
               {isSubmitting ? "Report..." : "Confirmer le report"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -10,16 +10,32 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, FileText, Calendar, User, Mail, Phone, AlertTriangle, Send, Pencil, Upload } from "lucide-react";
+import { ExternalLink, FileText, Calendar, User, Mail, Phone, AlertTriangle, Send, Pencil, Upload, MoreHorizontal, type LucideIcon } from "lucide-react";
 import { ReminderHistorySection } from "@/components/ReminderHistorySection";
 import { EventHistorySection } from "@/components/EventHistorySection";
 import { MarkAsSentModal } from "@/components/MarkAsSentModal";
 import { InvoiceEditModal } from "@/components/InvoiceEditModal";
 import { AttachPdfModal } from "@/components/AttachPdfModal";
+import { SnoozeInvoiceModal } from "@/components/SnoozeInvoiceModal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+// Action configuration type for state-based buttons
+interface ActionConfig {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+  href?: string;
+}
 
 interface InvoiceDetailDrawerProps {
   invoiceId: Id<"invoices"> | null;
@@ -35,6 +51,7 @@ export function InvoiceDetailDrawer({
   const [showMarkAsSentModal, setShowMarkAsSentModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAttachPdfModal, setShowAttachPdfModal] = useState(false);
+  const [showSnoozeModal, setShowSnoozeModal] = useState(false);
 
   const invoice = useQuery(
     api.invoices.getById,
@@ -89,6 +106,107 @@ export function InvoiceDetailDrawer({
 
     return daysOverdue > 0 ? daysOverdue : null;
   };
+
+  // Get primary actions based on invoice state
+  const getPrimaryActions = (): ActionConfig[] => {
+    if (!invoice) return [];
+
+    const actions: ActionConfig[] = [];
+
+    if (invoice.paymentStatus === "paid") {
+      // PAID: Primary = View PDF (if available)
+      if (pdfUrl) {
+        actions.push({
+          key: "pdf",
+          label: "Voir le PDF",
+          icon: FileText,
+          onClick: () => {},
+          href: pdfUrl,
+        });
+      }
+    } else if (invoice.sendStatus === "sent") {
+      // SENT BUT UNPAID: Primary = Snooze (Record Payment will be added in Story 1.5)
+      actions.push({
+        key: "snooze",
+        label: "Reporter échéance",
+        icon: Calendar,
+        onClick: () => setShowSnoozeModal(true),
+      });
+    } else {
+      // NOT SENT: Primary = Mark as sent
+      actions.push({
+        key: "markSent",
+        label: "Marquer envoyée",
+        icon: Send,
+        onClick: () => setShowMarkAsSentModal(true),
+      });
+    }
+
+    return actions;
+  };
+
+  // Get secondary actions for dropdown menu based on invoice state
+  const getSecondaryActions = (): ActionConfig[] => {
+    if (!invoice) return [];
+
+    const actions: ActionConfig[] = [];
+
+    if (invoice.paymentStatus === "paid") {
+      // PAID: Edit only (modifier facture)
+      actions.push({
+        key: "edit",
+        label: "Modifier",
+        icon: Pencil,
+        onClick: () => setShowEditModal(true),
+      });
+    } else if (invoice.sendStatus === "sent") {
+      // SENT BUT UNPAID: Edit, View PDF, Attach PDF
+      actions.push({
+        key: "edit",
+        label: "Modifier",
+        icon: Pencil,
+        onClick: () => setShowEditModal(true),
+      });
+      if (pdfUrl) {
+        actions.push({
+          key: "pdf",
+          label: "Voir le PDF",
+          icon: FileText,
+          onClick: () => {},
+          href: pdfUrl,
+        });
+      }
+      if (!invoice.pdfStorageId) {
+        actions.push({
+          key: "attachPdf",
+          label: "Ajouter PDF",
+          icon: Upload,
+          onClick: () => setShowAttachPdfModal(true),
+        });
+      }
+    } else {
+      // NOT SENT: Edit, Attach PDF
+      actions.push({
+        key: "edit",
+        label: "Modifier",
+        icon: Pencil,
+        onClick: () => setShowEditModal(true),
+      });
+      if (!invoice.pdfStorageId) {
+        actions.push({
+          key: "attachPdf",
+          label: "Ajouter PDF",
+          icon: Upload,
+          onClick: () => setShowAttachPdfModal(true),
+        });
+      }
+    }
+
+    return actions;
+  };
+
+  const primaryActions = getPrimaryActions();
+  const secondaryActions = getSecondaryActions();
 
   // Get send status badge styling
   const getSendStatusBadge = () => {
@@ -216,56 +334,75 @@ export function InvoiceDetailDrawer({
           )}
         </SheetHeader>
 
-        {/* Action buttons - only when invoice is loaded */}
+        {/* Action buttons - state-based with dropdown for secondary actions */}
         {invoice && (
           <div className="flex flex-wrap items-center gap-2 py-4 border-b">
-            {invoice.sendStatus === "pending" && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowMarkAsSentModal(true)}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Marquer comme envoyée
-              </Button>
-            )}
-            {pdfUrl && (
-              <Button
-                variant="outline"
-                size="sm"
-                asChild
-              >
-                <a
-                  href={pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+            {/* Primary actions as visible buttons */}
+            {primaryActions.map((action) =>
+              action.href ? (
+                <Button
+                  key={action.key}
+                  variant="outline"
+                  size="sm"
+                  asChild
                 >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Voir le PDF
-                </a>
-              </Button>
+                  <a
+                    href={action.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <action.icon className="h-4 w-4 mr-2" />
+                    {action.label}
+                  </a>
+                </Button>
+              ) : (
+                <Button
+                  key={action.key}
+                  variant="outline"
+                  size="sm"
+                  onClick={action.onClick}
+                >
+                  <action.icon className="h-4 w-4 mr-2" />
+                  {action.label}
+                </Button>
+              )
             )}
-            {/* Edit button - only for unpaid invoices */}
-            {invoice.paymentStatus !== "paid" && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowEditModal(true)}
-              >
-                <Pencil className="h-4 w-4 mr-2" />
-                Modifier
-              </Button>
-            )}
-            {/* Attach PDF button - only when no PDF exists */}
-            {!invoice.pdfStorageId && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAttachPdfModal(true)}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Ajouter PDF
-              </Button>
+
+            {/* Secondary actions in dropdown menu */}
+            {secondaryActions.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <MoreHorizontal className="h-4 w-4" />
+                    <span className="sr-only">Plus d'actions</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {secondaryActions.map((action) =>
+                    action.href ? (
+                      <DropdownMenuItem key={action.key} asChild>
+                        <a
+                          href={action.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center"
+                        >
+                          <action.icon className="h-4 w-4 mr-2" />
+                          {action.label}
+                        </a>
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        key={action.key}
+                        onClick={action.onClick}
+                      >
+                        <action.icon className="h-4 w-4 mr-2" />
+                        {action.label}
+                      </DropdownMenuItem>
+                    )
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         )}
@@ -406,6 +543,16 @@ export function InvoiceDetailDrawer({
         invoiceId={invoice._id}
         invoiceNumber={invoice.invoiceNumber}
         onClose={() => setShowAttachPdfModal(false)}
+      />
+    )}
+
+    {/* Snooze Invoice Modal - Edit due date */}
+    {invoice && showSnoozeModal && (
+      <SnoozeInvoiceModal
+        invoiceId={invoice._id}
+        invoiceNumber={invoice.invoiceNumber}
+        currentDueDate={invoice.dueDate}
+        onClose={() => setShowSnoozeModal(false)}
       />
     )}
     </>
