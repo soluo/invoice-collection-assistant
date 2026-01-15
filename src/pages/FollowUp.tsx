@@ -29,6 +29,7 @@ import {
 import { formatDistanceToNow, format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { EmailPreviewModalFollowUp } from "@/components/EmailPreviewModalFollowUp";
@@ -82,6 +83,9 @@ export function FollowUp() {
   const handleExitSimulation = () => {
     setSimulationDate(null);
     setTestSentIds(new Set());
+    toast.success("Mode simulation terminé", {
+      description: "Retour aux relances réelles",
+    });
   };
 
   // Group upcoming reminders by date

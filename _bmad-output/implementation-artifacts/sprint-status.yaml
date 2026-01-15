@@ -75,7 +75,9 @@ development_status:
   epic-5: in-progress
   5-1-send-test-email-to-custom-address: done
   5-2-admin-date-simulation-on-follow-up: done
-  5-3-test-send-and-cleanup-simulated-reminders: review
+  5-3-test-send-and-cleanup-simulated-reminders: done
+  # Story 5.4: Permet de générer de VRAIES relances en BDD pour tester le flux complet
+  5-4-trigger-reminder-cron-manually-dev: backlog
   epic-5-retrospective: optional
 
   # Epic 6: Améliorations Post-Demo - Quick Wins (Priority: High for bugs)

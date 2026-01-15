@@ -1,6 +1,6 @@
 # Story 5.3: Test Send and Cleanup Simulated Reminders
 
-Status: review
+Status: done
 
 ## Story
 
@@ -552,4 +552,46 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `convex/emails.ts` - Added `sendSimulatedTestEmail` action, `getInvoiceForTestEmail` and `getOrgWithTokensAndSteps` internal queries
 - `src/components/EmailPreviewModalFollowUp.tsx` - Added test email dialog, "Envoyer en test" button, and `onTestSent` prop
 - `src/pages/FollowUp.tsx` - Added `testSentIds` state, `handleTestSent` and `handleExitSimulation` handlers, passed props through ReminderGroup to ReminderCard, added "Test envoyé" badge
+- `convex/reminders.ts` - Fixed amount formatting to French locale in `replaceTemplatePlaceholders`
+
+## Senior Developer Review (AI)
+
+**Reviewed:** 2026-01-15
+**Reviewer:** Claude Opus 4.5 (code-review workflow)
+**Outcome:** Approved with fixes applied
+
+### Findings Summary
+
+| # | Severity | Description | Resolution |
+|---|----------|-------------|------------|
+| 1 | MEDIUM | Toast de confirmation manquant lors de la sortie du mode simulation | **FIXED** - Added `toast.success()` in `handleExitSimulation` |
+| 2 | MEDIUM | Performance: `generateSimulatedReminders` charge toutes les factures en mémoire | Noted for future optimization (non-blocking) |
+| 3 | LOW | Email de test contient l'adresse du vrai client (intentionnel pour contexte) | Accepted as-is |
+| 4 | LOW | Default silencieux du `reminderStepIndex` à 0 si format inattendu | Noted for future improvement |
+| 5 | LOW | Pas d'audit trail pour les emails de test envoyés | Noted for future consideration |
+| 6 | LOW | Type `any` pour `reminder` prop dans EmailPreviewModalFollowUp | Noted for future typing improvement |
+| 7 | LOW | Changement formatage montant dans `convex/reminders.ts` non documenté | Added to File List |
+
+### Fixes Applied
+
+1. **Toast de confirmation ajouté** (`src/pages/FollowUp.tsx:86-88`):
+   ```tsx
+   toast.success("Mode simulation terminé", {
+     description: "Retour aux relances réelles",
+   });
+   ```
+
+2. **Import toast ajouté** (`src/pages/FollowUp.tsx:32`):
+   ```tsx
+   import { toast } from "sonner";
+   ```
+
+### Verification
+
+- `pnpm lint` passed after fixes
+- All ACs validated against implementation
+
+### Notes for Future Stories
+
+- Story 5.4 recommended: "Execute Reminder Cron Manually (Dev Mode)" to generate REAL reminders in DB for end-to-end testing
 
