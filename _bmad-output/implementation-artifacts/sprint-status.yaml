@@ -1,4 +1,4 @@
-# generated: 2026-01-12
+# generated: 2026-01-15
 # project: invoice-collection-assistant
 # project_key: relancezen
 # tracking_system: file-system
@@ -33,7 +33,7 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-01-12
+generated: 2026-01-15
 project: invoice-collection-assistant
 project_key: relancezen
 tracking_system: file-system
@@ -85,3 +85,18 @@ development_status:
   6-3-edit-and-reassign-invoice: done
   6-4-filtered-history-on-followup: done
   epic-6-retrospective: optional
+
+  # Epic 7: Templates Email Avancés (Priority: Medium)
+  epic-7: backlog
+  7-1-template-envoi-initial-facture: backlog
+  7-2-template-email-invitation: backlog
+  7-3-pieces-jointes-aux-relances: backlog
+  7-4-signature-email-avec-image: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: Gestion Chèques Avancée (Priority: Medium)
+  epic-8: backlog
+  8-1-statut-cheque-en-attente-notes: backlog
+  8-2-relance-peremption-cheques: backlog
+  8-3-paiement-recu-par-technicien: backlog
+  epic-8-retrospective: optional
