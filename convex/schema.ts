@@ -235,7 +235,10 @@ const applicationTables = {
     // Dates
     recordedDate: v.string(), // Date d'enregistrement du paiement (YYYY-MM-DD)
     receivedDate: v.optional(v.string()), // Date réelle d'encaissement (pour status: received)
-    expectedDepositDate: v.optional(v.string()), // Date souhaitée d'encaissement (pour checks pending)
+    expectedDepositDate: v.optional(v.string()), // Date souhaitée d'encaissement (pour checks)
+
+    // Check-specific fields (Story 1.5)
+    checkIssueDate: v.optional(v.string()), // Date d'émission du chèque (YYYY-MM-DD)
 
     // Métadonnées
     notes: v.optional(v.string()),

@@ -13,7 +13,7 @@ import InvoiceTableRow from "@/components/mainView/InvoiceTableRow";
 import InvoiceTableCard from "@/components/mainView/InvoiceTableCard";
 import EmailPreviewModal from "@/components/modals/EmailPreviewModal";
 import MarkAsPaidModal from "@/components/modals/MarkAsPaidModal";
-import RecordPaymentModal from "@/components/modals/RecordPaymentModal";
+import { RecordPaymentModal } from "@/components/RecordPaymentModal";
 import { MarkAsSentModal } from "@/components/MarkAsSentModal";
 import { InvoiceDetailDrawer } from "@/components/InvoiceDetailDrawer";
 import { InvoiceEditModal } from "@/components/InvoiceEditModal";
@@ -139,14 +139,9 @@ export default function MainView() {
     }
   };
 
-  const handleConfirmRecordPayment = async (data: any) => {
-    try {
-      // TODO: Implémenter la mutation recordPayment
-      console.log("Record payment:", data);
-      toast.success("Paiement enregistré avec succès");
-    } catch (error: any) {
-      toast.error(error.message || "Erreur lors de l'enregistrement");
-    }
+  const handleCloseRecordPayment = () => {
+    setRecordPaymentOpen(false);
+    setSelectedInvoice(null);
   };
 
   return (
@@ -288,16 +283,16 @@ export default function MainView() {
         )}
       </div>
 
-      {/* Modals (réutiliser les existants) */}
-      <RecordPaymentModal
-        open={recordPaymentOpen}
-        onClose={() => {
-          setRecordPaymentOpen(false);
-          setSelectedInvoice(null);
-        }}
-        invoice={selectedInvoice}
-        onConfirm={handleConfirmRecordPayment}
-      />
+      {/* Record Payment Modal - Story 1.5 */}
+      {recordPaymentOpen && selectedInvoice && (
+        <RecordPaymentModal
+          invoiceId={selectedInvoice._id}
+          invoiceNumber={selectedInvoice.invoiceNumber}
+          amountTTC={selectedInvoice.amountTTC}
+          outstandingBalance={selectedInvoice.outstandingBalance}
+          onClose={handleCloseRecordPayment}
+        />
+      )}
 
       <MarkAsPaidModal
         open={markAsPaidOpen}

@@ -18,13 +18,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, FileText, Calendar, User, Mail, Phone, AlertTriangle, Send, Pencil, Upload, MoreHorizontal, type LucideIcon } from "lucide-react";
+import { ExternalLink, FileText, Calendar, User, Mail, Phone, AlertTriangle, Send, Pencil, Upload, MoreHorizontal, CreditCard, type LucideIcon } from "lucide-react";
 import { ReminderHistorySection } from "@/components/ReminderHistorySection";
 import { EventHistorySection } from "@/components/EventHistorySection";
 import { MarkAsSentModal } from "@/components/MarkAsSentModal";
 import { InvoiceEditModal } from "@/components/InvoiceEditModal";
 import { AttachPdfModal } from "@/components/AttachPdfModal";
 import { SnoozeInvoiceModal } from "@/components/SnoozeInvoiceModal";
+import { RecordPaymentModal } from "@/components/RecordPaymentModal";
+import { PaymentHistorySection } from "@/components/PaymentHistorySection";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -52,6 +54,7 @@ export function InvoiceDetailDrawer({
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAttachPdfModal, setShowAttachPdfModal] = useState(false);
   const [showSnoozeModal, setShowSnoozeModal] = useState(false);
+  const [showRecordPaymentModal, setShowRecordPaymentModal] = useState(false);
 
   const invoice = useQuery(
     api.invoices.getById,
@@ -125,8 +128,13 @@ export function InvoiceDetailDrawer({
         });
       }
     } else if (invoice.sendStatus === "sent") {
-      // SENT BUT UNPAID: Primary = Snooze
-      // TODO: Add "Enregistrer paiement" button here
+      // SENT BUT UNPAID: Primary = Record Payment + Snooze
+      actions.push({
+        key: "recordPayment",
+        label: "Enregistrer paiement",
+        icon: CreditCard,
+        onClick: () => setShowRecordPaymentModal(true),
+      });
       actions.push({
         key: "snooze",
         label: "Reporter échéance",
@@ -499,6 +507,9 @@ export function InvoiceDetailDrawer({
               </div>
             )}
 
+            {/* Payment History - Story 1.5 */}
+            <PaymentHistorySection invoiceId={invoice._id} />
+
             {/* Reminder History */}
             <ReminderHistorySection invoiceId={invoice._id} />
 
@@ -554,6 +565,17 @@ export function InvoiceDetailDrawer({
         invoiceNumber={invoice.invoiceNumber}
         currentDueDate={invoice.dueDate}
         onClose={() => setShowSnoozeModal(false)}
+      />
+    )}
+
+    {/* Record Payment Modal - Story 1.5 */}
+    {invoice && showRecordPaymentModal && (
+      <RecordPaymentModal
+        invoiceId={invoice._id}
+        invoiceNumber={invoice.invoiceNumber}
+        amountTTC={invoice.amountTTC}
+        outstandingBalance={invoice.outstandingBalance}
+        onClose={() => setShowRecordPaymentModal(false)}
       />
     )}
     </>

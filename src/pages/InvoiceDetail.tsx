@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, MessageSquare, Calendar, Send, Pencil, Upload } from "lucide-react";
 import { InvoiceTimeline } from "@/components/InvoiceTimeline";
-import { PaymentRecordModal } from "@/components/PaymentRecordModal";
+import { RecordPaymentModal } from "@/components/RecordPaymentModal";
+import { PaymentHistorySection } from "@/components/PaymentHistorySection";
 import { SnoozeInvoiceModal } from "@/components/SnoozeInvoiceModal";
 import { MarkAsSentModal } from "@/components/MarkAsSentModal";
 import { InvoiceEditModal } from "@/components/InvoiceEditModal";
@@ -327,6 +328,9 @@ export function InvoiceDetail() {
                   )}
                 </div>
               )}
+
+              {/* Payment History - Story 1.5 */}
+              <PaymentHistorySection invoiceId={invoice._id} />
             </dl>
           </div>
         </div>
@@ -411,12 +415,12 @@ export function InvoiceDetail() {
         </div>
       </div>
 
-      {/* Payment modal */}
+      {/* Payment modal - Story 1.5 */}
       {isPaymentModalOpen && (
-        <PaymentRecordModal
+        <RecordPaymentModal
           invoiceId={id as Id<"invoices">}
           invoiceNumber={invoice.invoiceNumber}
-          clientName={invoice.clientName}
+          amountTTC={invoice.amountTTC}
           outstandingBalance={invoice.outstandingBalance}
           onClose={() => setIsPaymentModalOpen(false)}
         />

@@ -26,6 +26,7 @@ export const getPaymentsByInvoice = query({
       recordedDate: v.string(),
       receivedDate: v.optional(v.string()),
       expectedDepositDate: v.optional(v.string()),
+      checkIssueDate: v.optional(v.string()), // Story 1.5: date d'émission du chèque
       notes: v.optional(v.string()),
       createdAt: v.number(),
     })
@@ -128,7 +129,8 @@ export const recordPayment = mutation({
         type: v.union(v.literal("bank_transfer"), v.literal("check")),
         amount: v.number(),
         receivedDate: v.optional(v.string()), // Pour bank_transfer (date de réception)
-        expectedDepositDate: v.optional(v.string()), // Pour check (date souhaitée)
+        checkIssueDate: v.optional(v.string()), // Pour check (date d'émission)
+        expectedDepositDate: v.optional(v.string()), // Pour check (date d'encaissement souhaitée)
         notes: v.optional(v.string()),
       })
     ),
@@ -174,51 +176,40 @@ export const recordPayment = mutation({
     const now = Date.now();
     const today = new Date().toISOString().split("T")[0];
 
-    let totalReceived = 0;
-    let totalPending = 0;
-
+    // Story 1.5: Tous les paiements (y compris chèques) sont "received"
+    // Un chèque reçu = paiement effectué immédiatement (règle métier)
     for (const payment of payments) {
-      const status: "received" | "pending" =
-        payment.type === "bank_transfer" ? "received" : "pending";
-
       await ctx.db.insert("payments", {
         organizationId: user.organizationId,
         invoiceId,
         userId,
         type: payment.type,
         amount: payment.amount,
-        status,
+        status: "received", // Story 1.5: toujours "received"
         recordedDate: today,
-        receivedDate: payment.type === "bank_transfer" ? payment.receivedDate : undefined,
+        receivedDate: payment.receivedDate ?? today,
+        checkIssueDate: payment.type === "check" ? payment.checkIssueDate : undefined,
         expectedDepositDate: payment.type === "check" ? payment.expectedDepositDate : undefined,
         notes: payment.notes,
         createdAt: now,
       });
-
-      if (status === "received") {
-        totalReceived += payment.amount;
-      } else {
-        totalPending += payment.amount;
-      }
     }
 
-    // Mettre à jour le montant payé de la facture (uniquement les paiements "received")
-    const newPaidAmount = currentPaidAmount + totalReceived;
+    // Mettre à jour le montant payé de la facture
+    const newPaidAmount = currentPaidAmount + totalNewPayments;
 
     // Calculer le nouveau statut de paiement
+    // Story 1.5: Simplifié - pas de "pending_payment" puisque chèques sont "received"
     let newPaymentStatus: "unpaid" | "partial" | "pending_payment" | "paid";
 
     if (newPaidAmount >= invoice.amountTTC - 0.01) {
       // Facture entièrement payée
       newPaymentStatus = "paid";
-    } else if (newPaidAmount + totalPending >= invoice.amountTTC - 0.01) {
-      // Chèques en attente qui couvrent le reste
-      newPaymentStatus = "pending_payment";
     } else if (newPaidAmount > 0) {
       // Paiement partiel
       newPaymentStatus = "partial";
     } else {
-      // Pas encore payé (uniquement des chèques pending ne couvrant pas le total)
+      // Pas encore payé
       newPaymentStatus = "unpaid";
     }
 

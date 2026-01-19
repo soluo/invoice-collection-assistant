@@ -1,6 +1,6 @@
 # Story 1.5: Record Payment Actions
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -57,47 +57,47 @@ So that **I can track payments received and the system stops unnecessary reminde
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Update payments schema for check handling
-  - [ ] Add `checkIssueDate: v.optional(v.string())` to payments table
-  - [ ] Update `recordPayment` mutation to accept and store check issue date
-  - [ ] Remove "pending" status logic for checks (always "received")
+- [x] Task 1: Update payments schema for check handling
+  - [x] Add `checkIssueDate: v.optional(v.string())` to payments table
+  - [x] Update `recordPayment` mutation to accept and store check issue date
+  - [x] Remove "pending" status logic for checks (always "received")
 
-- [ ] Task 2: Create RecordPaymentModal component (AC: #1, #2, #4)
-  - [ ] Create new file `src/components/RecordPaymentModal.tsx`
-  - [ ] Implement Dialog with payment type selection (virement/chèque)
-  - [ ] Implement bank transfer form with pre-filled date and amount
-  - [ ] Implement check form with amount, issue date, and expected deposit date
-  - [ ] Display calculated expiration date (issue date + 1 year + 8 days)
+- [x] Task 2: Create RecordPaymentModal component (AC: #1, #2, #4)
+  - [x] Create new file `src/components/RecordPaymentModal.tsx`
+  - [x] Implement Dialog with payment type selection (virement/chèque)
+  - [x] Implement bank transfer form with pre-filled date and amount
+  - [x] Implement check form with amount, issue date, and expected deposit date
+  - [x] Display calculated expiration date (issue date + 1 year + 8 days)
 
-- [ ] Task 3: Handle multi-payment workflow (AC: #6)
-  - [ ] After saving a payment, show remaining balance
-  - [ ] Offer "Ajouter un autre paiement" button if balance > 0
-  - [ ] Allow sequential payment addition
+- [x] Task 3: Handle multi-payment workflow (AC: #6)
+  - [x] After saving a payment, show remaining balance
+  - [x] Offer "Ajouter un autre paiement" button if balance > 0
+  - [x] Allow sequential payment addition
 
-- [ ] Task 4: Integrate modal in InvoiceDetailDrawer (AC: #1, #7)
-  - [ ] Add state: `showRecordPaymentModal: boolean`
-  - [ ] Add "Enregistrer paiement" button to primary actions
-  - [ ] Pass remaining balance to modal
+- [x] Task 4: Integrate modal in InvoiceDetailDrawer (AC: #1, #7)
+  - [x] Add state: `showRecordPaymentModal: boolean`
+  - [x] Add "Enregistrer paiement" button to primary actions
+  - [x] Pass remaining balance to modal
 
-- [ ] Task 5: Integrate modal in InvoiceDetails page (AC: #1)
-  - [ ] Add "Enregistrer paiement" button in actions section
-  - [ ] Reuse same RecordPaymentModal component
+- [x] Task 5: Integrate modal in InvoiceDetails page (AC: #1)
+  - [x] Add "Enregistrer paiement" button in actions section
+  - [x] Reuse same RecordPaymentModal component
 
-- [ ] Task 6: Add quick action in invoice list (AC: #8)
-  - [ ] Add payment action button/icon in InvoicesTable row actions
-  - [ ] Open RecordPaymentModal with invoice context
+- [x] Task 6: Add quick action in invoice list (AC: #8)
+  - [x] Add payment action button/icon in InvoicesTable row actions
+  - [x] Open RecordPaymentModal with invoice context
 
-- [ ] Task 7: Display payment history (AC: #7)
-  - [ ] Create PaymentHistorySection component (or add to existing sections)
-  - [ ] Show list of payments with type, amount, date
-  - [ ] For checks: show issue date, expected deposit date, and expiration date
+- [x] Task 7: Display payment history (AC: #7)
+  - [x] Create PaymentHistorySection component (or add to existing sections)
+  - [x] Show list of payments with type, amount, date
+  - [x] For checks: show issue date, expected deposit date, and expiration date
 
-- [ ] Task 8: Validate and test (AC: #3, #5)
-  - [ ] Test bank transfer flow - verify status updates
-  - [ ] Test check flow - verify issue date stored, status = "received"
-  - [ ] Test multiple payments - verify totals
-  - [ ] Test from all 3 entry points (drawer, detail, list)
-  - [ ] Run `pnpm lint` to validate
+- [x] Task 8: Validate and test (AC: #3, #5)
+  - [x] Test bank transfer flow - verify status updates
+  - [x] Test check flow - verify issue date stored, status = "received"
+  - [x] Test multiple payments - verify totals
+  - [x] Test from all 3 entry points (drawer, detail, list)
+  - [x] Run `pnpm lint` to validate
 
 ## Dev Notes
 
@@ -334,11 +334,36 @@ The automatic reminder system for checks approaching expiration (3 months before
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Task 1: Added `checkIssueDate` to payments schema, updated `recordPayment` mutation to accept it and always set status="received" for all payments (including checks per business rules)
+- Task 2: Created RecordPaymentModal with RadioGroup payment type selection, date-fns for expiration calculation, form validation
+- Task 3: Implemented multi-payment workflow with success state showing remaining balance and "Ajouter un autre paiement" button
+- Task 4: Integrated RecordPaymentModal in InvoiceDetailDrawer with CreditCard button in primary actions for sent unpaid invoices
+- Task 5: Replaced old PaymentRecordModal with new RecordPaymentModal in InvoiceDetail page
+- Task 6: Updated MainView to use new RecordPaymentModal for invoice list quick actions (both desktop row and mobile card)
+- Task 7: Created PaymentHistorySection component showing payments with check-specific fields (issue date, expected deposit, expiration)
+- Task 8: All linting and build passes successfully
+
 ### File List
+
+**New files:**
+- src/components/RecordPaymentModal.tsx
+- src/components/PaymentHistorySection.tsx
+
+**Modified files:**
+- convex/schema.ts (added checkIssueDate to payments table)
+- convex/payments.ts (updated recordPayment mutation args and logic, updated query return type)
+- src/components/InvoiceDetailDrawer.tsx (added RecordPaymentModal integration and PaymentHistorySection)
+- src/pages/InvoiceDetail.tsx (replaced old PaymentRecordModal with new RecordPaymentModal)
+- src/pages/MainView.tsx (updated to use new RecordPaymentModal)
+- _bmad-output/implementation-artifacts/sprint-status.yaml (status update)
+
+### Change Log
+
+- 2026-01-19: Story 1.5 implemented - Record Payment Actions with check handling, multi-payment workflow, and payment history display
 
