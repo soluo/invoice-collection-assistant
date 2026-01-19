@@ -1,6 +1,6 @@
 # Story 1.5: Record Payment Actions
 
-Status: review
+Status: done
 
 ## Story
 
@@ -366,4 +366,31 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 ### Change Log
 
 - 2026-01-19: Story 1.5 implemented - Record Payment Actions with check handling, multi-payment workflow, and payment history display
+- 2026-01-19: Code review fixes applied (see Senior Developer Review section)
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.5
+**Date:** 2026-01-19
+**Outcome:** ✅ APPROVED (after fixes)
+
+### Issues Found & Fixed
+
+| Severity | Issue | File | Fix Applied |
+|----------|-------|------|-------------|
+| HIGH | Payment button visible for paid invoices | InvoiceDetail.tsx:219 | Added condition `paymentStatus !== "paid"` |
+| HIGH | Payment blocked for non-sent invoices | Drawer, Detail, List | Payment now available for ALL unpaid invoices (use case: check collected at service) |
+| MEDIUM | Timezone bug - toISOString() returns UTC | RecordPaymentModal.tsx:47 | Replaced with `formatISO(new Date(), { representation: "date" })` |
+| MEDIUM | PaymentHistorySection inside `<dl>` - invalid HTML | InvoiceDetail.tsx:333 | Moved outside `</dl>` closing tag |
+| MEDIUM | "Reçu le" label confusing for checks | PaymentHistorySection.tsx:103 | Changed to "Enregistré le" for checks, kept "Reçu le" for bank transfers |
+| MEDIUM | confirmCheckDeposit obsolete per business rules | payments.ts:245 | Added @deprecated JSDoc comment explaining the situation |
+| LOW | `any` type for invoice prop | InvoiceTableRow/Card.tsx | Not fixed - outside story scope |
+| LOW | Delete action non-functional | InvoiceTableRow/Card.tsx | Not fixed - outside story scope |
+
+### Verification
+
+- ✅ All HIGH and MEDIUM issues fixed
+- ✅ `pnpm lint` passes
+- ✅ Build successful
+- ✅ All Acceptance Criteria verified as implemented
 

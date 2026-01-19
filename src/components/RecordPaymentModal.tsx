@@ -15,8 +15,11 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CreditCard, CheckCircle, Banknote, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { addYears, addDays, format } from "date-fns";
+import { addYears, addDays, format, formatISO } from "date-fns";
 import { fr } from "date-fns/locale";
+
+// Helper to get today's date in local timezone as YYYY-MM-DD
+const getTodayLocalDate = () => formatISO(new Date(), { representation: "date" });
 
 interface RecordPaymentModalProps {
   invoiceId: Id<"invoices">;
@@ -44,11 +47,9 @@ export function RecordPaymentModal({
   // Form state
   const [paymentType, setPaymentType] = useState<PaymentType>("bank_transfer");
   const [amount, setAmount] = useState(outstandingBalance.toFixed(2));
-  const [receivedDate, setReceivedDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
-  const [checkIssueDate, setCheckIssueDate] = useState("");
-  const [expectedDepositDate, setExpectedDepositDate] = useState("");
+  const [receivedDate, setReceivedDate] = useState(getTodayLocalDate);
+  const [checkIssueDate, setCheckIssueDate] = useState(getTodayLocalDate);
+  const [expectedDepositDate, setExpectedDepositDate] = useState(getTodayLocalDate);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const recordPayment = useMutation(api.payments.recordPayment);
@@ -138,9 +139,9 @@ export function RecordPaymentModal({
     // Reset form for another payment
     setPaymentType("bank_transfer");
     setAmount(currentBalance.toFixed(2));
-    setReceivedDate(new Date().toISOString().split("T")[0]);
-    setCheckIssueDate("");
-    setExpectedDepositDate("");
+    setReceivedDate(getTodayLocalDate());
+    setCheckIssueDate(getTodayLocalDate());
+    setExpectedDepositDate(getTodayLocalDate());
     setModalState("form");
   };
 

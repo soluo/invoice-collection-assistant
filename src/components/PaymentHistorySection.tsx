@@ -98,11 +98,11 @@ export function PaymentHistorySection({ invoiceId }: PaymentHistorySectionProps)
               </div>
 
               <div className="mt-2 text-xs text-gray-600 space-y-1">
-                {/* Date reçue */}
+                {/* Date enregistrement/réception */}
                 <div className="flex justify-between">
-                  <span>Reçu le :</span>
+                  <span>{payment.type === "check" ? "Enregistré le :" : "Reçu le :"}</span>
                   <span className="font-medium">
-                    {formatDate(payment.receivedDate || payment.recordedDate)}
+                    {formatDate(payment.recordedDate)}
                   </span>
                 </div>
 

@@ -216,12 +216,14 @@ export function InvoiceDetail() {
             Marquer comme envoyée
           </Button>
         )}
-        <Button
-          onClick={() => setIsPaymentModalOpen(true)}
-          className="bg-green-600 hover:bg-green-700"
-        >
-          Enregistrer un paiement
-        </Button>
+        {invoice.paymentStatus !== "paid" && (
+          <Button
+            onClick={() => setIsPaymentModalOpen(true)}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            Enregistrer un paiement
+          </Button>
+        )}
         <Button
           onClick={() => setIsSnoozeModalOpen(true)}
           variant="outline"
@@ -328,10 +330,10 @@ export function InvoiceDetail() {
                   )}
                 </div>
               )}
-
-              {/* Payment History - Story 1.5 */}
-              <PaymentHistorySection invoiceId={invoice._id} />
             </dl>
+
+            {/* Payment History - Story 1.5 (outside dl for valid HTML) */}
+            <PaymentHistorySection invoiceId={invoice._id} />
           </div>
         </div>
 

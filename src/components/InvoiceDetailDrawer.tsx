@@ -142,12 +142,18 @@ export function InvoiceDetailDrawer({
         onClick: () => setShowSnoozeModal(true),
       });
     } else {
-      // NOT SENT: Primary = Mark as sent
+      // NOT SENT: Primary = Mark as sent + Record Payment (chèque récupéré à la prestation)
       actions.push({
         key: "markSent",
         label: "Marquer envoyée",
         icon: Send,
         onClick: () => setShowMarkAsSentModal(true),
+      });
+      actions.push({
+        key: "recordPayment",
+        label: "Enregistrer paiement",
+        icon: CreditCard,
+        onClick: () => setShowRecordPaymentModal(true),
       });
     }
 

@@ -128,8 +128,8 @@ export default function InvoiceTableCard({ invoice, onAction, onInvoiceClick }: 
           </Button>
         )}
 
-        {/* Bouton "Paiement" pour envoyée/en-retard */}
-        {(status === "envoyee" || status === "en-retard") && (
+        {/* Bouton "Paiement" pour toutes les factures non payées */}
+        {status !== "payee" && (
           <Button
             variant="outline"
             size="sm"

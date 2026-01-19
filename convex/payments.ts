@@ -244,6 +244,12 @@ export const recordPayment = mutation({
 
 /**
  * Confirme l'encaissement d'un chèque
+ *
+ * @deprecated Since Story 1.5, checks are always recorded with status="received"
+ * immediately (business rule: a received check = payment made). This mutation
+ * is kept for potential future use cases (e.g., check cancellation/bounce handling)
+ * but will never be called under current business rules since no check will have
+ * status="pending".
  */
 export const confirmCheckDeposit = mutation({
   args: {
