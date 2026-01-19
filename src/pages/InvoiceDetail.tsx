@@ -224,14 +224,16 @@ export function InvoiceDetail() {
             Enregistrer un paiement
           </Button>
         )}
-        <Button
-          onClick={() => setIsSnoozeModalOpen(true)}
-          variant="outline"
-          className="inline-flex items-center gap-2"
-        >
-          <Calendar className="h-4 w-4" />
-          Reporter l'échéance
-        </Button>
+        {invoice.paymentStatus !== "paid" && (
+          <Button
+            onClick={() => setIsSnoozeModalOpen(true)}
+            variant="outline"
+            className="inline-flex items-center gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            Reporter l'échéance
+          </Button>
+        )}
         {pdfUrl && (
           <Button
             variant="outline"

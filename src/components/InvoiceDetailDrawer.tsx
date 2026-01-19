@@ -19,8 +19,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, FileText, Calendar, User, Mail, Phone, AlertTriangle, Send, Pencil, Upload, MoreHorizontal, CreditCard, type LucideIcon } from "lucide-react";
-import { ReminderHistorySection } from "@/components/ReminderHistorySection";
-import { EventHistorySection } from "@/components/EventHistorySection";
+import { ReminderStatusCompact } from "@/components/ReminderStatusCompact";
+import { InvoiceNotesCompact } from "@/components/InvoiceNotesCompact";
 import { MarkAsSentModal } from "@/components/MarkAsSentModal";
 import { InvoiceEditModal } from "@/components/InvoiceEditModal";
 import { AttachPdfModal } from "@/components/AttachPdfModal";
@@ -513,23 +513,23 @@ export function InvoiceDetailDrawer({
               </div>
             )}
 
-            {/* Payment History - Story 1.5 */}
-            <PaymentHistorySection invoiceId={invoice._id} />
+            {/* Reminder Status Compact - AC #4-7 */}
+            <ReminderStatusCompact invoiceId={invoice._id} />
 
-            {/* Reminder History */}
-            <ReminderHistorySection invoiceId={invoice._id} />
+            {/* Payment History - Collapsed by default in drawer - AC #9 */}
+            <PaymentHistorySection invoiceId={invoice._id} defaultExpanded={false} />
 
-            {/* Event History - Story 6.4: Complete audit trail */}
-            <EventHistorySection invoiceId={invoice._id} />
+            {/* Notes Compact - AC #1-3 */}
+            <InvoiceNotesCompact invoiceId={invoice._id} />
 
-            {/* Link to full page */}
+            {/* Prominent link to full page - AC #10 */}
             <div className="pt-4 border-t">
               <NavLink
                 to={`/invoices/${invoice._id}`}
-                className="flex items-center justify-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 hover:underline"
+                className="flex items-center justify-center gap-2 w-full py-2 text-sm font-medium text-brand-600 hover:text-brand-700 hover:bg-brand-50 rounded-lg transition-colors"
               >
+                Voir historique complet
                 <ExternalLink className="h-4 w-4" />
-                Voir la page complète
               </NavLink>
             </div>
           </div>

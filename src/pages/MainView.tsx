@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Id } from "@convex/_generated/dataModel";
@@ -22,6 +22,7 @@ import { toast } from "sonner";
 
 export default function MainView() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // États
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,8 +48,17 @@ export default function MainView() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [selectedReminder, setSelectedReminder] = useState<{ emailSubject?: string; emailContent?: string } | null>(null);
 
-  // État pour le drawer de détail facture
-  const [selectedInvoiceForDrawer, setSelectedInvoiceForDrawer] = useState<Id<"invoices"> | null>(null);
+  // Drawer de détail facture - synchronisé avec l'URL
+  const invoiceParam = searchParams.get("invoice");
+  const selectedInvoiceForDrawer = invoiceParam as Id<"invoices"> | null;
+
+  const setSelectedInvoiceForDrawer = (invoiceId: Id<"invoices"> | null) => {
+    if (invoiceId) {
+      setSearchParams({ invoice: invoiceId });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   // Mutations
   const markAsPaid = useMutation(api.invoices.markAsPaid);

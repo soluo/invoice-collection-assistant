@@ -9,10 +9,14 @@ import { cn } from "@/lib/utils";
 
 interface PaymentHistorySectionProps {
   invoiceId: Id<"invoices">;
+  defaultExpanded?: boolean;
 }
 
-export function PaymentHistorySection({ invoiceId }: PaymentHistorySectionProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+export function PaymentHistorySection({
+  invoiceId,
+  defaultExpanded = true,
+}: PaymentHistorySectionProps) {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   const payments = useQuery(api.payments.getPaymentsByInvoice, { invoiceId });
 

@@ -1,6 +1,6 @@
 # Story 1.6: Invoice Notes + Drawer Compact
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -76,41 +76,41 @@ Cette story fait partie d'une refonte du Drawer pour le rendre **compact et acti
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create ReminderStatusCompact component (AC: #4, #5, #6, #7)
-  - [ ] Create `src/components/ReminderStatusCompact.tsx`
-  - [ ] Query reminders with `api.reminders.getByInvoice`
-  - [ ] Extract last completed reminder (completionStatus="completed", most recent)
-  - [ ] Extract next pending reminder (completionStatus="pending", earliest date)
-  - [ ] Display 2 lines max with icons and relative/absolute dates
-  - [ ] Handle all empty states (no section if no reminders)
+- [x] Task 1: Create ReminderStatusCompact component (AC: #4, #5, #6, #7)
+  - [x] Create `src/components/ReminderStatusCompact.tsx`
+  - [x] Query reminders with `api.reminders.getByInvoice`
+  - [x] Extract last completed reminder (completionStatus="completed", most recent)
+  - [x] Extract next pending reminder (completionStatus="pending", earliest date)
+  - [x] Display 2 lines max with icons and relative/absolute dates
+  - [x] Handle all empty states (no section if no reminders)
 
-- [ ] Task 2: Create InvoiceNotesCompact component (AC: #1, #2, #3)
-  - [ ] Create `src/components/InvoiceNotesCompact.tsx`
-  - [ ] Query notes with `api.invoiceNotes.listForInvoice`
-  - [ ] Display only `notes[0]` (most recent) if exists
-  - [ ] Compact input: single line with inline send button
-  - [ ] Handle submit with mutation and toast
+- [x] Task 2: Create InvoiceNotesCompact component (AC: #1, #2, #3)
+  - [x] Create `src/components/InvoiceNotesCompact.tsx`
+  - [x] Query notes with `api.invoiceNotes.listForInvoice`
+  - [x] Display only `notes[0]` (most recent) if exists
+  - [x] Compact input: single line with inline send button
+  - [x] Handle submit with mutation and toast
 
-- [ ] Task 3: Update PaymentHistorySection for compact mode (AC: #9)
-  - [ ] Add prop `defaultExpanded?: boolean` (default: true for backward compat)
-  - [ ] In Drawer, pass `defaultExpanded={false}`
-  - [ ] Keep existing behavior on Detail page
+- [x] Task 3: Update PaymentHistorySection for compact mode (AC: #9)
+  - [x] Add prop `defaultExpanded?: boolean` (default: true for backward compat)
+  - [x] In Drawer, pass `defaultExpanded={false}`
+  - [x] Keep existing behavior on Detail page
 
-- [ ] Task 4: Simplify InvoiceDetailDrawer (AC: #8, #10)
-  - [ ] Remove `<ReminderHistorySection>` import and usage
-  - [ ] Remove `<EventHistorySection>` import and usage
-  - [ ] Add `<ReminderStatusCompact>` after Contact section
-  - [ ] Add `<InvoiceNotesCompact>` after PaymentHistorySection
-  - [ ] Pass `defaultExpanded={false}` to PaymentHistorySection
-  - [ ] Make "Voir la page complète" link more prominent
+- [x] Task 4: Simplify InvoiceDetailDrawer (AC: #8, #10)
+  - [x] Remove `<ReminderHistorySection>` import and usage
+  - [x] Remove `<EventHistorySection>` import and usage
+  - [x] Add `<ReminderStatusCompact>` after Contact section
+  - [x] Add `<InvoiceNotesCompact>` after PaymentHistorySection
+  - [x] Pass `defaultExpanded={false}` to PaymentHistorySection
+  - [x] Make "Voir la page complète" link more prominent
 
-- [ ] Task 5: Validate and test
-  - [ ] Drawer: verify compact layout, no full historique sections
-  - [ ] Drawer: verify reminder status compact (dernière + prochaine)
-  - [ ] Drawer: verify notes compact works (add, display latest)
-  - [ ] Drawer: verify payments collapsed by default
-  - [ ] Page: verify full notes tab still works
-  - [ ] Run `pnpm lint`
+- [x] Task 5: Validate and test
+  - [x] Drawer: verify compact layout, no full historique sections
+  - [x] Drawer: verify reminder status compact (dernière + prochaine)
+  - [x] Drawer: verify notes compact works (add, display latest)
+  - [x] Drawer: verify payments collapsed by default
+  - [x] Page: verify full notes tab still works
+  - [x] Run `pnpm lint`
 
 ## Dev Notes
 
@@ -495,8 +495,26 @@ import { InvoiceNotesCompact } from "@/components/InvoiceNotesCompact";
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Completion Notes List
 
+- **Task 1:** Created `ReminderStatusCompact.tsx` - displays last completed reminder and next pending reminder in 2 lines max. Returns null if no reminders (AC #7).
+- **Task 2:** Created `InvoiceNotesCompact.tsx` - shows most recent note with author/time, compact input with inline send button, toast on success.
+- **Task 3:** Added `defaultExpanded` prop to `PaymentHistorySection` (default: true for backward compat), allows drawer to collapse it by default.
+- **Task 4:** Refactored `InvoiceDetailDrawer` - removed full history sections (`ReminderHistorySection`, `EventHistorySection`), added compact components, improved footer link styling.
+- **Task 5:** `pnpm lint` passes successfully with no errors.
+
 ### File List
+
+**Created:**
+- `src/components/ReminderStatusCompact.tsx` - Compact reminder status (2 lines: dernière + prochaine)
+- `src/components/InvoiceNotesCompact.tsx` - Compact notes display with inline input
+
+**Modified:**
+- `src/components/PaymentHistorySection.tsx` - Added `defaultExpanded` prop
+- `src/components/InvoiceDetailDrawer.tsx` - Replaced full history sections with compact versions
+
+### Change Log
+
+- 2026-01-19: Implemented story 1-6 - Drawer compact with notes, reminder summary, collapsible payments
