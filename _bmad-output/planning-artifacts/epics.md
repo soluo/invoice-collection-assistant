@@ -613,101 +613,82 @@ So that **I can personalize the message based on recent client interactions**.
 
 ---
 
-## Epic 3: Phone Call Workflow
+## Epic 3: Suivi Manuel Post-Relances (Simplifié)
 
-**Goal:** User can manage phone call reminders with outcome recording and automatic/manual snooze functionality.
+**Goal:** User can identify and track invoices that have completed all automatic reminders and need manual follow-up (phone calls, etc.).
 
----
+**Context (2026-01-19):** Client feedback indicates phone calls will be handled outside the application for now. The system already has a `manual_followup` status that is automatically set when all reminder steps are completed. Users can use the existing Notes feature (Story 1.6) to track call outcomes.
 
-### Story 3.1: Record Phone Call Outcome
+**What exists:**
+- ✅ `reminderStatus = "manual_followup"` flag (auto-set when all steps done)
+- ✅ Invoice Notes with author + timestamp (Story 1.6)
+- ✅ Cron stops generating reminders for `manual_followup` invoices
 
-As a **user**,
-I want **to record the outcome of a phone call reminder**,
-So that **the system knows what happened and can take appropriate next actions**.
+**What's missing:**
+- ❌ Filter in /invoices to see `manual_followup` invoices
 
-**Acceptance Criteria:**
-
-**Given** I have a phone call reminder displayed on /follow-up
-**When** I click on the reminder or an action button
-**Then** I see options to record the outcome
-
-**Given** I am recording an outcome
-**When** I select an option
-**Then** I can choose from: "Will pay", "No answer", "Dispute", "Voicemail", "Other"
-**And** I can optionally add a note with details
-
-**Given** I select "Will pay"
-**When** I confirm the outcome
-**Then** the reminder is marked as completed
-**And** automatic reminders are paused for this invoice
-**And** a note is added to the invoice with the promise details
-
-**Given** I select "Dispute"
-**When** I confirm the outcome
-**Then** the reminder is marked as completed with dispute status
-**And** I am prompted to add details about the dispute
-**And** automatic reminders are paused pending resolution
-
-**Given** I select "Voicemail"
-**When** I confirm the outcome
-**Then** the reminder is marked as completed
-**And** a follow-up call is scheduled (similar to "No answer" behavior)
+**Original Stories 3.1-3.3 (DEPRECATED):** Phone call outcome recording, auto-snooze, manual snooze - moved to backlog for future consideration if in-app call management is needed.
 
 ---
 
-### Story 3.2: Auto-Snooze No Answer Calls
+### Story 3.1: Filtre "Suivi Manuel" sur Liste Factures
 
 As a **user**,
-I want **"no answer" calls to be automatically rescheduled to the next business day**,
-So that **I don't have to manually reschedule and the client will be called again**.
+I want **to filter invoices that have completed all automatic reminders**,
+So that **I can see which invoices need manual follow-up (phone, other means) and track my progress via notes**.
 
 **Acceptance Criteria:**
 
-**Given** I record a phone call outcome as "No answer"
-**When** I confirm the outcome
-**Then** the current reminder is marked as completed with "no answer" status
-**And** a new phone call reminder is automatically created for the next business day
-**And** I see a confirmation message indicating when the next call is scheduled
+**Given** I am on the /invoices page
+**When** I look at the status filter dropdown
+**Then** I see a new option "Suivi manuel" (or "Manual follow-up")
 
-**Given** today is Friday
-**When** I record "No answer"
-**Then** the next call is scheduled for Monday (skipping weekend)
+**Given** I select the "Suivi manuel" filter
+**When** the list updates
+**Then** I see only invoices where `reminderStatus === "manual_followup"`
+**And** these are invoices that have completed all configured reminder steps
+**And** the count badge shows the number of invoices needing manual follow-up
 
-**Given** the next day is a configured holiday
-**When** I record "No answer"
-**Then** the system schedules for the next working day after the holiday
+**Given** I view an invoice in "Suivi manuel" status
+**When** I open the invoice drawer
+**Then** I can add notes to track my manual follow-up actions (calls, emails, etc.)
+**And** notes show author and timestamp (existing functionality)
 
-**Given** multiple "No answer" outcomes have been recorded for the same invoice
-**When** I view the reminder history
-**Then** I can see the sequence of attempted calls
+**Given** I want to clear the filter
+**When** I select "Toutes" or clear the filter
+**Then** I see all invoices again
+
+**Technical Notes:**
+- Backend: Add case in `listInvoicesWithFilters` for `statusFilter === "suivi-manuel"`
+- Frontend: Add option in `FilterBar.tsx` dropdown
+- The `manual_followup` status is already computed and stored by the reminder cron
 
 ---
 
-### Story 3.3: Manual Snooze Reminder
+### Backlog: Original Phone Call Stories (Future)
 
-As a **user**,
-I want **to manually snooze any reminder to a specific date**,
-So that **I can postpone follow-up when I know the client is unavailable or when timing is better**.
+The following stories are preserved for future implementation if in-app phone call management becomes a requirement:
 
-**Acceptance Criteria:**
+<details>
+<summary>Story 3.2 (Backlog): Record Phone Call Outcome</summary>
 
-**Given** I have a reminder displayed on /follow-up (email or phone)
-**When** I click a "Snooze" or "Postpone" action
-**Then** a date picker appears allowing me to select a future date
+User can record call outcomes (will pay, no answer, dispute, voicemail) with notes. System pauses reminders on "will pay" or "dispute".
 
-**Given** the date picker is open
-**When** I select a date and confirm
-**Then** the current reminder is marked as snoozed
-**And** a new reminder is created for the selected date
-**And** the reminder type (email/phone) is preserved
+</details>
 
-**Given** I snooze a reminder
-**When** I view the reminder history for the invoice
-**Then** I can see that the reminder was snoozed with the reason "manually postponed"
+<details>
+<summary>Story 3.3 (Backlog): Auto-Snooze No Answer Calls</summary>
 
-**Given** I try to snooze to a past date
-**When** I attempt to confirm
-**Then** I see an error message and must select a future date
+"No answer" calls automatically reschedule to next business day (skip weekends/holidays).
+
+</details>
+
+<details>
+<summary>Story 3.4 (Backlog): Manual Snooze Reminder</summary>
+
+User can manually postpone any reminder to a specific future date.
+
+</details>
 
 ---
 

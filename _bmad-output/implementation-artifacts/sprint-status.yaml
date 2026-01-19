@@ -68,14 +68,18 @@ development_status:
   2-4-email-edit-before-send: done
   epic-2-retrospective: optional
 
-  # Epic 3: Phone Call Workflow
-  # NOTE 2026-01-19: Analyse partielle suggère que PhoneCallCompleteModal existe
-  # avec 4 outcomes (will_pay, dispute, no_answer, voicemail) + reschedule auto
-  # À valider si 100% complet ou partiel
-  epic-3: backlog
-  3-1-record-phone-call-outcome: backlog  # Probablement déjà fait - à vérifier
-  3-2-auto-snooze-no-answer-calls: backlog  # Probablement déjà fait - à vérifier
-  3-3-manual-snooze-reminder: backlog
+  # Epic 3: Suivi Manuel Post-Relances (Simplifié)
+  # NOTE 2026-01-19: Epic simplifié suite feedback client
+  # - Appels téléphoniques gérés hors application pour l'instant
+  # - Le flag manual_followup existe déjà (auto-set quand toutes relances terminées)
+  # - Il manque juste un FILTRE dans l'UI pour voir ces factures
+  # - Stories originales 3.1-3.3 (phone workflow) déplacées en backlog
+  epic-3: in-progress
+  3-1-filtre-suivi-manuel: ready-for-dev  # SEULE STORY NÉCESSAIRE POUR MVP
+  # Backlog (future - si gestion appels in-app nécessaire):
+  # 3-2-record-phone-call-outcome: backlog
+  # 3-3-auto-snooze-no-answer-calls: backlog
+  # 3-4-manual-snooze-reminder: backlog
   epic-3-retrospective: optional
 
   # Epic 4: Invoice Search & Filtering - ALREADY IMPLEMENTED
