@@ -1147,7 +1147,8 @@ export const listInvoicesWithFilters = query({
         v.literal("a-envoyer"),
         v.literal("envoyee"),
         v.literal("en-retard"),
-        v.literal("payee")
+        v.literal("payee"),
+        v.literal("suivi-manuel")
       )
     ),
     sortBy: v.optional(
@@ -1294,6 +1295,9 @@ export const listInvoicesWithFilters = query({
             return invoice.isOverdue;
           case "payee":
             return invoice.paymentStatus === "paid";
+          case "suivi-manuel":
+            // Factures en suivi manuel ET non payées (l'historique reminderStatus est conservé après paiement)
+            return invoice.reminderStatus === "manual_followup" && invoice.paymentStatus !== "paid";
           default:
             return true;
         }
@@ -1332,4 +1336,5 @@ export const listInvoicesWithFilters = query({
     });
   },
 });
+
 

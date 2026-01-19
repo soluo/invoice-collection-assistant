@@ -45,6 +45,7 @@ export default function TabFilterBar({
     { value: "all", label: "Toutes" },
     { value: "payee", label: "Payées" },
     { value: "en-retard", label: "En retard" },
+    { value: "suivi-manuel", label: "Suivi manuel" },
     { value: "a-envoyer", label: "Brouillons" },
   ];
 

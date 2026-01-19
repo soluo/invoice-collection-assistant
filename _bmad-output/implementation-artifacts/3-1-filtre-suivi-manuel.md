@@ -6,7 +6,7 @@ As a **user**,
 I want **to filter invoices that have completed all automatic reminders**,
 So that **I can see which invoices need manual follow-up (phone, other means) and track my progress via notes**.
 
-## Status: ready-for-dev
+## Status: review
 
 ## Context
 
@@ -84,10 +84,31 @@ Ajouter l'option dans le dropdown de statut :
 
 ### Vérification
 
-- [ ] Le filtre apparaît dans le dropdown
-- [ ] Sélectionner "Suivi manuel" affiche uniquement les factures avec `reminderStatus === "manual_followup"`
-- [ ] Le drawer s'ouvre et les notes sont accessibles
-- [ ] Le filtre peut être effacé
+- [x] Le filtre apparaît dans le dropdown (onglet "Suivi manuel" ajouté dans TabFilterBar)
+- [x] Sélectionner "Suivi manuel" affiche uniquement les factures avec `reminderStatus === "manual_followup"`
+- [x] Le drawer s'ouvre et les notes sont accessibles (fonctionnalité existante - Story 1.6)
+- [x] Le filtre peut être effacé (sélectionner "Toutes" remet le filtre à all)
+
+## Dev Agent Record
+
+### Implementation Notes (2026-01-19)
+
+**Changements effectués :**
+
+1. **Backend (`convex/invoices.ts`):**
+   - Ajout de `v.literal("suivi-manuel")` dans le validateur `statusFilter` de `listInvoicesWithFilters`
+   - Ajout du cas `case "suivi-manuel": return invoice.reminderStatus === "manual_followup";` dans le switch de filtrage
+
+2. **Frontend (`src/components/mainView/TabFilterBar.tsx`):**
+   - Ajout de l'onglet `{ value: "suivi-manuel", label: "Suivi manuel" }` dans le tableau `statusTabs`
+
+**Fichiers modifiés :**
+- `convex/invoices.ts` (lignes 1145-1152, 1298-1299)
+- `src/components/mainView/TabFilterBar.tsx` (ligne 48)
+
+**Validation :**
+- ✅ `pnpm lint` : TypeScript compile sans erreur
+- ✅ `pnpm build` : Build production réussie
 
 ## Out of Scope
 
