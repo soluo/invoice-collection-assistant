@@ -1,4 +1,5 @@
 # generated: 2026-01-15
+# updated: 2026-01-19
 # project: invoice-collection-assistant
 # project_key: relancezen
 # tracking_system: file-system
@@ -41,6 +42,8 @@ story_location: _bmad-output/implementation-artifacts
 
 development_status:
   # Epic 1: Invoice Detail View Enhancement (Priority 1)
+  # NOTE 2026-01-19: Stories 1.1-1.6 terminées. 1.7 ajoutée post-client (nice to have)
+  # MVP peut être livré sans 1.7
   epic-1: in-progress
   1-1-invoice-detail-drawer-with-status-display: done
   1-2-reminder-history-in-drawer: done
@@ -50,21 +53,28 @@ development_status:
   1-6-invoice-notes: done
   # Story 1.7 ajoutée pour tracker feature discutée avec client
   # Nécessite: template email d'envoi facture + attacher PDF + UI choix envoi vs marquage
-  1-7-send-invoice-by-email: backlog
+  1-7-send-invoice-by-email: backlog  # POST-MVP
   epic-1-retrospective: optional
 
   # Epic 2: Follow-up Dashboard Completion (Priority 2)
-  epic-2: backlog
-  2-1-pending-and-overdue-reminders-view: backlog
-  2-2-reminders-history-filtered: backlog
-  2-3-email-preview-with-send-action: backlog
-  2-4-email-edit-before-send: backlog
+  # NOTE 2026-01-19: Analyse approfondie révèle que toutes les stories étaient déjà implémentées
+  # - Page /follow-up complète avec onglets En cours + Historique
+  # - EmailPreviewModalFollowUp + EmailEditModal + BulkSendConfirmModal
+  # - Query getReminderHistoryFiltered (événements reminder_sent uniquement)
+  epic-2: done
+  2-1-pending-and-overdue-reminders-view: done
+  2-2-reminders-history-filtered: done
+  2-3-email-preview-with-send-action: done
+  2-4-email-edit-before-send: done
   epic-2-retrospective: optional
 
   # Epic 3: Phone Call Workflow
+  # NOTE 2026-01-19: Analyse partielle suggère que PhoneCallCompleteModal existe
+  # avec 4 outcomes (will_pay, dispute, no_answer, voicemail) + reschedule auto
+  # À valider si 100% complet ou partiel
   epic-3: backlog
-  3-1-record-phone-call-outcome: backlog
-  3-2-auto-snooze-no-answer-calls: backlog
+  3-1-record-phone-call-outcome: backlog  # Probablement déjà fait - à vérifier
+  3-2-auto-snooze-no-answer-calls: backlog  # Probablement déjà fait - à vérifier
   3-3-manual-snooze-reminder: backlog
   epic-3-retrospective: optional
 
@@ -81,7 +91,8 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: Améliorations Post-Demo - Quick Wins (Priority: High for bugs)
-  epic-6: in-progress
+  # NOTE 2026-01-19: Toutes les stories complétées
+  epic-6: done
   6-1-bug-verify-invitations-and-technician-filters: done
   6-2-default-due-date-plus-14-days: done
   6-3-edit-and-reassign-invoice: done
