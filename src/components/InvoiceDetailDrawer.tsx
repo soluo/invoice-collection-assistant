@@ -313,7 +313,7 @@ export function InvoiceDetailDrawer({
         className="overflow-y-auto"
       >
         {/* Always render header for accessibility */}
-        <SheetHeader className="space-y-4 pb-4 border-b">
+        <SheetHeader className="space-y-4 pb-4 border-b border-gray-100">
           <div className="flex items-start justify-between gap-4">
             <div>
               <SheetTitle className="text-2xl font-bold">
@@ -351,7 +351,7 @@ export function InvoiceDetailDrawer({
 
         {/* Action buttons - state-based with dropdown for secondary actions */}
         {invoice && (
-          <div className="flex flex-wrap items-center gap-2 py-4 border-b">
+          <div className="flex flex-wrap items-center gap-2 py-4 border-b border-gray-100">
             {/* Primary actions as visible buttons */}
             {primaryActions.map((action) =>
               action.href ? (
@@ -464,14 +464,14 @@ export function InvoiceDetailDrawer({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <p className="text-sm text-gray-500 font-medium flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4" />
+                  <Calendar className="h-4 w-4 text-gray-300" />
                   Date de facture
                 </p>
                 <p className="text-gray-900">{formatDate(invoice.invoiceDate)}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-gray-500 font-medium flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4" />
+                  <Calendar className="h-4 w-4 text-gray-300" />
                   Échéance
                 </p>
                 <p className={cn(
@@ -484,7 +484,7 @@ export function InvoiceDetailDrawer({
               {invoice.sendStatus === "sent" && invoice.sentDate && (
                 <div className="space-y-1">
                   <p className="text-sm text-gray-500 font-medium flex items-center gap-1.5">
-                    <Send className="h-4 w-4" />
+                    <Send className="h-4 w-4 text-gray-300" />
                     Date d'envoi
                   </p>
                   <p className="text-gray-900">{formatDate(invoice.sentDate)}</p>
@@ -494,17 +494,19 @@ export function InvoiceDetailDrawer({
 
             {/* Contact Info */}
             {(invoice.contactName || invoice.contactEmail || invoice.contactPhone) && (
-              <div className="space-y-3 pt-4 border-t">
-                <p className="text-sm text-gray-500 font-medium">Contact</p>
+              <div className="space-y-3 pt-4 border-t border-gray-100">
+                <p className="text-sm text-gray-500 font-medium flex items-center gap-1.5">
+                  <User className="h-4 w-4 text-gray-300" />
+                  Contact
+                </p>
                 {invoice.contactName && (
-                  <div className="flex items-center gap-2 text-gray-900">
-                    <User className="h-4 w-4 text-gray-400" />
+                  <div className="text-gray-900">
                     {invoice.contactName}
                   </div>
                 )}
                 {invoice.contactEmail && (
                   <div className="flex items-center gap-2 text-gray-900">
-                    <Mail className="h-4 w-4 text-gray-400" />
+                    <Mail className="h-4 w-4 text-gray-300" />
                     <a
                       href={`mailto:${invoice.contactEmail}`}
                       className="hover:underline"
@@ -515,7 +517,7 @@ export function InvoiceDetailDrawer({
                 )}
                 {invoice.contactPhone && (
                   <div className="flex items-center gap-2 text-gray-900">
-                    <Phone className="h-4 w-4 text-gray-400" />
+                    <Phone className="h-4 w-4 text-gray-300" />
                     <a
                       href={`tel:${invoice.contactPhone}`}
                       className="hover:underline"
@@ -537,7 +539,7 @@ export function InvoiceDetailDrawer({
             <InvoiceNotesCompact invoiceId={invoice._id} />
 
             {/* Prominent link to full page */}
-            <div className="pt-4 border-t">
+            <div className="pt-4 border-t border-gray-100">
               <NavLink
                 to={`/invoices/${invoice._id}`}
                 className="flex items-center justify-center gap-2 w-full py-2 text-sm font-medium text-brand-600 hover:text-brand-700 hover:bg-brand-50 rounded-lg transition-colors"
