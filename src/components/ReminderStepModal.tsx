@@ -1,11 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Info } from "lucide-react";
+
+const EMAIL_VARIABLES = [
+  { name: "nom_client", label: "Nom client" },
+  { name: "nom_contact", label: "Nom contact" },
+  { name: "numero_facture", label: "N° facture" },
+  { name: "montant", label: "Montant" },
+  { name: "date_facture", label: "Date facture" },
+  { name: "date_echeance", label: "Date échéance" },
+  { name: "jours_retard", label: "Jours retard" },
+] as const;
 
 export type ReminderStep = {
   id: string;
@@ -37,6 +48,41 @@ export function ReminderStepModal({
   const [emailSubject, setEmailSubject] = useState("");
   const [emailTemplate, setEmailTemplate] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Refs and state for variable insertion
+  const emailSubjectRef = useRef<HTMLInputElement>(null);
+  const emailTemplateRef = useRef<HTMLTextAreaElement>(null);
+  const [lastFocusedField, setLastFocusedField] = useState<"subject" | "template" | null>(null);
+
+  const insertVariable = (variableName: string) => {
+    const variable = `{${variableName}}`;
+
+    // Determine which field to insert into
+    const targetField = lastFocusedField || "template";
+    const ref = targetField === "subject" ? emailSubjectRef : emailTemplateRef;
+    const value = targetField === "subject" ? emailSubject : emailTemplate;
+    const setValue = targetField === "subject" ? setEmailSubject : setEmailTemplate;
+
+    const element = ref.current;
+    if (!element) {
+      // Fallback: append to end
+      setValue(value + variable);
+      return;
+    }
+
+    const start = element.selectionStart ?? value.length;
+    const end = element.selectionEnd ?? value.length;
+
+    const newValue = value.slice(0, start) + variable + value.slice(end);
+    setValue(newValue);
+
+    // Restore focus and set cursor position after the inserted variable
+    requestAnimationFrame(() => {
+      element.focus();
+      const newCursorPos = start + variable.length;
+      element.setSelectionRange(newCursorPos, newCursorPos);
+    });
+  };
 
   // Initialize form when step changes or modal opens
   useEffect(() => {
@@ -190,9 +236,11 @@ export function ReminderStepModal({
                   Objet de l'email <span className="text-red-500">*</span>
                 </Label>
                 <Input
+                  ref={emailSubjectRef}
                   id="emailSubject"
                   value={emailSubject}
                   onChange={(e) => setEmailSubject(e.target.value)}
+                  onFocus={() => setLastFocusedField("subject")}
                   placeholder='Ex: "Rappel - Facture {numero_facture}"'
                   className={errors.emailSubject ? "border-red-500" : ""}
                 />
@@ -207,9 +255,11 @@ export function ReminderStepModal({
                   Contenu de l'email <span className="text-red-500">*</span>
                 </Label>
                 <Textarea
+                  ref={emailTemplateRef}
                   id="emailTemplate"
                   value={emailTemplate}
                   onChange={(e) => setEmailTemplate(e.target.value)}
+                  onFocus={() => setLastFocusedField("template")}
                   placeholder="Bonjour,&#10;&#10;Nous constatons que..."
                   rows={8}
                   className={errors.emailTemplate ? "border-red-500" : ""}
@@ -217,9 +267,25 @@ export function ReminderStepModal({
                 {errors.emailTemplate && (
                   <p className="text-sm text-red-500">{errors.emailTemplate}</p>
                 )}
+              </div>
+
+              {/* Variables badges */}
+              <div className="space-y-2">
                 <p className="text-sm text-gray-500">
-                  Variables disponibles: {"{numero_facture}"}, {"{montant}"}, {"{date_facture}"}, {"{date_echeance}"}, {"{jours_retard}"}
+                  Variables disponibles · <span className="text-gray-400">Cliquez pour insérer</span>
                 </p>
+                <div className="flex flex-wrap gap-2">
+                  {EMAIL_VARIABLES.map((v) => (
+                    <Badge
+                      key={v.name}
+                      variant="secondary"
+                      className="cursor-pointer hover:bg-gray-200 transition-colors select-none"
+                      onClick={() => insertVariable(v.name)}
+                    >
+                      {v.name}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             </>
           ) : (

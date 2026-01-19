@@ -301,7 +301,7 @@ export function OrganizationSettings() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 md:px-6 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 md:px-6 space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
@@ -313,37 +313,42 @@ export function OrganizationSettings() {
       </div>
 
       {/* Block 1: Organization Profile */}
-      <fieldset className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
-        <legend className="text-lg font-semibold text-gray-900 px-2">
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-gray-900">
           Profil de l'entreprise
-        </legend>
-        <div className="space-y-4 mt-4">
-          <div>
-            <Label htmlFor="organizationName">Nom de l'entreprise</Label>
-            <Input
-              id="organizationName"
-              value={organizationName}
-              onChange={(e) => setOrganizationName(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div className="flex justify-end">
-            <Button
-              onClick={handleSaveOrganizationName}
-              disabled={savingName || !organizationName.trim()}
-            >
-              {savingName ? "Enregistrement..." : "Enregistrer"}
-            </Button>
+        </h2>
+        <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="organizationName">Nom de l'entreprise</Label>
+              <Input
+                id="organizationName"
+                value={organizationName}
+                onChange={(e) => setOrganizationName(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleSaveOrganizationName}
+                disabled={savingName || !organizationName.trim()}
+              >
+                {savingName ? "Enregistrement..." : "Enregistrer"}
+              </Button>
+            </div>
           </div>
         </div>
-      </fieldset>
+      </section>
 
       {/* Block 2: Email Connection */}
-      <fieldset id="email-connection-section" className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
-        <legend className="text-lg font-semibold text-gray-900 px-2">
+      <section id="email-connection-section" className="space-y-3">
+        <h2 className="text-lg font-semibold text-gray-900">
           Connexion du compte email
-        </legend>
-        <div className="space-y-4 mt-4">
+        </h2>
+        <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+          <div className="space-y-4">
           {organization.emailProvider && organization.emailAccountInfo ? (
             <>
               {/* Connected account info */}
@@ -411,9 +416,10 @@ export function OrganizationSettings() {
                     className="flex-1 min-w-0"
                   />
                   <Button
+                    variant="outline"
+                    size="sm"
                     onClick={handleSaveSenderName}
                     disabled={savingSenderName}
-                    size="sm"
                     className="flex-shrink-0"
                   >
                     {savingSenderName ? "..." : "Enregistrer"}
@@ -451,18 +457,20 @@ export function OrganizationSettings() {
               </Button>
             </div>
           )}
+          </div>
         </div>
-      </fieldset>
+      </section>
 
       {/* Block: Test Email (admin only, shown only when email is connected) */}
       <TestEmailSection organization={organization} user={loggedInUser} />
 
       {/* Block 3: Reminder Management */}
-      <fieldset className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
-        <legend className="text-lg font-semibold text-gray-900 px-2">
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-gray-900">
           Gestion des relances
-        </legend>
-        <div className="space-y-6 mt-4">
+        </h2>
+        <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+          <div className="space-y-6">
           {/* Auto-send toggle */}
           <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
             <div className="flex-1 min-w-0">
@@ -490,7 +498,7 @@ export function OrganizationSettings() {
               Heure d'envoi quotidienne
             </Label>
             <p className="text-sm text-gray-600 mt-1 mb-3">
-              Les relances automatiques seront générées quotidiennement à cette heure
+              Les relances générées seront envoyées quotidiennement à cette heure
             </p>
             <div className="flex items-center gap-3">
               <Input
@@ -603,8 +611,9 @@ export function OrganizationSettings() {
               </div>
             )}
           </div>
+          </div>
         </div>
-      </fieldset>
+      </section>
 
       {/* Step Modal */}
       <ReminderStepModal
