@@ -46,7 +46,7 @@ development_status:
   1-2-reminder-history-in-drawer: done
   1-3-mark-invoice-as-sent-action: done
   1-4-edit-due-date-action: done
-  1-5-record-payment-actions: backlog
+  1-5-record-payment-actions: ready-for-dev
   1-6-invoice-notes: backlog
   # Story 1.7 ajoutée pour tracker feature discutée avec client
   # Nécessite: template email d'envoi facture + attacher PDF + UI choix envoi vs marquage
