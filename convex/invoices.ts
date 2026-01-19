@@ -790,14 +790,21 @@ export const listPaid = query({
  */
 export const getById = query({
   args: {
-    invoiceId: v.id("invoices"),
+    // Accept string to handle invalid IDs gracefully (URL params, deep links)
+    invoiceId: v.string(),
   },
   handler: async (ctx, args) => {
     const user = await getUserWithOrg(ctx);
 
-    const invoice = await ctx.db.get(args.invoiceId);
+    // Safely validate the ID format - returns null if invalid
+    const normalizedId = ctx.db.normalizeId("invoices", args.invoiceId);
+    if (!normalizedId) {
+      return null; // Invalid ID format - let frontend show error state
+    }
+
+    const invoice = await ctx.db.get(normalizedId);
     if (!invoice) {
-      throw new Error("Facture introuvable");
+      return null; // Invoice doesn't exist
     }
 
     // Vérifier les permissions

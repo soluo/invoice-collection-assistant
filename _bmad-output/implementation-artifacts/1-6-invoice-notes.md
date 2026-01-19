@@ -1,6 +1,6 @@
 # Story 1.6: Invoice Notes + Drawer Compact
 
-Status: review
+Status: done
 
 ## Story
 
@@ -113,6 +113,16 @@ Cette story fait partie d'une refonte du Drawer pour le rendre **compact et acti
   - [x] Run `pnpm lint`
 
 ## Dev Notes
+
+### Bonus Feature: URL Sync for Drawer
+
+The drawer state is now synchronized with the URL via `?invoice=<id>` query parameter:
+- **Shareable URLs**: Copy/paste URL to share specific invoice drawer state
+- **Back/Forward navigation**: Browser history works correctly
+- **Preserved params**: Other query params (like filters) are not overwritten
+- **Invalid ID handling**: Shows user-friendly error with close button
+
+This feature was implemented opportunistically during story 1.6 and is handled by the `useInvoiceDrawerUrl` hook.
 
 ### Architecture Decision: Drawer vs Page
 
@@ -510,11 +520,16 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 **Created:**
 - `src/components/ReminderStatusCompact.tsx` - Compact reminder status (2 lines: dernière + prochaine)
 - `src/components/InvoiceNotesCompact.tsx` - Compact notes display with inline input
+- `src/hooks/useInvoiceDrawerUrl.ts` - Hook for URL-synced drawer state (shareable URLs, preserves other params)
 
 **Modified:**
 - `src/components/PaymentHistorySection.tsx` - Added `defaultExpanded` prop
-- `src/components/InvoiceDetailDrawer.tsx` - Replaced full history sections with compact versions
+- `src/components/InvoiceDetailDrawer.tsx` - Replaced full history sections with compact versions, improved error state for invalid invoice IDs
+- `src/pages/FollowUp.tsx` - Use `useInvoiceDrawerUrl` hook for drawer URL sync
+- `src/pages/MainView.tsx` - Use `useInvoiceDrawerUrl` hook for drawer URL sync
+- `src/pages/InvoiceDetail.tsx` - Hide "Reporter échéance" button when invoice is paid (UX improvement)
 
 ### Change Log
 
 - 2026-01-19: Implemented story 1-6 - Drawer compact with notes, reminder summary, collapsible payments
+- 2026-01-19: Code review fixes - Created `useInvoiceDrawerUrl` hook to deduplicate URL sync logic, improved invalid ID error state, preserved query params, documented all modified files

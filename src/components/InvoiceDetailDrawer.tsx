@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, FileText, Calendar, User, Mail, Phone, AlertTriangle, Send, Pencil, Upload, MoreHorizontal, CreditCard, type LucideIcon } from "lucide-react";
+import { ExternalLink, FileText, Calendar, User, Mail, Phone, AlertTriangle, Send, Pencil, Upload, MoreHorizontal, CreditCard, AlertCircle, type LucideIcon } from "lucide-react";
 import { ReminderStatusCompact } from "@/components/ReminderStatusCompact";
 import { InvoiceNotesCompact } from "@/components/InvoiceNotesCompact";
 import { MarkAsSentModal } from "@/components/MarkAsSentModal";
@@ -428,8 +428,22 @@ export function InvoiceDetailDrawer({
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500" />
           </div>
         ) : invoice === null ? (
-          <div className="flex items-center justify-center py-12">
-            <p className="text-gray-500">Facture introuvable</p>
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 mb-4">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Facture introuvable
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Cette facture n'existe pas ou a été supprimée.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Fermer
+            </Button>
           </div>
         ) : (
           <div className="py-6 space-y-6">
@@ -513,16 +527,16 @@ export function InvoiceDetailDrawer({
               </div>
             )}
 
-            {/* Reminder Status Compact - AC #4-7 */}
+            {/* Reminder Status Compact */}
             <ReminderStatusCompact invoiceId={invoice._id} />
 
-            {/* Payment History - Collapsed by default in drawer - AC #9 */}
+            {/* Payment History - Collapsed by default in drawer */}
             <PaymentHistorySection invoiceId={invoice._id} defaultExpanded={false} />
 
-            {/* Notes Compact - AC #1-3 */}
+            {/* Notes Compact */}
             <InvoiceNotesCompact invoiceId={invoice._id} />
 
-            {/* Prominent link to full page - AC #10 */}
+            {/* Prominent link to full page */}
             <div className="pt-4 border-t">
               <NavLink
                 to={`/invoices/${invoice._id}`}

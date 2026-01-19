@@ -29,8 +29,8 @@ import {
 import { formatDistanceToNow, format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { useInvoiceDrawerUrl } from "@/hooks/useInvoiceDrawerUrl";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { EmailPreviewModalFollowUp } from "@/components/EmailPreviewModalFollowUp";
@@ -40,7 +40,8 @@ import { PhoneCallCompleteModal } from "@/components/PhoneCallCompleteModal";
 import { InvoiceDetailDrawer } from "@/components/InvoiceDetailDrawer";
 
 export function FollowUp() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  // URL-synced drawer state (shareable URLs, back/forward navigation)
+  const { selectedInvoiceId: selectedInvoiceForDrawer, setSelectedInvoiceId: setSelectedInvoiceForDrawer } = useInvoiceDrawerUrl();
 
   // User and organization data
   const currentUser = useQuery(api.auth.loggedInUser);
@@ -72,18 +73,6 @@ export function FollowUp() {
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [selectedReminders, setSelectedReminders] = useState<string[]>([]);
   const [phoneCallReminder, setPhoneCallReminder] = useState<AnyReminder | null>(null);
-
-  // Drawer de détail facture - synchronisé avec l'URL
-  const invoiceParam = searchParams.get("invoice");
-  const selectedInvoiceForDrawer = invoiceParam as Id<"invoices"> | null;
-
-  const setSelectedInvoiceForDrawer = (invoiceId: Id<"invoices"> | null) => {
-    if (invoiceId) {
-      setSearchParams({ invoice: invoiceId });
-    } else {
-      setSearchParams({});
-    }
-  };
 
   // Check if user is admin
   const isAdmin = currentUser?.role === "admin";

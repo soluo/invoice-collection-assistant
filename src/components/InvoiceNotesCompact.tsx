@@ -37,35 +37,7 @@ export function InvoiceNotesCompact({ invoiceId }: InvoiceNotesCompactProps) {
     }
   };
 
-  // Don't show loading state for compact - just show input ready
-  if (notes === undefined) {
-    return (
-      <div className="space-y-2 pt-4 border-t">
-        <p className="text-sm text-gray-500 font-medium flex items-center gap-1.5">
-          <MessageSquare className="h-4 w-4" />
-          Notes
-        </p>
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <Input
-            placeholder="Ajouter une note..."
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            className="flex-1 h-9 text-sm"
-            disabled={isSubmitting}
-          />
-          <Button
-            type="submit"
-            size="sm"
-            disabled={!newNote.trim() || isSubmitting}
-            className="h-9 px-3"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
-      </div>
-    );
-  }
-
+  // Show form immediately even while loading - input is always usable
   return (
     <div className="space-y-2 pt-4 border-t">
       <p className="text-sm text-gray-500 font-medium flex items-center gap-1.5">
