@@ -19,9 +19,9 @@ export type MainStatus =
 export type InvoiceStatus = MainStatus;
 
 /**
- * ✅ NEW: Simplified status system for V3 (4 statuses)
+ * ✅ NEW: Simplified status system for V3 (5 statuses)
  */
-export type SimplifiedInvoiceStatus = "a-envoyer" | "envoyee" | "en-retard" | "payee";
+export type SimplifiedInvoiceStatus = "a-envoyer" | "envoyee" | "en-retard" | "suivi-manuel" | "payee";
 
 export type StatusDisplay = {
   badgeLabel: string;
@@ -145,15 +145,17 @@ export function getStatusDisplay(invoice: any): StatusDisplay {
 }
 
 /**
- * ✅ NEW: Get simplified status (4 statuses for V3)
+ * ✅ NEW: Get simplified status (5 statuses for V3)
  * - "a-envoyer": Not sent yet
  * - "envoyee": Sent but not overdue
- * - "en-retard": Overdue (regardless of reminder status)
+ * - "en-retard": Overdue (but not yet in manual follow-up)
+ * - "suivi-manuel": Manual follow-up required (all auto reminders exhausted)
  * - "payee": Paid
  */
 export function getInvoiceSimplifiedStatus(invoice: any): SimplifiedInvoiceStatus {
   if (invoice.paymentStatus === "paid") return "payee";
   if (invoice.sendStatus === "pending") return "a-envoyer";
+  if (invoice.reminderStatus === "manual_followup") return "suivi-manuel";
   if (invoice.isOverdue) return "en-retard";
   return "envoyee";
 }
@@ -166,6 +168,7 @@ export function getStatusLabel(status: SimplifiedInvoiceStatus): string {
     "a-envoyer": "A envoyer",
     "envoyee": "Envoyée",
     "en-retard": "En retard",
+    "suivi-manuel": "Suivi manuel",
     "payee": "Payée",
   };
   return labels[status];
@@ -179,6 +182,7 @@ export function getStatusBadgeColor(status: SimplifiedInvoiceStatus): string {
     "a-envoyer": "bg-gray-100 text-gray-800 border-gray-200",
     "envoyee": "bg-blue-100 text-blue-800 border-blue-200",
     "en-retard": "bg-red-100 text-red-800 border-red-200",
+    "suivi-manuel": "bg-purple-100 text-purple-800 border-purple-200",
     "payee": "bg-green-100 text-green-800 border-green-200",
   };
   return colors[status];
@@ -192,6 +196,7 @@ export function getStatusDotColor(status: SimplifiedInvoiceStatus): string {
     "a-envoyer": "bg-gray-500",
     "envoyee": "bg-blue-500",
     "en-retard": "bg-red-500",
+    "suivi-manuel": "bg-purple-500",
     "payee": "bg-green-500",
   };
   return colors[status];

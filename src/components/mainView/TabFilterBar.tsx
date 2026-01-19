@@ -41,32 +41,65 @@ export default function TabFilterBar({
   sortBy,
   onSortByChange,
 }: TabFilterBarProps) {
-  const statusTabs = [
+  // Onglets principaux par priorité d'action
+  const mainStatusTabs = [
     { value: "all", label: "Toutes" },
-    { value: "payee", label: "Payées" },
     { value: "en-retard", label: "En retard" },
     { value: "suivi-manuel", label: "Suivi manuel" },
-    { value: "a-envoyer", label: "Brouillons" },
+    { value: "envoyee", label: "Envoyées" },
+    { value: "payee", label: "Payées" },
   ];
 
+  // Onglet séparé (pré-workflow)
+  const draftTab = { value: "a-envoyer", label: "À envoyer" };
+
   return (
-    <div className="p-0 md:p-5 md:border-b md:border-slate-100 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+    <div className="p-0 md:p-5 md:border-b md:border-slate-100 flex flex-col xl:flex-row xl:items-center xl:flex-wrap justify-between gap-4">
       {/* Status Tabs (Toggle style) */}
-      <div className="flex p-1 bg-slate-100 rounded-lg self-start">
-        {statusTabs.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => onStatusFilterChange(tab.value)}
-            className={cn(
-              "px-3 md:px-4 py-1.5 rounded-md text-xs md:text-sm font-bold transition-all",
-              statusFilter === tab.value
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex items-center gap-3 flex-shrink-0">
+        {/* Main tabs group */}
+        <div className="flex p-1 bg-slate-100 rounded-lg">
+          {mainStatusTabs.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => onStatusFilterChange(tab.value)}
+              className={cn(
+                "px-3 md:px-4 py-1.5 rounded-md text-xs md:text-sm font-bold transition-all",
+                statusFilter === tab.value
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Brouillons tab - séparé sur lg+ */}
+        <button
+          onClick={() => onStatusFilterChange(draftTab.value)}
+          className={cn(
+            "hidden lg:flex px-3 md:px-4 py-1.5 rounded-md text-xs md:text-sm font-bold transition-all border",
+            statusFilter === draftTab.value
+              ? "bg-slate-800 text-white border-slate-800"
+              : "bg-white text-slate-500 border-slate-200 hover:text-slate-700 hover:border-slate-300"
+          )}
+        >
+          {draftTab.label}
+        </button>
+
+        {/* Brouillons dans le groupe principal sur mobile/tablet */}
+        <button
+          onClick={() => onStatusFilterChange(draftTab.value)}
+          className={cn(
+            "lg:hidden p-1 bg-slate-100 rounded-lg px-3 md:px-4 py-1.5 text-xs md:text-sm font-bold transition-all",
+            statusFilter === draftTab.value
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          )}
+        >
+          {draftTab.label}
+        </button>
       </div>
 
       {/* Right side: Search + Filters */}

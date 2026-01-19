@@ -63,7 +63,7 @@ export default function InvoiceTableRow({ invoice, onAction, onInvoiceClick }: I
   return (
     <div
       onClick={handleRowClick}
-      className="grid grid-cols-[2fr_1fr_1fr_1.5fr_1.2fr_1.5fr] gap-4 px-6 py-4 border-b border-slate-100 hover:bg-slate-50 transition-colors items-center cursor-pointer"
+      className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_220px] gap-4 px-6 py-4 border-b border-slate-100 hover:bg-slate-50 transition-colors items-center cursor-pointer"
     >
       {/* Col 1: Facture / Client */}
       <div>
@@ -82,27 +82,27 @@ export default function InvoiceTableRow({ invoice, onAction, onInvoiceClick }: I
       <div>
         <span
           className={cn(
-            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border",
+            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap",
             getStatusBadgeColor(status)
           )}
         >
-          <span className={cn("w-1.5 h-1.5 rounded-full", getStatusDotColor(status))} />
+          <span className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", getStatusDotColor(status))} />
           {getStatusLabel(status)}
         </span>
       </div>
 
       {/* Col 4: Montant + échéance */}
-      <div>
+      <div className="text-right">
         <div className="font-bold text-gray-900">
           {formatCurrency(invoice.amountTTC)}
         </div>
         <div className="text-xs text-gray-500">
-          Échéance: {formatDate(invoice.dueDate)}
+          {formatDate(invoice.dueDate)}
         </div>
       </div>
 
       {/* Col 5: Prochain rappel */}
-      <div>
+      <div className="flex flex-col justify-center">
         {(status === "en-retard" || status === "envoyee") && invoice.nextReminderDate ? (
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-brand-50 text-brand-500 flex items-center justify-center">
@@ -117,12 +117,14 @@ export default function InvoiceTableRow({ invoice, onAction, onInvoiceClick }: I
               </div>
             </div>
           </div>
+        ) : status === "suivi-manuel" ? (
+          <div className="text-sm font-medium text-purple-600">À relancer</div>
         ) : status === "payee" ? (
-          <div className="text-xs text-slate-400 italic">Complete</div>
+          <div className="text-sm text-slate-400 italic">Complete</div>
         ) : status === "a-envoyer" ? (
-          <div className="text-xs text-slate-400">Pas encore envoyée</div>
+          <div className="text-sm text-slate-400">—</div>
         ) : (
-          <div className="text-xs text-slate-400">—</div>
+          <div className="text-sm text-slate-400">—</div>
         )}
       </div>
 

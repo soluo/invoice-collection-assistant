@@ -1288,7 +1288,8 @@ export const listInvoicesWithFilters = query({
       invoicesWithDisplayInfo = invoicesWithDisplayInfo.filter((invoice) => {
         switch (args.statusFilter) {
           case "a-envoyer":
-            return invoice.sendStatus === "pending";
+            // Exclure les factures déjà payées (cas rare mais possible dans les données)
+            return invoice.sendStatus === "pending" && invoice.paymentStatus !== "paid";
           case "envoyee":
             return invoice.sendStatus === "sent" && !invoice.isOverdue;
           case "en-retard":
@@ -1336,5 +1337,3 @@ export const listInvoicesWithFilters = query({
     });
   },
 });
-
-

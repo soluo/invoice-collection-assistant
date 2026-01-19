@@ -74,8 +74,8 @@ development_status:
   # - Le flag manual_followup existe déjà (auto-set quand toutes relances terminées)
   # - Il manque juste un FILTRE dans l'UI pour voir ces factures
   # - Stories originales 3.1-3.3 (phone workflow) déplacées en backlog
-  epic-3: in-progress
-  3-1-filtre-suivi-manuel: review  # SEULE STORY NÉCESSAIRE POUR MVP
+  epic-3: done
+  3-1-filtre-suivi-manuel: done  # SEULE STORY NÉCESSAIRE POUR MVP
   # Backlog (future - si gestion appels in-app nécessaire):
   # 3-2-record-phone-call-outcome: backlog
   # 3-3-auto-snooze-no-answer-calls: backlog

@@ -202,11 +202,11 @@ export default function MainView() {
             <div className="overflow-x-auto custom-scrollbar">
               <div className="min-w-[900px]">
                 {/* Header */}
-                <div className="grid grid-cols-[2fr_1fr_1fr_1.5fr_1.2fr_1.5fr] gap-4 px-6 py-4 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_220px] gap-4 px-6 py-4 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
                   <div>Facture / Client</div>
                   <div>Date facture</div>
                   <div>État</div>
-                  <div>Montant</div>
+                  <div className="text-right">Montant / Échéance</div>
                   <div>Prochain rappel</div>
                   <div className="text-right">Actions</div>
                 </div>

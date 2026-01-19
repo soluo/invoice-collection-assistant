@@ -6,7 +6,7 @@ As a **user**,
 I want **to filter invoices that have completed all automatic reminders**,
 So that **I can see which invoices need manual follow-up (phone, other means) and track my progress via notes**.
 
-## Status: review
+## Status: done
 
 ## Context
 
@@ -109,6 +109,25 @@ Ajouter l'option dans le dropdown de statut :
 **Validation :**
 - ✅ `pnpm lint` : TypeScript compile sans erreur
 - ✅ `pnpm build` : Build production réussie
+
+### Code Review (2026-01-19)
+
+**Issues corrigées :**
+
+1. **M1 - Badge "Suivi manuel" manquant** : Ajout de "suivi-manuel" dans `SimplifiedInvoiceStatus` et mise à jour des fonctions `getInvoiceSimplifiedStatus()`, `getStatusLabel()`, `getStatusBadgeColor()`, `getStatusDotColor()` dans `src/lib/invoiceStatus.ts`
+
+2. **M2/M3 - Colonne "Prochain rappel" vide** : Ajout d'un message "À relancer manuellement" (violet) pour les factures en suivi manuel dans `InvoiceTableRow.tsx` et `InvoiceTableCard.tsx`
+
+3. **L1 - Réorganisation des onglets** : Ordre par priorité d'action (En retard → Suivi manuel → Envoyées → Payées) avec "Brouillons" séparé à droite sur écrans lg+
+
+4. **L2 - Ligne vide** : Supprimée dans `convex/invoices.ts`
+
+**Fichiers modifiés (code review) :**
+- `src/lib/invoiceStatus.ts` (ajout "suivi-manuel" au type simplifié)
+- `src/components/mainView/InvoiceTableRow.tsx` (message suivi manuel)
+- `src/components/mainView/InvoiceTableCard.tsx` (message suivi manuel)
+- `src/components/mainView/TabFilterBar.tsx` (nouvel ordre onglets + Brouillons séparé)
+- `convex/invoices.ts` (suppression ligne vide)
 
 ## Out of Scope
 

@@ -98,7 +98,7 @@ export default function InvoiceTableCard({ invoice, onAction, onInvoiceClick }: 
             {formatDate(invoice.dueDate)}
           </span>
         </div>
-        {(status === "en-retard" || status === "envoyee") && invoice.nextReminderDate && (
+        {(status === "en-retard" || status === "envoyee") && invoice.nextReminderDate ? (
           <div className="flex items-center gap-2 text-sm">
             <div className="w-6 h-6 rounded-full bg-brand-50 text-brand-500 flex items-center justify-center">
               <Bot className="w-3 h-3" />
@@ -110,7 +110,9 @@ export default function InvoiceTableCard({ invoice, onAction, onInvoiceClick }: 
               • {formatDate(invoice.nextReminderDate)}
             </span>
           </div>
-        )}
+        ) : status === "suivi-manuel" ? (
+          <div className="text-sm font-medium text-purple-600">À relancer manuellement</div>
+        ) : null}
       </div>
 
       {/* Actions */}
