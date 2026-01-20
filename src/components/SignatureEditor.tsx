@@ -135,30 +135,35 @@ export function SignatureEditor({
       // 3. Save storage ID to organization
       await saveSignatureImage({ storageId });
 
-      // 4. Insert image in editor
-      // Remove any existing image first
+      // 4. Insert or replace image in editor
       if (editorRef.current) {
-        const existingImages = editorRef.current.querySelectorAll("img");
-        existingImages.forEach((img) => img.parentElement?.remove() || img.remove());
+        const existingImage = editorRef.current.querySelector("img");
+        const newSrc = `${convexSiteUrl}/signature-image/${storageId}`;
 
-        // Create image element with storageId in path (avoids cache issues on update)
-        const imgHtml = `<img src="${convexSiteUrl}/signature-image/${storageId}" alt="Signature" style="max-width: 600px; height: auto;" />`;
-
-        // Try to insert at saved cursor position, otherwise append
-        if (savedSelectionRef.current && editorRef.current.contains(savedSelectionRef.current.commonAncestorContainer)) {
-          const selection = window.getSelection();
-          selection?.removeAllRanges();
-          selection?.addRange(savedSelectionRef.current);
-          document.execCommand("insertHTML", false, `<p>${imgHtml}</p>`);
+        if (existingImage) {
+          // Replace: just update the src attribute
+          existingImage.src = newSrc;
+          handleInput();
+          toast.success("Image remplacée");
         } else {
-          // Fallback: append at the end
-          editorRef.current.innerHTML += `<p>${imgHtml}</p>`;
+          // Add new image
+          const imgHtml = `<p><img src="${newSrc}" alt="Signature" style="max-width: 600px; height: auto;" /></p>`;
+
+          // Try to insert at saved cursor position
+          if (savedSelectionRef.current && editorRef.current.contains(savedSelectionRef.current.commonAncestorContainer)) {
+            const selection = window.getSelection();
+            selection?.removeAllRanges();
+            selection?.addRange(savedSelectionRef.current);
+            document.execCommand("insertHTML", false, imgHtml);
+          } else {
+            // No cursor position: insert at the beginning
+            editorRef.current.innerHTML = imgHtml + editorRef.current.innerHTML;
+          }
+          handleInput();
+          toast.success("Image ajoutée");
         }
-        handleInput();
         editorRef.current.focus();
       }
-
-      toast.success("Image ajoutée");
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Erreur lors de l'upload de l'image");
@@ -187,9 +192,17 @@ export function SignatureEditor({
       // Remove image from editor HTML
       if (editorRef.current) {
         const images = editorRef.current.querySelectorAll("img");
-        images.forEach((img) => img.parentElement?.remove() || img.remove());
+        images.forEach((img) => {
+          const parent = img.parentElement;
+          img.remove();
+          // Remove parent only if it's now empty (was just containing the image)
+          if (parent && parent.innerHTML.trim() === "") {
+            parent.remove();
+          }
+        });
         handleInput();
       }
+      setHoveredImage(null);
 
       toast.success("Image supprimée");
     } catch (error) {
