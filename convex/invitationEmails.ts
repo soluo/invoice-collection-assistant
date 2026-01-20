@@ -18,7 +18,7 @@ export const getInvitationForEmail = internalQuery({
       _id: v.id("invitations"),
       email: v.string(),
       organizationId: v.id("organizations"),
-      role: v.union(v.literal("admin"), v.literal("technicien")),
+      role: v.union(v.literal("admin"), v.literal("technicien"), v.literal("superadmin")),
       token: v.string(),
       status: v.union(
         v.literal("pending"),
@@ -99,7 +99,7 @@ type InvitationForEmail = {
   _id: string;
   email: string;
   organizationId: string;
-  role: "admin" | "technicien";
+  role: "admin" | "technicien" | "superadmin";
   token: string;
   status: "pending" | "accepted" | "expired";
 } | null;

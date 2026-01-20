@@ -39,11 +39,26 @@ export function BulkSendConfirmModal({
     setIsSending(true);
     try {
       const reminderIds = realReminders.map((r) => r._id as Id<"reminders">);
-      await sendMultipleReminders({ reminderIds });
+      const result = await sendMultipleReminders({ reminderIds });
 
-      toast.success(
-        `${realReminders.length} relance${realReminders.length > 1 ? "s" : ""} envoyée${realReminders.length > 1 ? "s" : ""} avec succès`
-      );
+      // Show appropriate toast based on actual results
+      if (result.failed === 0) {
+        toast.success(
+          `${result.sent} relance${result.sent > 1 ? "s" : ""} envoyée${result.sent > 1 ? "s" : ""} avec succès`
+        );
+      } else if (result.sent === 0) {
+        toast.error(
+          `Échec de l'envoi des ${result.failed} relance${result.failed > 1 ? "s" : ""}`
+        );
+        console.error("Erreurs d'envoi:", result.errors);
+      } else {
+        // Partial success
+        toast.warning(
+          `${result.sent} envoyée${result.sent > 1 ? "s" : ""}, ${result.failed} échouée${result.failed > 1 ? "s" : ""}`
+        );
+        console.error("Erreurs d'envoi partiel:", result.errors);
+      }
+
       onSuccess?.();
       onClose();
     } catch (error: any) {

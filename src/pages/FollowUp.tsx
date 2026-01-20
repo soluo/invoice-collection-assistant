@@ -1,4 +1,4 @@
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Id, Doc } from "@convex/_generated/dataModel";
 import { FunctionReturnType } from "convex/server";
@@ -25,12 +25,17 @@ import {
   FileUp,
   CalendarDays,
   X,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Play,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useInvoiceDrawerUrl } from "@/hooks/useInvoiceDrawerUrl";
+import { isAdminRole, isSuperAdminRole } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { EmailPreviewModalFollowUp } from "@/components/EmailPreviewModalFollowUp";
@@ -50,6 +55,7 @@ export function FollowUp() {
   // Simulation state (admin only)
   const [simulationDate, setSimulationDate] = useState<Date | null>(null);
   const [testSentIds, setTestSentIds] = useState<Set<string>>(new Set());
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   // Format date for backend (YYYY-MM-DD)
   const simulationDateString = simulationDate ? format(simulationDate, "yyyy-MM-dd") : null;
@@ -74,8 +80,77 @@ export function FollowUp() {
   const [selectedReminders, setSelectedReminders] = useState<string[]>([]);
   const [phoneCallReminder, setPhoneCallReminder] = useState<AnyReminder | null>(null);
 
-  // Check if user is admin
-  const isAdmin = currentUser?.role === "admin";
+  // Check if user is admin or superadmin
+  const isAdmin = isAdminRole(currentUser?.role);
+  const isSuperAdmin = isSuperAdminRole(currentUser?.role);
+
+  // SuperAdmin mutations
+  const generateReminders = useMutation(api.followUp.generateRemindersForDate);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Keyboard navigation for simulation mode
+  useEffect(() => {
+    if (!simulationDate) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+
+      e.preventDefault();
+      const direction = e.key === "ArrowRight" ? 1 : -1;
+      const newDate = new Date(simulationDate);
+
+      if (e.altKey && e.shiftKey) {
+        // Alt+Shift: +/- 1 mois
+        newDate.setMonth(newDate.getMonth() + direction);
+      } else if (e.altKey) {
+        // Alt: +/- 1 semaine
+        newDate.setDate(newDate.getDate() + direction * 7);
+      } else {
+        // Normal: +/- 1 jour
+        newDate.setDate(newDate.getDate() + direction);
+      }
+
+      setSimulationDate(newDate);
+      setTestSentIds(new Set());
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [simulationDate]);
+
+  // Navigation helper functions
+  const navigateDate = (direction: number) => {
+    if (!simulationDate) return;
+    const newDate = new Date(simulationDate);
+    newDate.setDate(newDate.getDate() + direction);
+    setSimulationDate(newDate);
+    setTestSentIds(new Set());
+  };
+
+  // Handler for generating reminders (SuperAdmin)
+  // Note: La simulation affiche les relances du jour X, mais la génération se fait
+  // la veille (J-1) pour créer les relances de J. Donc on passe J-1 au backend.
+  const handleGenerateReminders = async () => {
+    if (!simulationDate) return;
+    setIsGenerating(true);
+    try {
+      // Calculate the previous day (generation runs the day before)
+      const previousDay = new Date(simulationDate);
+      previousDay.setDate(previousDay.getDate() - 1);
+      const previousDayString = format(previousDay, "yyyy-MM-dd");
+
+      const result = await generateReminders({ targetDate: previousDayString });
+      toast.success("Relances générées", {
+        description: `${result.totalRemindersGenerated} relance(s) générée(s) sur ${result.totalInvoicesProcessed} facture(s) traitée(s)`,
+      });
+    } catch (error: any) {
+      toast.error("Erreur", {
+        description: error.message || "Échec de la génération",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   // Handler for when a test email is sent
   const handleTestSent = (reminderId: string) => {
@@ -108,7 +183,19 @@ export function FollowUp() {
         {/* Date picker for simulation (admin only) */}
         {isAdmin && (
           <div className="flex items-center gap-2">
-            <Popover>
+            {/* Navigation arrow left - visible only when simulation active */}
+            {simulationDate && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigateDate(-1)}
+                className="px-2"
+                title="Jour précédent (←)"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            )}
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm">
                   <CalendarDays className="h-4 w-4 mr-2" />
@@ -121,7 +208,10 @@ export function FollowUp() {
                 <CalendarComponent
                   mode="single"
                   selected={simulationDate ?? undefined}
-                  onSelect={(date) => setSimulationDate(date ?? null)}
+                  onSelect={(date) => {
+                    setSimulationDate(date ?? null);
+                    setCalendarOpen(false);
+                  }}
                   locale={fr}
                   style={{ ["--cell-size" as string]: "2.75rem" }}
                   classNames={{
@@ -133,6 +223,18 @@ export function FollowUp() {
                 />
               </PopoverContent>
             </Popover>
+            {/* Navigation arrow right - visible only when simulation active */}
+            {simulationDate && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigateDate(1)}
+                className="px-2"
+                title="Jour suivant (→)"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
             {simulationDate && (
               <Button
                 variant="ghost"
@@ -149,22 +251,46 @@ export function FollowUp() {
 
       {/* Simulation mode banner */}
       {simulationDate && (
-        <div className="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-lg px-4 py-2">
-          <div className="flex items-center gap-2 text-purple-700">
-            <CalendarDays className="h-4 w-4" />
-            <span className="font-medium">Mode simulation</span>
-            <span className="text-purple-600">
-              Relances prévues pour le {format(simulationDate, "d MMMM yyyy", { locale: fr })}
-            </span>
+        <div className="bg-purple-50 border border-purple-200 rounded-lg px-4 py-3 space-y-3">
+          {/* First line: Mode info + Quit button */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-purple-700">
+              <CalendarDays className="h-4 w-4 flex-shrink-0" />
+              <span className="font-medium">Mode simulation</span>
+              <span className="text-purple-600">
+                Relances prévues pour le {format(simulationDate, "d MMMM yyyy", { locale: fr })}
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleExitSimulation}
+              className="text-purple-700 hover:text-purple-900 hover:bg-purple-100 flex-shrink-0"
+            >
+              Quitter simulation
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleExitSimulation}
-            className="text-purple-700 hover:text-purple-900 hover:bg-purple-100"
-          >
-            Quitter simulation
-          </Button>
+
+          {/* Second line: SuperAdmin action buttons */}
+          {isSuperAdmin && simulatedReminders && simulatedReminders.length > 0 && (
+            <div className="flex items-center gap-2 pt-3 border-t border-purple-200">
+              <span className="text-sm text-purple-600 mr-2">Actions SuperAdmin :</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateReminders}
+                disabled={isGenerating}
+                className="border-purple-300 text-purple-700 hover:bg-purple-100"
+              >
+                {isGenerating ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Play className="h-4 w-4 mr-2" />
+                )}
+                Générer les relances
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { normalizeEmail } from "./utils";
+import { hasAdminRole } from "./permissions";
 import {
   getDefaultReminderSteps,
   DEFAULT_INVOICE_EMAIL_SUBJECT,
@@ -69,7 +70,7 @@ export const createOrganizationWithAdmin = mutation({
 export const inviteUser = mutation({
   args: {
     email: v.string(),
-    role: v.union(v.literal("admin"), v.literal("technicien")),
+    role: v.union(v.literal("admin"), v.literal("technicien"), v.literal("superadmin")),
   },
   returns: v.object({
     invitationId: v.id("invitations"),
@@ -99,7 +100,7 @@ export const inviteUser = mutation({
     if (!user?.organizationId) {
       throw new Error("Vous n'appartenez à aucune organisation");
     }
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       throw new Error("Seuls les admins peuvent inviter des utilisateurs");
     }
 
@@ -257,7 +258,7 @@ export const listInvitations = query({
     v.object({
       _id: v.id("invitations"),
       email: v.string(),
-      role: v.union(v.literal("admin"), v.literal("technicien")),
+      role: v.union(v.literal("admin"), v.literal("technicien"), v.literal("superadmin")),
       createdAt: v.number(),
       expiresAt: v.number(),
       invitedByName: v.optional(v.string()),
@@ -276,7 +277,7 @@ export const listInvitations = query({
       return [];
     }
 
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       return [];
     }
 
@@ -324,7 +325,7 @@ export const listUsers = query({
       _id: v.id("users"),
       name: v.optional(v.string()),
       email: v.optional(v.string()),
-      role: v.optional(v.union(v.literal("admin"), v.literal("technicien"))),
+      role: v.optional(v.union(v.literal("admin"), v.literal("technicien"), v.literal("superadmin"))),
       invitedBy: v.optional(v.id("users")),
     })
   ),
@@ -340,7 +341,7 @@ export const listUsers = query({
     }
 
     // Seuls les admins peuvent voir tous les utilisateurs
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       return [];
     }
 
@@ -513,7 +514,7 @@ export const updateOrganizationName = mutation({
       throw new Error("Vous n'appartenez à aucune organisation");
     }
 
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       throw new Error("Seuls les admins peuvent modifier le nom de l'organisation");
     }
 
@@ -542,7 +543,7 @@ export const updateAutoSendEnabled = mutation({
       throw new Error("Vous n'appartenez à aucune organisation");
     }
 
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       throw new Error("Seuls les admins peuvent modifier ce paramètre");
     }
 
@@ -580,7 +581,7 @@ export const updateReminderSteps = mutation({
       throw new Error("Vous n'appartenez à aucune organisation");
     }
 
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       throw new Error("Seuls les admins peuvent modifier les étapes de relance");
     }
 
@@ -648,7 +649,7 @@ export const addReminderStep = mutation({
       throw new Error("Vous n'appartenez à aucune organisation");
     }
 
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       throw new Error("Seuls les admins peuvent ajouter des étapes de relance");
     }
 
@@ -730,7 +731,7 @@ export const updateReminderStep = mutation({
       throw new Error("Vous n'appartenez à aucune organisation");
     }
 
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       throw new Error("Seuls les admins peuvent modifier les étapes de relance");
     }
 
@@ -817,7 +818,7 @@ export const deleteReminderStep = mutation({
       throw new Error("Vous n'appartenez à aucune organisation");
     }
 
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       throw new Error("Seuls les admins peuvent supprimer des étapes de relance");
     }
 
@@ -861,7 +862,7 @@ export const updateSenderName = mutation({
       throw new Error("Vous n'appartenez à aucune organisation");
     }
 
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       throw new Error("Seuls les admins peuvent modifier ce paramètre");
     }
 
@@ -890,7 +891,7 @@ export const updateReminderSendTime = mutation({
       throw new Error("Vous n'appartenez à aucune organisation");
     }
 
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       throw new Error("Seuls les admins peuvent modifier ce paramètre");
     }
 
@@ -970,7 +971,7 @@ export const deleteInvitation = mutation({
       throw new Error("Non authentifié");
     }
     const user = await ctx.db.get(userId);
-    if (user?.role !== "admin") {
+    if (!user || !hasAdminRole(user.role)) {
       throw new Error("Seuls les admins peuvent supprimer des invitations");
     }
 
@@ -1006,7 +1007,7 @@ export const regenerateInvitationToken = mutation({
       throw new Error("Non authentifié");
     }
     const user = await ctx.db.get(userId);
-    if (user?.role !== "admin") {
+    if (!user || !hasAdminRole(user.role)) {
       throw new Error("Seuls les admins peuvent regénérer des invitations");
     }
     if (!user.organizationId) {
@@ -1062,7 +1063,7 @@ export const updateInvoiceEmailTemplate = mutation({
       throw new Error("Vous n'appartenez à aucune organisation");
     }
 
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       throw new Error("Seuls les admins peuvent modifier les modèles d'email");
     }
 
@@ -1146,7 +1147,7 @@ export const updateAttachPdfToReminders = mutation({
       throw new Error("Vous n'appartenez à aucune organisation");
     }
 
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       throw new Error("Accès réservé aux administrateurs");
     }
 
@@ -1179,7 +1180,7 @@ export const updateInvitationEmailTemplate = mutation({
       throw new Error("Vous n'appartenez à aucune organisation");
     }
 
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       throw new Error("Seuls les admins peuvent modifier les modèles d'email");
     }
 
@@ -1249,7 +1250,7 @@ export const getInvitationEmailTemplate = query({
 export const updateUserRole = mutation({
   args: {
     userId: v.id("users"),
-    newRole: v.union(v.literal("admin"), v.literal("technicien")),
+    newRole: v.union(v.literal("admin"), v.literal("technicien"), v.literal("superadmin")),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -1262,7 +1263,7 @@ export const updateUserRole = mutation({
     if (!currentUser?.organizationId) {
       throw new Error("Vous n'appartenez à aucune organisation");
     }
-    if (currentUser.role !== "admin") {
+    if (!hasAdminRole(currentUser.role)) {
       throw new Error("Seuls les admins peuvent changer les rôles");
     }
 
@@ -1275,19 +1276,22 @@ export const updateUserRole = mutation({
       throw new Error("Cet utilisateur n'appartient pas à votre organisation");
     }
 
-    // Empêcher de retirer le dernier admin
-    if (targetUser.role === "admin" && args.newRole === "technicien") {
+    // Empêcher de retirer le dernier admin/superadmin
+    const isTargetAdmin = hasAdminRole(targetUser.role);
+    if (isTargetAdmin && args.newRole === "technicien") {
       const allAdmins = await ctx.db
         .query("users")
         .withIndex("by_organizationId", (q) =>
           q.eq("organizationId", currentUser.organizationId)
         )
-        .filter((q) => q.eq(q.field("role"), "admin"))
+        .filter((q) =>
+          q.or(q.eq(q.field("role"), "admin"), q.eq(q.field("role"), "superadmin"))
+        )
         .collect();
 
       if (allAdmins.length <= 1) {
         throw new Error(
-          "Impossible de retirer le dernier admin de l'organisation"
+          "Impossible de retirer le dernier administrateur de l'organisation"
         );
       }
     }
@@ -1316,7 +1320,7 @@ export const removeUser = mutation({
     if (!currentUser?.organizationId) {
       throw new Error("Vous n'appartenez à aucune organisation");
     }
-    if (currentUser.role !== "admin") {
+    if (!hasAdminRole(currentUser.role)) {
       throw new Error("Seuls les admins peuvent supprimer des utilisateurs");
     }
 
@@ -1329,19 +1333,22 @@ export const removeUser = mutation({
       throw new Error("Cet utilisateur n'appartient pas à votre organisation");
     }
 
-    // Empêcher de supprimer le dernier admin
-    if (targetUser.role === "admin") {
+    // Empêcher de supprimer le dernier admin/superadmin
+    const isTargetAdmin = targetUser.role === "admin" || targetUser.role === "superadmin";
+    if (isTargetAdmin) {
       const allAdmins = await ctx.db
         .query("users")
         .withIndex("by_organizationId", (q) =>
           q.eq("organizationId", currentUser.organizationId)
         )
-        .filter((q) => q.eq(q.field("role"), "admin"))
+        .filter((q) =>
+          q.or(q.eq(q.field("role"), "admin"), q.eq(q.field("role"), "superadmin"))
+        )
         .collect();
 
       if (allAdmins.length <= 1) {
         throw new Error(
-          "Impossible de supprimer le dernier admin de l'organisation"
+          "Impossible de supprimer le dernier administrateur de l'organisation"
         );
       }
     }

@@ -20,6 +20,8 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { InviteUserModal } from "@/components/InviteUserModal";
 import { toast } from "sonner";
 import { Tooltip } from "@/components/ui/simple-tooltip";
+import { ForbiddenPage } from "@/components/ForbiddenPage";
+import { isAdminRole } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,16 +52,14 @@ export function TeamManagement() {
     );
   }
 
-  // Permission check
-  if (loggedInUser.role !== "admin") {
+  // Permission check - Admin only
+  if (!isAdminRole(loggedInUser.role)) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
-          <p className="text-amber-800 font-medium">
-            Vous n'avez pas les permissions pour accéder à cette page.
-          </p>
-        </div>
-      </div>
+      <ForbiddenPage
+        message="Cette page est réservée aux administrateurs. Contactez votre administrateur pour obtenir les permissions nécessaires."
+        returnPath="/invoices"
+        returnLabel="Retour aux factures"
+      />
     );
   }
 
@@ -71,7 +71,15 @@ export function TeamManagement() {
     });
   };
 
-  const getRoleBadge = (role?: "admin" | "technicien") => {
+  const getRoleBadge = (role?: "admin" | "technicien" | "superadmin") => {
+    if (role === "superadmin") {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+          <Shield size={12} />
+          SuperAdmin
+        </span>
+      );
+    }
     if (role === "admin") {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">

@@ -16,7 +16,7 @@ import { QueryCtx, MutationCtx } from "./_generated/server";
  */
 export type UserWithOrg = {
   userId: Id<"users">;
-  role: "admin" | "technicien";
+  role: "admin" | "technicien" | "superadmin";
   organizationId: Id<"organizations">;
   email?: string;
   name?: string;
@@ -63,10 +63,34 @@ export async function getUserWithOrg(
 }
 
 /**
- * Vérifie si l'utilisateur est admin
+ * Vérifie si l'utilisateur est admin (ou superadmin qui hérite des privilèges admin)
  */
 export function isAdmin(user: UserWithOrg): boolean {
-  return user.role === "admin";
+  return hasAdminRole(user.role);
+}
+
+/**
+ * Vérifie si l'utilisateur est superadmin
+ */
+export function isSuperAdmin(user: UserWithOrg): boolean {
+  return user.role === "superadmin";
+}
+
+/**
+ * Helper simple pour vérifier si un rôle est admin ou superadmin
+ * Utilisable quand on n'a pas un UserWithOrg complet
+ */
+export function hasAdminRole(role: string | undefined | null): boolean {
+  return role === "admin" || role === "superadmin";
+}
+
+/**
+ * Assertion : lance une erreur si l'utilisateur n'est pas superadmin
+ */
+export function assertIsSuperAdmin(user: UserWithOrg): void {
+  if (!isSuperAdmin(user)) {
+    throw new Error("Cette opération nécessite les privilèges super administrateur");
+  }
 }
 
 /**

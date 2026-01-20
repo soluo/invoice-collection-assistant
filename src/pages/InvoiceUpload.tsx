@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Id } from "../../convex/_generated/dataModel";
+import { isAdminRole } from "@/lib/utils";
 
 interface InvoiceUploadProps {
   onSuccess: () => void;
@@ -91,7 +92,7 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
   const extractPdfData = useAction(api.pdfExtractionAI.extractPdfDataAI);
   const createInvoice = useMutation(api.invoices.create);
 
-  const isAdmin = loggedInUser?.role === "admin";
+  const isAdmin = isAdminRole(loggedInUser?.role);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();

@@ -351,7 +351,7 @@ export const sendReminderEmail = action({
       throw new Error("Accès refusé à cette relance");
     }
 
-    const isAdminUser = user.role === "admin";
+    const isAdminUser = user.role === "admin" || user.role === "superadmin";
     if (!isAdminUser && context.reminder.userId !== userId) {
       throw new Error("Accès refusé à cette relance");
     }
@@ -836,9 +836,11 @@ export const generateInvoiceReminder = internalMutation({
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const detectionDate = new Date(invoice.overdueDetectedDate);
-    const daysSinceDetectionTomorrow = Math.floor(
-      (tomorrow.getTime() - detectionDate.getTime()) / (1000 * 60 * 60 * 24)
+    // IMPORTANT: Utiliser dueDate (pas overdueDetectedDate) pour être cohérent avec la simulation
+    // Le delay configuré est "X jours après l'échéance", pas "X jours après détection"
+    const dueDate = new Date(invoice.dueDate);
+    const daysPastDueTomorrow = Math.floor(
+      (tomorrow.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
     );
 
     // Déterminer le numéro de relance actuel
@@ -846,7 +848,7 @@ export const generateInvoiceReminder = internalMutation({
     const nextReminderNum = currentReminderNum + 1;
 
     console.log(
-      `[REMINDER] Invoice ${invoice.invoiceNumber}: current reminder=${currentReminderNum}, next=${nextReminderNum}, tomorrow will be ${daysSinceDetectionTomorrow} days since detection`
+      `[REMINDER] Invoice ${invoice.invoiceNumber}: current reminder=${currentReminderNum}, next=${nextReminderNum}, tomorrow will be ${daysPastDueTomorrow} days past due`
     );
 
     // Vérifier si on a une prochaine étape
@@ -868,7 +870,7 @@ export const generateInvoiceReminder = internalMutation({
     const nextStep = steps[nextReminderNum - 1];
 
     // Vérifier si demain correspond exactement au délai configuré
-    if (daysSinceDetectionTomorrow === nextStep.delay) {
+    if (daysPastDueTomorrow === nextStep.delay) {
       // Vérifier qu'on n'a pas déjà envoyé une relance récemment
       const lastReminderDate = invoice.lastReminderDate
         ? new Date(invoice.lastReminderDate)
@@ -909,7 +911,7 @@ export const generateInvoiceReminder = internalMutation({
       });
 
       console.log(
-        `[REMINDER] Generated reminder_${nextReminderNum} for invoice ${invoice.invoiceNumber} for tomorrow (type: ${nextStep.type}, tomorrow will be ${daysSinceDetectionTomorrow} days since detection, matching delay=${nextStep.delay})`
+        `[REMINDER] Generated reminder_${nextReminderNum} for invoice ${invoice.invoiceNumber} for tomorrow (type: ${nextStep.type}, tomorrow will be ${daysPastDueTomorrow} days past due, matching delay=${nextStep.delay})`
       );
 
       return {
@@ -921,11 +923,11 @@ export const generateInvoiceReminder = internalMutation({
 
     // Pas encore temps pour la prochaine relance
     console.log(
-      `[REMINDER] Invoice ${invoice.invoiceNumber}: not yet time (tomorrow: ${daysSinceDetectionTomorrow} days since detection, need ${nextStep.delay})`
+      `[REMINDER] Invoice ${invoice.invoiceNumber}: not yet time (tomorrow: ${daysPastDueTomorrow} days past due, need ${nextStep.delay})`
     );
     return {
       action: "no_action" as const,
-      reason: `Not yet time for next reminder (tomorrow: ${daysSinceDetectionTomorrow}/${nextStep.delay} days since detection)`,
+      reason: `Not yet time for next reminder (tomorrow: ${daysPastDueTomorrow}/${nextStep.delay} days past due)`,
     };
   },
 });
@@ -1166,10 +1168,10 @@ export const updateEmailContent = mutation({
       throw new Error("Facture introuvable");
     }
 
-    // Permissions : admin OU createdBy de la facture
-    const isAdmin = user.role === "admin";
+    // Permissions : admin (ou superadmin) OU createdBy de la facture
+    const isAdminUser = user.role === "admin" || user.role === "superadmin";
     const isCreator = user.userId === invoice.createdBy;
-    if (!isAdmin && !isCreator) {
+    if (!isAdminUser && !isCreator) {
       throw new Error("Vous n'avez pas les permissions pour modifier cette relance");
     }
 

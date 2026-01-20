@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { action, internalAction, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
+import { hasAdminRole } from "./permissions";
 
 /**
  * Query pour générer l'URL d'autorisation OAuth Microsoft
@@ -69,7 +70,7 @@ export const disconnectEmailProvider = mutation({
     }
 
     // Vérifier que l'utilisateur est admin
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       throw new Error("Seuls les admins peuvent gérer la connexion email");
     }
 
@@ -96,7 +97,7 @@ export const getUserForOAuth = internalQuery({
   returns: v.union(
     v.object({
       _id: v.id("users"),
-      role: v.optional(v.union(v.literal("admin"), v.literal("technicien"))),
+      role: v.optional(v.union(v.literal("admin"), v.literal("technicien"), v.literal("superadmin"))),
       organizationId: v.optional(v.id("organizations")),
     }),
     v.null()
@@ -140,7 +141,7 @@ export const refreshTokenIfNeeded = action({
     if (!userInfo?.organizationId) {
       throw new Error("Utilisateur sans organisation");
     }
-    if (userInfo.role !== "admin") {
+    if (!hasAdminRole(userInfo.role)) {
       throw new Error("Seuls les admins peuvent gérer la connexion email");
     }
 
@@ -311,7 +312,7 @@ export const saveOAuthTokens = internalMutation({
     }
 
     // Vérifier que l'utilisateur est admin
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       throw new Error("Seuls les admins peuvent connecter un compte email");
     }
 

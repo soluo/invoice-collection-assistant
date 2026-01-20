@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { ReminderStepModal, type ReminderStep } from "@/components/ReminderStepModal";
 import { ForbiddenPage } from "@/components/ForbiddenPage";
+import { isAdminRole } from "@/lib/utils";
 import { Tooltip } from "@/components/ui/simple-tooltip";
 import { TestEmailSection } from "@/components/TestEmailSection";
 import { EmailTemplateModal } from "@/components/EmailTemplateModal";
@@ -361,7 +362,7 @@ export function OrganizationSettings() {
   }
 
   // Permission check - Admin only
-  if (loggedInUser.role !== "admin") {
+  if (!isAdminRole(loggedInUser.role)) {
     return (
       <ForbiddenPage
         message="Cette page est réservée aux administrateurs. Contactez votre administrateur pour obtenir les permissions nécessaires."

@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getUserWithOrg, isAdmin } from "./permissions";
+import { getUserWithOrg, isAdmin, isSuperAdmin } from "./permissions";
+import { internal, api } from "./_generated/api";
 
 /**
  * ✅ V2 : Query pour l'onglet "À Venir" de la page Relances
@@ -678,11 +679,13 @@ export const generateSimulatedReminders = query({
       .withIndex("by_organization", (q) => q.eq("organizationId", user.organizationId))
       .collect();
 
-    // Filter to sent and unpaid invoices
+    // Filter to sent and unpaid invoices (same criteria as generateDailyReminders)
     const eligibleInvoices = invoices.filter(
       (invoice) =>
         invoice.sendStatus === "sent" &&
-        invoice.paymentStatus !== "paid"
+        invoice.paymentStatus !== "paid" &&
+        invoice.paymentStatus !== "pending_payment" &&
+        invoice.reminderStatus !== "manual_followup"
     );
 
     // Generate simulated reminders based on due date + delay
@@ -938,5 +941,101 @@ export const getRemindersForAutoTab = query({
         return bDate - aDate;
       }
     });
+  },
+});
+
+/**
+ * ✅ SuperAdmin : Génère les relances pour une date cible (écrit en BDD)
+ * Permet de tester le système de génération automatique sans attendre le cron
+ * Appelle internal.reminders.generateDailyReminders avec la date spécifiée
+ */
+export const generateRemindersForDate = mutation({
+  args: {
+    targetDate: v.string(), // Format YYYY-MM-DD
+  },
+  returns: v.object({
+    totalInvoicesProcessed: v.number(),
+    totalRemindersGenerated: v.number(),
+  }),
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ totalInvoicesProcessed: number; totalRemindersGenerated: number }> => {
+    const user = await getUserWithOrg(ctx);
+
+    // SuperAdmin only
+    if (!isSuperAdmin(user)) {
+      throw new Error("Cette opération nécessite les privilèges super administrateur");
+    }
+
+    // Call the internal mutation to generate reminders
+    const result = await ctx.runMutation(internal.reminders.generateDailyReminders, {
+      currentDate: args.targetDate,
+      organizationId: user.organizationId,
+      generatedByCron: false, // Mark as manual generation
+    });
+
+    return {
+      totalInvoicesProcessed: result.totalInvoicesProcessed,
+      totalRemindersGenerated: result.totalRemindersGenerated,
+    };
+  },
+});
+
+/**
+ * ✅ SuperAdmin : Envoie toutes les relances email "pending" pour une date donnée
+ * Permet de tester le système d'envoi sans attendre l'envoi automatique
+ */
+export const sendRemindersForDate = mutation({
+  args: {
+    targetDate: v.string(), // Format YYYY-MM-DD
+  },
+  returns: v.object({
+    scheduled: v.number(),
+    skipped: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const user = await getUserWithOrg(ctx);
+
+    // SuperAdmin only
+    if (!isSuperAdmin(user)) {
+      throw new Error("Cette opération nécessite les privilèges super administrateur");
+    }
+
+    // Find all pending email reminders for this date in the user's organization
+    const reminders = await ctx.db
+      .query("reminders")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", user.organizationId).eq("completionStatus", "pending")
+      )
+      .collect();
+
+    // Filter to email reminders for the target date
+    const targetDatePrefix = args.targetDate; // e.g. "2025-01-20"
+    const emailRemindersForDate = reminders.filter((r) => {
+      if (r.reminderType !== "email") return false;
+      // reminderDate is in format "YYYY-MM-DD HH:MM:SS"
+      return r.reminderDate.startsWith(targetDatePrefix);
+    });
+
+    let scheduled = 0;
+    let skipped = 0;
+
+    for (const reminder of emailRemindersForDate) {
+      // Check if invoice has a contact email
+      const invoice = await ctx.db.get(reminder.invoiceId);
+      if (!invoice?.contactEmail) {
+        skipped++;
+        continue;
+      }
+
+      // Schedule the email send action
+      await ctx.scheduler.runAfter(0, api.reminders.sendReminderEmail, {
+        reminderId: reminder._id,
+      });
+      scheduled++;
+    }
+
+    return { scheduled, skipped };
   },
 });

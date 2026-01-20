@@ -9,7 +9,7 @@ import {
   Mail,
   Users,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, isAdminRole } from "@/lib/utils";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import {
@@ -85,8 +85,8 @@ export function Sidebar() {
               {mainNavItems.map((item) => (
                 <NavItem key={item.path} item={item} onClick={() => setOpenMobile(false)} />
               ))}
-              {/* Admin-only links */}
-              {loggedInUser?.role === "admin" && (
+              {/* Admin-only links (admin or superadmin) */}
+              {isAdminRole(loggedInUser?.role) && (
                 <>
                   <NavItem
                     item={{ name: "Équipe", path: "/team", icon: Users }}

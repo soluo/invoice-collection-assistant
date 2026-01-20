@@ -6,7 +6,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
+import { cn, isAdminRole } from "@/lib/utils";
 import type { Doc } from "../../../convex/_generated/dataModel";
 
 type MaybeUser = Doc<"users"> | null | undefined;
@@ -130,8 +130,8 @@ export function Topbar() {
               </NavLink>
             );
           })}
-          {/* Admin-only links */}
-          {loggedInUser?.role === "admin" && (
+          {/* Admin-only links (admin or superadmin) */}
+          {isAdminRole(loggedInUser?.role) && (
             <>
               <NavLink
                 to="/team"
@@ -195,7 +195,7 @@ export function Topbar() {
                 )}
               </div>
               <div className="py-1">
-                {loggedInUser?.role === "admin" && (
+                {isAdminRole(loggedInUser?.role) && (
                   <button
                     type="button"
                     onClick={() => handleNavigate("/settings")}

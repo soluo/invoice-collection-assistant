@@ -64,7 +64,7 @@ const applicationTables = {
   invitations: defineTable({
     email: v.string(),
     organizationId: v.id("organizations"),
-    role: v.union(v.literal("admin"), v.literal("technicien")),
+    role: v.union(v.literal("admin"), v.literal("technicien"), v.literal("superadmin")),
     token: v.string(),
     status: v.union(
       v.literal("pending"),
@@ -293,7 +293,7 @@ export default defineSchema({
     isAnonymous: v.optional(v.boolean()),
 
     // NOS champs personnalisés pour multi-user
-    role: v.optional(v.union(v.literal("admin"), v.literal("technicien"))),
+    role: v.optional(v.union(v.literal("admin"), v.literal("technicien"), v.literal("superadmin"))),
     organizationId: v.optional(v.id("organizations")),
     invitedBy: v.optional(v.id("users")),
   })

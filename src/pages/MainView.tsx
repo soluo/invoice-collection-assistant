@@ -21,6 +21,7 @@ import { InvoiceEditModal } from "@/components/InvoiceEditModal";
 import { SendInvoiceEmailModal } from "@/components/SendInvoiceEmailModal";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { isAdminRole } from "@/lib/utils";
 
 export default function MainView() {
   const navigate = useNavigate();
@@ -60,7 +61,7 @@ export default function MainView() {
 
   // Queries
   const loggedInUser = useQuery(api.auth.loggedInUser);
-  const isAdmin = loggedInUser?.role === "admin";
+  const isAdmin = isAdminRole(loggedInUser?.role);
 
   const stats = useQuery(api.invoices.getStatsForMainView);
 

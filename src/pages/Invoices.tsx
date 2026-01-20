@@ -8,6 +8,7 @@ import { InvoicesList } from "@components/InvoicesList";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { isAdminRole } from "@/lib/utils";
 
 type SortField = "invoiceDate" | "amountTTC" | "outstandingBalance" | "dueDate";
 type SortOrder = "asc" | "desc";
@@ -38,7 +39,7 @@ export function Invoices() {
   const urlSortOrder = searchParams.get("sortOrder");
   const sortOrder: SortOrder = urlSortOrder === "asc" ? "asc" : "desc";
 
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = isAdminRole(currentUser?.role);
 
   // ===== HANDLERS =====
 

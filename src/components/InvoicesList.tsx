@@ -8,6 +8,7 @@ import { MarkAsSentModal } from "./MarkAsSentModal";
 import { PaymentRecordModal } from "./PaymentRecordModal";
 import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/lib/formatters";
+import { isAdminRole } from "@/lib/utils";
 import { getStatusDisplay, type InvoiceStatus } from "@/lib/invoiceStatus";
 import { canSendReminder, canMarkAsPaid } from "@/lib/invoiceHelpers";
 import { ArrowUpDown, ArrowUp, ArrowDown, MoreVertical } from "lucide-react";
@@ -51,7 +52,7 @@ export function InvoicesList({ invoices, sortBy, sortOrder, onSort, emptyState }
   const [paymentModal, setPaymentModal] = useState<{ invoice: any } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = isAdminRole(currentUser?.role);
 
   // Composant pour afficher l'icône de tri
   const SortIcon = ({ field }: { field: SortField }) => {

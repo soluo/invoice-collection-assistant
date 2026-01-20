@@ -17,6 +17,7 @@ import { X, Edit, Mail, Send, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip } from "@/components/ui/simple-tooltip";
 import { toast } from "sonner";
+import { isAdminRole } from "@/lib/utils";
 
 interface EmailPreviewModalFollowUpProps {
   reminder: any; // Le reminder complet passé depuis FollowUp
@@ -55,7 +56,7 @@ export function EmailPreviewModalFollowUp({
   const canSend = Boolean(reminder.invoice?.contactEmail) && !alreadySent && !isSimulation;
 
   // Permissions : admin OU createdBy de la facture
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = isAdminRole(currentUser?.role);
   const isCreator = currentUser?._id === reminder.invoice?.createdBy;
   const canEdit = isPending && (isAdmin || isCreator) && !isSimulation;
 

@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { isAdminRole } from "@/lib/utils";
 
 interface InvoiceEditModalProps {
   invoice: Doc<"invoices">;
@@ -35,7 +36,7 @@ export function InvoiceEditModal({ invoice, onClose }: InvoiceEditModalProps) {
   const users = useQuery(api.organizations.listUsers);
   const [selectedUserId, setSelectedUserId] = useState<string>(invoice.createdBy);
 
-  const isAdmin = loggedInUser?.role === "admin";
+  const isAdmin = isAdminRole(loggedInUser?.role);
 
   const updateInvoice = useMutation(api.invoices.update);
 

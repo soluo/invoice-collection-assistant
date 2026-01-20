@@ -2,6 +2,7 @@ import { action, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
+import { hasAdminRole } from "./permissions";
 
 /**
  * Story 7.3: Convert ArrayBuffer to base64 string (web-compatible, no Buffer)
@@ -51,7 +52,7 @@ export const sendTestEmail = action({
     }
 
     // 2. Verify user is admin
-    if (user.role !== "admin") {
+    if (!hasAdminRole(user.role)) {
       throw new Error("Accès refusé: réservé aux administrateurs");
     }
 
@@ -280,7 +281,7 @@ export const sendSimulatedTestEmail = action({
     }
 
     // 3. Verify user is admin
-    if (user.role !== "admin") {
+    if (user.role !== "admin" && user.role !== "superadmin") {
       throw new Error("Accès refusé: réservé aux administrateurs");
     }
 
