@@ -1,5 +1,5 @@
 # generated: 2026-01-15
-# updated: 2026-01-19
+# updated: 2026-01-20
 # project: invoice-collection-assistant
 # project_key: relancezen
 # tracking_system: file-system
@@ -106,7 +106,7 @@ development_status:
   # Epic 7: Templates Email Avancés (Priority: Medium)
   epic-7: in-progress
   7-1-template-envoi-initial-facture: review
-  7-2-template-email-invitation: backlog
+  7-2-template-email-invitation: ready-for-dev
   7-3-pieces-jointes-aux-relances: backlog
   7-4-signature-email-avec-image: backlog
   epic-7-retrospective: optional
