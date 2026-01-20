@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
-import { Mail, Phone, Trash2, Edit, Plus, Check, X } from "lucide-react";
+import { Mail, Phone, Trash2, Edit, Plus, Check } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { ReminderStepModal, type ReminderStep } from "@/components/ReminderStepM
 import { ForbiddenPage } from "@/components/ForbiddenPage";
 import { Tooltip } from "@/components/ui/simple-tooltip";
 import { TestEmailSection } from "@/components/TestEmailSection";
+import { EmailTemplateModal } from "@/components/EmailTemplateModal";
 
 const TOKEN_REFRESH_THRESHOLD_MS = 10 * 60 * 1000;
 
@@ -28,6 +29,9 @@ export function OrganizationSettings() {
   const getOAuthUrl = useQuery(api.oauth.getOAuthUrl);
   const disconnectEmail = useMutation(api.oauth.disconnectEmailProvider);
   const refreshTokenIfNeeded = useAction(api.oauth.refreshTokenIfNeeded);
+  // Story 7.1: Invoice email template
+  const invoiceEmailTemplate = useQuery(api.organizations.getInvoiceEmailTemplate);
+  const updateInvoiceEmailTemplate = useMutation(api.organizations.updateInvoiceEmailTemplate);
 
   // Block 1: Organization name
   const [organizationName, setOrganizationName] = useState("");
@@ -47,6 +51,10 @@ export function OrganizationSettings() {
   const [reminderSteps, setReminderSteps] = useState<ReminderStep[]>([]);
   const [stepModalOpen, setStepModalOpen] = useState(false);
   const [editingStep, setEditingStep] = useState<ReminderStep | null>(null);
+
+  // Story 7.1: Email template modal state
+  const [emailTemplateModalOpen, setEmailTemplateModalOpen] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   // Handle OAuth messages
   useEffect(() => {
@@ -276,6 +284,24 @@ export function OrganizationSettings() {
 
   const sortedSteps = [...reminderSteps].sort((a, b) => a.delay - b.delay);
   const existingDelays = reminderSteps.map((s) => s.delay);
+
+  // Story 7.1: Save invoice email template
+  const handleSaveInvoiceEmailTemplate = async (data: { subject: string; template: string }) => {
+    setSavingTemplate(true);
+    try {
+      await updateInvoiceEmailTemplate({
+        subject: data.subject,
+        template: data.template,
+      });
+      toast.success("Modèle enregistré");
+      setEmailTemplateModalOpen(false);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors de l'enregistrement";
+      toast.error(errorMessage);
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
 
   // Loading state
   if (loggedInUser === undefined || !organization) {
@@ -615,6 +641,56 @@ export function OrganizationSettings() {
         </div>
       </section>
 
+      {/* Story 7.1: Email Templates Section (AC7) */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-gray-900">
+          Modèles d'emails
+        </h2>
+        <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+          <div className="divide-y divide-gray-200 sm:divide-y-0 sm:space-y-3">
+            {/* Invoice Email Template Card */}
+            <div
+              className="py-4 sm:p-4 sm:border sm:border-gray-200 sm:rounded-lg hover:sm:border-gray-400 transition-colors cursor-pointer"
+              onClick={() => setEmailTemplateModalOpen(true)}
+            >
+              <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                {/* Icon */}
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                  <Mail className="h-5 w-5 text-blue-600" />
+                </div>
+
+                {/* Info + Actions */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    {/* Template info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900">Envoi de la facture</p>
+                      <p className="text-sm text-gray-600 mt-1 truncate">
+                        {invoiceEmailTemplate?.subject || "Facture {numero_facture} - {nom_client}"}
+                      </p>
+                    </div>
+
+                    {/* Edit button only - no delete */}
+                    <div className="flex-shrink-0 flex items-center gap-2 mt-2 sm:mt-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEmailTemplateModalOpen(true);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Step Modal */}
       <ReminderStepModal
         open={stepModalOpen}
@@ -623,6 +699,18 @@ export function OrganizationSettings() {
         step={editingStep}
         existingDelays={existingDelays}
       />
+
+      {/* Story 7.1: Email Template Modal */}
+      {invoiceEmailTemplate && (
+        <EmailTemplateModal
+          open={emailTemplateModalOpen}
+          onClose={() => setEmailTemplateModalOpen(false)}
+          onSave={handleSaveInvoiceEmailTemplate}
+          subject={invoiceEmailTemplate.subject}
+          template={invoiceEmailTemplate.template}
+          saving={savingTemplate}
+        />
+      )}
     </div>
   );
 }

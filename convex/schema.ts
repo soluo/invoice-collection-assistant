@@ -48,6 +48,10 @@ const applicationTables = {
       })
     ),
     senderName: v.optional(v.string()), // Nom d'affichage pour l'expéditeur (si supporté par le provider)
+
+    // ✅ Story 7.1 : Template pour l'envoi initial de facture
+    invoiceEmailSubject: v.optional(v.string()),
+    invoiceEmailTemplate: v.optional(v.string()),
   }),
 
   invitations: defineTable({

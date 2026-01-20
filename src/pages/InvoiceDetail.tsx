@@ -4,7 +4,7 @@ import { api } from "@convex/_generated/api";
 import { Id } from "@convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, MessageSquare, Calendar, Send, Pencil, Upload } from "lucide-react";
+import { ArrowLeft, Eye, MessageSquare, Calendar, Send, Pencil, Upload, Mail } from "lucide-react";
 import { InvoiceTimeline } from "@/components/InvoiceTimeline";
 import { RecordPaymentModal } from "@/components/RecordPaymentModal";
 import { PaymentHistorySection } from "@/components/PaymentHistorySection";
@@ -12,9 +12,11 @@ import { SnoozeInvoiceModal } from "@/components/SnoozeInvoiceModal";
 import { MarkAsSentModal } from "@/components/MarkAsSentModal";
 import { InvoiceEditModal } from "@/components/InvoiceEditModal";
 import { AttachPdfModal } from "@/components/AttachPdfModal";
+import { SendInvoiceEmailModal } from "@/components/SendInvoiceEmailModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Tooltip } from "@/components/ui/simple-tooltip";
 
 export function InvoiceDetail() {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +25,7 @@ export function InvoiceDetail() {
   const [isMarkAsSentModalOpen, setIsMarkAsSentModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAttachPdfModalOpen, setIsAttachPdfModalOpen] = useState(false);
+  const [isSendEmailModalOpen, setIsSendEmailModalOpen] = useState(false);
   const [noteContent, setNoteContent] = useState("");
   const [isAddingNote, setIsAddingNote] = useState(false);
 
@@ -206,6 +209,18 @@ export function InvoiceDetail() {
 
       {/* Action buttons */}
       <div className="mb-6 flex flex-wrap items-center gap-3">
+        {/* Story 7.1: Bouton Envoyer par email */}
+        {invoice.sendStatus !== "sent" && (
+          <Tooltip content="Prévisualisez l'email avant envoi">
+            <Button
+              onClick={() => setIsSendEmailModalOpen(true)}
+              className="inline-flex items-center gap-2"
+            >
+              <Mail className="h-4 w-4" />
+              Envoyer par email
+            </Button>
+          </Tooltip>
+        )}
         {invoice.sendStatus !== "sent" && (
           <Button
             onClick={() => setIsMarkAsSentModalOpen(true)}
@@ -240,8 +255,8 @@ export function InvoiceDetail() {
             asChild
           >
             <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
-              <Download className="h-4 w-4" />
-              Télécharger le PDF
+              <Eye className="h-4 w-4" />
+              Voir le PDF
             </a>
           </Button>
         )}
@@ -464,6 +479,14 @@ export function InvoiceDetail() {
           invoiceId={invoice._id}
           invoiceNumber={invoice.invoiceNumber}
           onClose={() => setIsAttachPdfModalOpen(false)}
+        />
+      )}
+
+      {/* Send Invoice Email modal - Story 7.1 */}
+      {isSendEmailModalOpen && invoice && (
+        <SendInvoiceEmailModal
+          invoiceId={invoice._id}
+          onClose={() => setIsSendEmailModalOpen(false)}
         />
       )}
     </div>

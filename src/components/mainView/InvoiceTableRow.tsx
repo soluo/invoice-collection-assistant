@@ -14,6 +14,7 @@ import {
   getStatusDotColor,
 } from "@/lib/invoiceStatus";
 import { cn } from "@/lib/utils";
+import { Tooltip } from "@/components/ui/simple-tooltip";
 
 interface InvoiceTableRowProps {
   invoice: any; // Enriched with nextReminderDate
@@ -130,17 +131,19 @@ export default function InvoiceTableRow({ invoice, onAction, onInvoiceClick }: I
 
       {/* Col 6: Actions */}
       <div className="flex items-center gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
-        {/* Bouton "Envoyer" pour brouillons */}
+        {/* Bouton "Envoyer" pour brouillons - Story 7.1: ouvre modal d'envoi d'email */}
         {status === "a-envoyer" && (
-          <Button
-            variant="default"
-            size="sm"
-            onClick={(e) => handleActionClick(e, "markAsSent")}
-            className="whitespace-nowrap"
-          >
-            <Send className="w-4 h-4 mr-1" />
-            Envoyer
-          </Button>
+          <Tooltip content="Prévisualisez l'email avant envoi">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={(e) => handleActionClick(e, "sendInvoiceEmail")}
+              className="whitespace-nowrap"
+            >
+              <Send className="w-4 h-4 mr-1" />
+              Envoyer
+            </Button>
+          </Tooltip>
         )}
 
         {/* Bouton "Paiement" pour toutes les factures non payées */}

@@ -1,5 +1,3 @@
-import { v } from "convex/values";
-
 /**
  * Type pour une étape de relance
  */
@@ -56,3 +54,19 @@ Cordialement,`,
     },
   ];
 }
+
+/**
+ * Template par défaut pour l'envoi initial de facture (Story 7.1)
+ */
+export const DEFAULT_INVOICE_EMAIL_SUBJECT = "Facture {numero_facture} - {nom_client}";
+
+export const DEFAULT_INVOICE_EMAIL_TEMPLATE = `Bonjour,
+
+Veuillez trouver ci-joint notre facture n°{numero_facture} d'un montant de {montant}€ TTC.
+
+Date de facture : {date_facture}
+Date d'échéance : {date_echeance}
+
+Nous vous remercions de procéder au règlement avant la date d'échéance.
+
+Cordialement,`;

@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { normalizeEmail } from "./utils";
-import { getDefaultReminderSteps } from "./reminderDefaults";
+import { getDefaultReminderSteps, DEFAULT_INVOICE_EMAIL_SUBJECT, DEFAULT_INVOICE_EMAIL_TEMPLATE } from "./reminderDefaults";
 import { validationError, ErrorCodes } from "./errors";
 
 /**
@@ -389,6 +389,9 @@ export const getCurrentOrganization = query({
         })
       ),
       senderName: v.optional(v.string()),
+      // Story 7.1: Invoice email template
+      invoiceEmailSubject: v.optional(v.string()),
+      invoiceEmailTemplate: v.optional(v.string()),
     }),
     v.null()
   ),
@@ -422,6 +425,9 @@ export const getCurrentOrganization = query({
       emailTokenExpiresAt: organization.emailTokenExpiresAt,
       emailAccountInfo: organization.emailAccountInfo,
       senderName: organization.senderName,
+      // Story 7.1: Invoice email template (with defaults)
+      invoiceEmailSubject: organization.invoiceEmailSubject,
+      invoiceEmailTemplate: organization.invoiceEmailTemplate,
     };
   },
 });
@@ -877,7 +883,7 @@ export const updateReminderSendTime = mutation({
     }
 
     // Validation de la plage horaire (06:00 - 21:59)
-    const [hours, minutes] = args.sendTime.split(":").map(Number);
+    const [hours] = args.sendTime.split(":").map(Number);
     if (hours < 6 || hours >= 22) {
       throw new Error("L'heure d'envoi doit être entre 06:00 et 21:59");
     }
@@ -1000,6 +1006,91 @@ export const regenerateInvitationToken = mutation({
     });
 
     return newToken;
+  },
+});
+
+/**
+ * Story 7.1: Mutation pour mettre à jour le template d'email d'envoi de facture
+ * Admin-only
+ */
+export const updateInvoiceEmailTemplate = mutation({
+  args: {
+    subject: v.string(),
+    template: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+
+    if (user.role !== "admin") {
+      throw new Error("Seuls les admins peuvent modifier les modèles d'email");
+    }
+
+    // Validation: subject et template ne doivent pas être vides
+    if (!args.subject.trim()) {
+      throw new Error("L'objet de l'email ne peut pas être vide");
+    }
+    if (!args.template.trim()) {
+      throw new Error("Le contenu de l'email ne peut pas être vide");
+    }
+
+    await ctx.db.patch(user.organizationId, {
+      invoiceEmailSubject: args.subject.trim(),
+      invoiceEmailTemplate: args.template.trim(),
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Story 7.1: Query pour récupérer le template d'email d'envoi de facture
+ * Retourne les valeurs par défaut si non configuré
+ */
+export const getInvoiceEmailTemplate = query({
+  args: {},
+  returns: v.object({
+    subject: v.string(),
+    template: v.string(),
+  }),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      // Retourner les valeurs par défaut si non authentifié
+      return {
+        subject: DEFAULT_INVOICE_EMAIL_SUBJECT,
+        template: DEFAULT_INVOICE_EMAIL_TEMPLATE,
+      };
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      return {
+        subject: DEFAULT_INVOICE_EMAIL_SUBJECT,
+        template: DEFAULT_INVOICE_EMAIL_TEMPLATE,
+      };
+    }
+
+    const organization = await ctx.db.get(user.organizationId);
+    if (!organization) {
+      return {
+        subject: DEFAULT_INVOICE_EMAIL_SUBJECT,
+        template: DEFAULT_INVOICE_EMAIL_TEMPLATE,
+      };
+    }
+
+    return {
+      subject: organization.invoiceEmailSubject || DEFAULT_INVOICE_EMAIL_SUBJECT,
+      template: organization.invoiceEmailTemplate || DEFAULT_INVOICE_EMAIL_TEMPLATE,
+    };
   },
 });
 

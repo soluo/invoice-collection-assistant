@@ -105,7 +105,7 @@ development_status:
 
   # Epic 7: Templates Email Avancés (Priority: Medium)
   epic-7: in-progress
-  7-1-template-envoi-initial-facture: ready-for-dev
+  7-1-template-envoi-initial-facture: review
   7-2-template-email-invitation: backlog
   7-3-pieces-jointes-aux-relances: backlog
   7-4-signature-email-avec-image: backlog
