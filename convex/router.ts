@@ -6,32 +6,25 @@ import { Id } from "./_generated/dataModel";
 const http = httpRouter();
 
 /**
- * Story 7.4: Route publique pour servir l'image de signature d'une organisation
- * URL: /signature-image?orgId={orgId}
+ * Story 7.4: Route publique pour servir l'image de signature
+ * URL: /signature-image/{storageId}
+ * L'ID dans le path permet d'éviter les problèmes de cache lors des mises à jour
  */
 http.route({
-  path: "/signature-image",
+  pathPrefix: "/signature-image/",
   method: "GET",
   handler: httpAction(async (ctx, request) => {
+    // Extract storageId from path after prefix
     const url = new URL(request.url);
-    const orgId = url.searchParams.get("orgId");
+    const storageId = url.pathname.split("/signature-image/")[1];
 
-    if (!orgId) {
-      return new Response("Organization ID required", { status: 400 });
+    if (!storageId) {
+      return new Response("Storage ID required", { status: 400 });
     }
 
     try {
-      // Get organization's signature image
-      const org = await ctx.runQuery(internal.organizations.getSignatureImageForHttp, {
-        organizationId: orgId as Id<"organizations">,
-      });
-
-      if (!org?.signatureImageId) {
-        return new Response("Not found", { status: 404 });
-      }
-
-      // Fetch image from storage
-      const imageBlob = await ctx.storage.get(org.signatureImageId);
+      // Fetch image directly from storage
+      const imageBlob = await ctx.storage.get(storageId as Id<"_storage">);
       if (!imageBlob) {
         return new Response("Not found", { status: 404 });
       }
@@ -42,7 +35,7 @@ http.route({
       return new Response(imageBlob, {
         headers: {
           "Content-Type": contentType,
-          "Cache-Control": "public, max-age=3600",
+          "Cache-Control": "public, max-age=31536000, immutable",
           "Access-Control-Allow-Origin": "*",
         },
       });

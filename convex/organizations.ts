@@ -1373,31 +1373,6 @@ export const removeUser = mutation({
 // ============================================
 
 /**
- * Internal query for HTTP endpoint to fetch signature image
- * Called from router.ts to serve signature images publicly
- */
-export const getSignatureImageForHttp = internalQuery({
-  args: {
-    organizationId: v.id("organizations"),
-  },
-  returns: v.union(
-    v.object({
-      signatureImageId: v.optional(v.id("_storage")),
-    }),
-    v.null()
-  ),
-  handler: async (ctx, args) => {
-    const organization = await ctx.db.get(args.organizationId);
-    if (!organization) {
-      return null;
-    }
-    return {
-      signatureImageId: organization.signatureImageId,
-    };
-  },
-});
-
-/**
  * Story 7.4: Mutation pour mettre à jour la signature HTML
  * Admin-only access
  */

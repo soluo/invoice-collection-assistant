@@ -803,7 +803,6 @@ export function OrganizationSettings() {
         </h2>
         <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
           <SignatureEditor
-            organizationId={organization._id}
             initialSignature={organization.signature}
             signatureImageId={organization.signatureImageId}
           />

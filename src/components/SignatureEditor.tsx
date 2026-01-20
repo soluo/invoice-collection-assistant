@@ -7,13 +7,11 @@ import { Button } from "@/components/ui/button";
 import type { Id } from "../../convex/_generated/dataModel";
 
 interface SignatureEditorProps {
-  organizationId: Id<"organizations">;
   initialSignature: string;
   signatureImageId?: Id<"_storage">;
 }
 
 export function SignatureEditor({
-  organizationId,
   initialSignature,
   signatureImageId,
 }: SignatureEditorProps) {
@@ -141,8 +139,8 @@ export function SignatureEditor({
         const existingImages = editorRef.current.querySelectorAll("img");
         existingImages.forEach((img) => img.parentElement?.remove() || img.remove());
 
-        // Create image element
-        const imgHtml = `<img src="${convexSiteUrl}/signature-image?orgId=${organizationId}" alt="Signature" style="max-width: 600px; height: auto;" />`;
+        // Create image element with storageId in path (avoids cache issues on update)
+        const imgHtml = `<img src="${convexSiteUrl}/signature-image/${storageId}" alt="Signature" style="max-width: 600px; height: auto;" />`;
 
         // Try to insert at saved cursor position, otherwise append
         if (savedSelectionRef.current && editorRef.current.contains(savedSelectionRef.current.commonAncestorContainer)) {
