@@ -1,6 +1,6 @@
 # Story 7.2: Template Email Invitation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -146,10 +146,10 @@ So that **new team members receive a branded, professional invitation with all t
 ### Task 11: Testing & Validation
 - [x] 11.1 Run `pnpm dev:backend` - verify no Convex errors
 - [x] 11.2 Run `pnpm lint` - verify no TypeScript/ESLint errors
-- [ ] 11.3 Manual test: Invite user with OAuth connected - email should be sent
-- [ ] 11.4 Manual test: Invite user without OAuth - email should not be sent, link displayed
-- [ ] 11.5 Manual test: Configure invitation template in Settings
-- [ ] 11.6 Manual test: Regenerate invitation token - new email should be sent
+- [x] 11.3 Manual test: Invite user with OAuth connected - email should be sent
+- [x] 11.4 Manual test: Invite user without OAuth - email should not be sent, link displayed
+- [x] 11.5 Manual test: Configure invitation template in Settings
+- [x] 11.6 Manual test: Regenerate invitation token - new email should be sent
 
 ## Dev Notes
 
@@ -350,3 +350,8 @@ N/A - No errors or debugging required
 ## Change Log
 
 - 2026-01-20: Implemented Story 7.2 - Template Email Invitation feature with automatic email sending on invitation creation, template customization in settings, and proper handling of OAuth connection status
+- 2026-01-20: Code Review fixes applied:
+  - Fixed hardcoded URL fallback to use production URL (relancezen.soluo.fr)
+  - Fixed type safety: replaced `any` types with proper Convex `Id<>` types in TeamManagement.tsx
+  - Fixed error message consistency in InviteUserModal.tsx
+  - Fixed `signature` field to be optional in invitationEmails.ts (supports legacy data)

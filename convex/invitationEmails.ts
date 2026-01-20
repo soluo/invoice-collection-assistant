@@ -59,7 +59,7 @@ export const getOrgForInvitationEmail = internalQuery({
       emailTokenExpiresAt: v.optional(v.number()),
       invitationEmailSubject: v.optional(v.string()),
       invitationEmailTemplate: v.optional(v.string()),
-      signature: v.string(),
+      signature: v.optional(v.string()),
     }),
     v.null()
   ),
@@ -111,7 +111,7 @@ type OrgForInvitationEmail = {
   emailTokenExpiresAt?: number;
   invitationEmailSubject?: string;
   invitationEmailTemplate?: string;
-  signature: string;
+  signature?: string;
 } | null;
 
 /**
@@ -191,8 +191,8 @@ export const sendInvitationEmail = action({
     }
 
     // 6. Generate invitation URL
-    // Use SITE_URL env var if available, otherwise construct from known patterns
-    const baseUrl = process.env.SITE_URL || "https://invoice-collection-assistant.vercel.app";
+    // Use SITE_URL env var if available, otherwise use production URL
+    const baseUrl = process.env.SITE_URL || "https://relancezen.soluo.fr";
     const invitationUrl = `${baseUrl}/accept-invitation/${invitation.token}`;
 
     // 7. Generate email content from template

@@ -16,6 +16,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
 import { InviteUserModal } from "@/components/InviteUserModal";
 import { toast } from "sonner";
 import { Tooltip } from "@/components/ui/simple-tooltip";
@@ -118,7 +119,7 @@ export function TeamManagement() {
     toast.success("Lien d'invitation copié !");
   };
 
-  const handleRegenerate = async (invitationId: any) => {
+  const handleRegenerate = async (invitationId: Id<"invitations">) => {
     try {
       const result = await regenerateToken({ invitationId });
 
@@ -143,7 +144,7 @@ export function TeamManagement() {
     }
   };
 
-  const handleDelete = (invitationId: any) => {
+  const handleDelete = (invitationId: Id<"invitations">) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer cette invitation ?")) {
       deleteInvitation({ invitationId })
         .then(() => {
@@ -155,7 +156,7 @@ export function TeamManagement() {
     }
   };
 
-  const handleChangeRole = async (userId: any, currentRole?: "admin" | "technicien") => {
+  const handleChangeRole = async (userId: Id<"users">, currentRole?: "admin" | "technicien") => {
     const newRole = currentRole === "admin" ? "technicien" : "admin";
     const roleName = newRole === "admin" ? "Administrateur" : "Technicien";
 
@@ -169,7 +170,7 @@ export function TeamManagement() {
     }
   };
 
-  const handleRemoveUser = async (userId: any, userName?: string) => {
+  const handleRemoveUser = async (userId: Id<"users">, userName?: string) => {
     if (window.confirm(`Êtes-vous sûr de vouloir retirer ${userName || "cet utilisateur"} de l'organisation ?`)) {
       try {
         await removeUser({ userId });
@@ -180,7 +181,7 @@ export function TeamManagement() {
     }
   };
 
-  const UserActionsMenu = ({ user }: { user: any }) => (
+  const UserActionsMenu = ({ user }: { user: { _id: Id<"users">; name?: string; role?: "admin" | "technicien" } }) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">

@@ -61,14 +61,14 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
           if (emailResult.error === "no_oauth") {
             setEmailSendError("Compte email non connecté");
           } else {
-            setEmailSendError("Échec de l'envoi de l'email");
+            setEmailSendError("Échec lors de l'envoi du mail");
           }
           toast.info("Invitation créée - partagez le lien manuellement");
         }
       } catch {
         // Email send failed but invitation was created
         setEmailSent(false);
-        setEmailSendError("Erreur lors de l'envoi de l'email");
+        setEmailSendError("Échec lors de l'envoi du mail");
         toast.info("Invitation créée - partagez le lien manuellement");
       }
 
