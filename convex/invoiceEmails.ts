@@ -7,6 +7,7 @@ import {
   DEFAULT_INVOICE_EMAIL_TEMPLATE,
 } from "./reminderDefaults";
 import { arrayBufferToBase64 } from "./lib/encoding";
+import { wrapEmailAsHtml } from "./lib/emailHtml";
 
 /**
  * Story 7.1: Internal query to get invoice data for sending
@@ -295,13 +296,7 @@ export const sendInvoiceEmail = action({
     const recipientName = invoice.contactName || invoice.clientName;
 
     // Story 7.4: Wrap email content as HTML with signature
-    const { wrapEmailAsHtml } = await import("./lib/emailHtml");
-    const htmlContent = wrapEmailAsHtml(
-      emailContent,
-      org.signature,
-      invoice.organizationId.toString(),
-      process.env.CONVEX_SITE_URL
-    );
+    const htmlContent = wrapEmailAsHtml(emailContent, org.signature);
 
     const graphBody: {
       message: {

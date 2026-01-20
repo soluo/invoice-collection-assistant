@@ -1,6 +1,6 @@
 # Story 7.4: Signature Email avec Image
 
-Status: review
+Status: done
 
 ## Story
 
@@ -28,8 +28,9 @@ So that **all outgoing emails look professional and branded**.
 ### AC3: Image Served via Public URL
 **Given** a signature image is uploaded
 **When** the image is stored
-**Then** it is accessible via a public HTTP endpoint: `/organization/{orgId}/signature.{ext}`
+**Then** it is accessible via a public HTTP endpoint: `/signature-image/{storageId}`
 **And** the URL can be used in HTML emails with `<img src="...">`
+**And** changing the storageId in the URL automatically busts browser/email client caches
 
 ### AC4: Remove Signature Image
 **Given** a signature image exists
@@ -350,4 +351,10 @@ None
 ## Change Log
 
 - 2026-01-20: Story 7.4 implementation complete - Email signatures now support HTML formatting with bold text and optional logo images. All outgoing emails are now sent as HTML.
+- 2026-01-21: Code review completed. Fixes applied:
+  - AC3 updated to reflect actual URL pattern (`/signature-image/{storageId}` with cache-busting)
+  - Added DOMPurify for XSS protection in SignatureEditor preview
+  - Fixed imports to use `@convex` alias
+  - Removed unused parameters from `wrapEmailAsHtml`
+  - Converted dynamic imports to static imports in email files
 

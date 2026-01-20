@@ -2,14 +2,24 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useMutation } from "convex/react";
 import { Bold, ImageIcon, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { api } from "../../convex/_generated/api";
+import DOMPurify from "dompurify";
+import { api } from "@convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import type { Id } from "../../convex/_generated/dataModel";
+import type { Id } from "@convex/_generated/dataModel";
 
 interface SignatureEditorProps {
   initialSignature: string;
   signatureImageId?: Id<"_storage">;
 }
+
+// Configure DOMPurify to allow inline styles and safe HTML elements
+const sanitizeHtml = (html: string): string => {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ["p", "br", "b", "strong", "i", "em", "u", "img", "div", "span"],
+    ALLOWED_ATTR: ["src", "alt", "style", "class"],
+    ALLOW_DATA_ATTR: false,
+  });
+};
 
 export function SignatureEditor({
   initialSignature,
@@ -401,7 +411,7 @@ export function SignatureEditor({
         {currentContent ? (
           <div
             className="prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: currentContent }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(currentContent) }}
           />
         ) : (
           <p className="text-sm text-gray-400 italic">

@@ -4,6 +4,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 import { hasAdminRole } from "./permissions";
 import { arrayBufferToBase64 } from "./lib/encoding";
+import { wrapEmailAsHtml } from "./lib/emailHtml";
 
 /**
  * Send a test email to verify OAuth configuration is working
@@ -398,18 +399,11 @@ export const sendSimulatedTestEmail = action({
 
     // 9. Send via Microsoft Graph API
     // Story 7.4: Wrap simulated email as HTML with signature
-    const { wrapEmailAsHtml } = await import("./lib/emailHtml");
-
     // Add test header to the content
     const testHeader = `--- EMAIL DE TEST (SIMULATION) ---\n\nDestinataire réel: ${invoice.contactEmail || "Non spécifié"}\n\n--- CONTENU DE L'EMAIL ---\n\n`;
     const fullContent = testHeader + emailContent;
 
-    const htmlContent = wrapEmailAsHtml(
-      fullContent,
-      org.signature,
-      user.organizationId.toString(),
-      process.env.CONVEX_SITE_URL
-    );
+    const htmlContent = wrapEmailAsHtml(fullContent, org.signature);
 
     const graphBody: {
       message: {

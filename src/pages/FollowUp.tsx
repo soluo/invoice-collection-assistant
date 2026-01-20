@@ -80,6 +80,13 @@ export function FollowUp() {
   const [selectedReminders, setSelectedReminders] = useState<string[]>([]);
   const [phoneCallReminder, setPhoneCallReminder] = useState<AnyReminder | null>(null);
 
+  // Sync selectedReminders with available reminders (remove IDs no longer in the list)
+  useEffect(() => {
+    if (!upcomingReminders) return;
+    const availableIds = new Set(upcomingReminders.map((r) => r._id));
+    setSelectedReminders((prev) => prev.filter((id) => availableIds.has(id)));
+  }, [upcomingReminders]);
+
   // Check if user is admin or superadmin
   const isAdmin = isAdminRole(currentUser?.role);
   const isSuperAdmin = isSuperAdminRole(currentUser?.role);

@@ -14,7 +14,6 @@ import { TeamManagement } from "@pages/TeamManagement";
 import { OrganizationSettings } from "@pages/OrganizationSettings";
 import { Invoices } from "@pages/Invoices";
 import { InvoiceDetail } from "@pages/InvoiceDetail";
-import { Reminders } from "@pages/Reminders";
 import { FollowUp } from "@pages/FollowUp";
 import { CallPlan } from "@pages/CallPlan";
 import { MvpMockup } from "@pages/MvpMockup";
@@ -155,7 +154,6 @@ function Content() {
           <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
           <Route path="/follow-up" element={<AppLayout><FollowUp /></AppLayout>} />
           <Route path="/call-plan" element={<AppLayout><CallPlan /></AppLayout>} />
-          <Route path="/reminders" element={<AppLayout><Reminders /></AppLayout>} />
           <Route path="/ongoing" element={<Navigate to="/invoices" replace />} />
           <Route path="/paid" element={<Navigate to="/invoices" replace />} />
 

@@ -55,14 +55,10 @@ function wrapSignatureAsHtml(signature: string): string {
  * Wrap email content and signature as a complete HTML document
  * @param textContent - The email body as plain text
  * @param signature - The signature (can be HTML or plain text)
- * @param organizationId - Optional org ID for signature image URL
- * @param convexSiteUrl - Base URL for the Convex site (for image URLs)
  */
 export function wrapEmailAsHtml(
   textContent: string,
-  signature: string,
-  _organizationId?: string, // Kept for backwards compatibility
-  _convexSiteUrl?: string   // Kept for backwards compatibility
+  signature: string
 ): string {
   const bodyHtml = textToHtml(textContent);
   const signatureHtml = wrapSignatureAsHtml(signature);

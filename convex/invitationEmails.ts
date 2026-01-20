@@ -5,6 +5,7 @@ import {
   DEFAULT_INVITATION_EMAIL_SUBJECT,
   DEFAULT_INVITATION_EMAIL_TEMPLATE,
 } from "./reminderDefaults";
+import { wrapEmailAsHtml } from "./lib/emailHtml";
 
 /**
  * Story 7.2: Internal query to get invitation data for sending
@@ -219,13 +220,7 @@ export const sendInvitationEmail = action({
       .replace(/{inviteur}/g, inviterName);
 
     // Story 7.4: Wrap email as HTML with signature
-    const { wrapEmailAsHtml } = await import("./lib/emailHtml");
-    const htmlContent = wrapEmailAsHtml(
-      emailContent,
-      org.signature || "",
-      invitation.organizationId.toString(),
-      process.env.CONVEX_SITE_URL
-    );
+    const htmlContent = wrapEmailAsHtml(emailContent, org.signature || "");
 
     // 8. Send email via Microsoft Graph API
     try {

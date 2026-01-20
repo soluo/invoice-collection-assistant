@@ -11,6 +11,7 @@ import { internal, api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { getReminderNumber, getReminderStatusFromNumber } from "./lib/invoiceStatus";
 import { arrayBufferToBase64 } from "./lib/encoding";
+import { wrapEmailAsHtml } from "./lib/emailHtml";
 
 /**
  * ✅ V2 Phase 2.8 : Créer une relance
@@ -451,8 +452,6 @@ export const sendReminderEmail = action({
     }
 
     // ===== Story 7.4: Prepare HTML email content =====
-    const { wrapEmailAsHtml } = await import("./lib/emailHtml");
-
     // Get the plain text body (without signature - Story 7.4 change)
     const emailBody = context.reminder.data?.emailContent || "";
 
@@ -460,12 +459,7 @@ export const sendReminderEmail = action({
     const organizationSignature = organizationTokens.signature || "";
 
     // Wrap as HTML with signature
-    const htmlContent = wrapEmailAsHtml(
-      emailBody,
-      organizationSignature,
-      context.reminder.organizationId.toString(),
-      process.env.CONVEX_SITE_URL
-    );
+    const htmlContent = wrapEmailAsHtml(emailBody, organizationSignature);
 
     // Prepare Graph API request body
     const graphBody: {
