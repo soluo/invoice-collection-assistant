@@ -13,14 +13,36 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 
-// Variables disponibles pour le template d'envoi de facture (Story 7.1)
-const INVOICE_EMAIL_VARIABLES = [
-  { name: "nom_client", label: "Nom client" },
-  { name: "numero_facture", label: "N° facture" },
-  { name: "montant", label: "Montant" },
-  { name: "date_facture", label: "Date facture" },
-  { name: "date_echeance", label: "Date échéance" },
-] as const;
+// Story 7.2: Template types and their variables
+export type TemplateType = "invoice" | "invitation";
+
+const TEMPLATE_VARIABLES: Record<TemplateType, { name: string; label: string }[]> = {
+  invoice: [
+    { name: "nom_client", label: "Nom client" },
+    { name: "numero_facture", label: "N° facture" },
+    { name: "montant", label: "Montant" },
+    { name: "date_facture", label: "Date facture" },
+    { name: "date_echeance", label: "Date échéance" },
+  ],
+  invitation: [
+    { name: "email_invite", label: "Email invité" },
+    { name: "nom_organisation", label: "Organisation" },
+    { name: "role", label: "Rôle" },
+    { name: "lien_invitation", label: "Lien" },
+    { name: "inviteur", label: "Inviteur" },
+  ],
+};
+
+const TEMPLATE_TITLES: Record<TemplateType, { title: string; description: string }> = {
+  invoice: {
+    title: "Modifier le modèle d'email",
+    description: "Personnalisez l'objet et le contenu du mail envoyé avec vos factures",
+  },
+  invitation: {
+    title: "Modifier le modèle d'invitation",
+    description: "Personnalisez l'email d'invitation envoyé aux nouveaux membres",
+  },
+};
 
 interface EmailTemplateModalProps {
   open: boolean;
@@ -29,6 +51,7 @@ interface EmailTemplateModalProps {
   subject: string;
   template: string;
   saving?: boolean;
+  templateType?: TemplateType; // Story 7.2: Support for different template types
 }
 
 export function EmailTemplateModal({
@@ -38,7 +61,11 @@ export function EmailTemplateModal({
   subject: initialSubject,
   template: initialTemplate,
   saving = false,
+  templateType = "invoice", // Default to invoice for backward compatibility
 }: EmailTemplateModalProps) {
+  // Get variables and titles for current template type
+  const variables = TEMPLATE_VARIABLES[templateType];
+  const titles = TEMPLATE_TITLES[templateType];
   const [subject, setSubject] = useState(initialSubject);
   const [template, setTemplate] = useState(initialTemplate);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -116,10 +143,8 @@ export function EmailTemplateModal({
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Modifier le modèle d'email</DialogTitle>
-          <DialogDescription>
-            Personnalisez l'objet et le contenu du mail envoyé avec vos factures
-          </DialogDescription>
+          <DialogTitle>{titles.title}</DialogTitle>
+          <DialogDescription>{titles.description}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -169,7 +194,7 @@ export function EmailTemplateModal({
               <span className="text-gray-400">Cliquez pour insérer</span>
             </p>
             <div className="flex flex-wrap gap-2">
-              {INVOICE_EMAIL_VARIABLES.map((v) => (
+              {variables.map((v) => (
                 <Badge
                   key={v.name}
                   variant="secondary"

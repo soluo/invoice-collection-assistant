@@ -52,6 +52,10 @@ const applicationTables = {
     // ✅ Story 7.1 : Template pour l'envoi initial de facture
     invoiceEmailSubject: v.optional(v.string()),
     invoiceEmailTemplate: v.optional(v.string()),
+
+    // ✅ Story 7.2 : Template pour les emails d'invitation
+    invitationEmailSubject: v.optional(v.string()),
+    invitationEmailTemplate: v.optional(v.string()),
   }),
 
   invitations: defineTable({

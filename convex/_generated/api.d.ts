@@ -16,6 +16,7 @@ import type * as errors from "../errors.js";
 import type * as events from "../events.js";
 import type * as followUp from "../followUp.js";
 import type * as http from "../http.js";
+import type * as invitationEmails from "../invitationEmails.js";
 import type * as invoiceEmails from "../invoiceEmails.js";
 import type * as invoiceNotes from "../invoiceNotes.js";
 import type * as invoices from "../invoices.js";
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   events: typeof events;
   followUp: typeof followUp;
   http: typeof http;
+  invitationEmails: typeof invitationEmails;
   invoiceEmails: typeof invoiceEmails;
   invoiceNotes: typeof invoiceNotes;
   invoices: typeof invoices;

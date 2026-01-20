@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
-import { Mail, Phone, Trash2, Edit, Plus, Check } from "lucide-react";
+import { Mail, Phone, Trash2, Edit, Plus, Check, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,9 @@ export function OrganizationSettings() {
   // Story 7.1: Invoice email template
   const invoiceEmailTemplate = useQuery(api.organizations.getInvoiceEmailTemplate);
   const updateInvoiceEmailTemplate = useMutation(api.organizations.updateInvoiceEmailTemplate);
+  // Story 7.2: Invitation email template
+  const invitationEmailTemplate = useQuery(api.organizations.getInvitationEmailTemplate);
+  const updateInvitationEmailTemplate = useMutation(api.organizations.updateInvitationEmailTemplate);
 
   // Block 1: Organization name
   const [organizationName, setOrganizationName] = useState("");
@@ -55,6 +58,9 @@ export function OrganizationSettings() {
   // Story 7.1: Email template modal state
   const [emailTemplateModalOpen, setEmailTemplateModalOpen] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
+  // Story 7.2: Invitation template modal state
+  const [invitationTemplateModalOpen, setInvitationTemplateModalOpen] = useState(false);
+  const [savingInvitationTemplate, setSavingInvitationTemplate] = useState(false);
 
   // Handle OAuth messages
   useEffect(() => {
@@ -303,6 +309,24 @@ export function OrganizationSettings() {
     }
   };
 
+  // Story 7.2: Save invitation email template
+  const handleSaveInvitationEmailTemplate = async (data: { subject: string; template: string }) => {
+    setSavingInvitationTemplate(true);
+    try {
+      await updateInvitationEmailTemplate({
+        subject: data.subject,
+        template: data.template,
+      });
+      toast.success("Modèle enregistré");
+      setInvitationTemplateModalOpen(false);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors de l'enregistrement";
+      toast.error(errorMessage);
+    } finally {
+      setSavingInvitationTemplate(false);
+    }
+  };
+
   // Loading state
   if (loggedInUser === undefined || !organization) {
     return (
@@ -327,7 +351,7 @@ export function OrganizationSettings() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 md:px-6 space-y-8">
+    <div className="max-w-3xl mx-auto px-4 md:px-0 space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
@@ -687,6 +711,46 @@ export function OrganizationSettings() {
                 </div>
               </div>
             </div>
+
+            {/* Story 7.2: Invitation Email Template Card */}
+            <div
+              className="py-4 sm:p-4 sm:border sm:border-gray-200 sm:rounded-lg hover:sm:border-gray-400 transition-colors cursor-pointer"
+              onClick={() => setInvitationTemplateModalOpen(true)}
+            >
+              <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                {/* Icon */}
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                  <UserPlus className="h-5 w-5 text-purple-600" />
+                </div>
+
+                {/* Info + Actions */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    {/* Template info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900">Invitation utilisateur</p>
+                      <p className="text-sm text-gray-600 mt-1 truncate">
+                        {invitationEmailTemplate?.subject || "Invitation à rejoindre {nom_organisation} sur RelanceZen"}
+                      </p>
+                    </div>
+
+                    {/* Edit button only - no delete */}
+                    <div className="flex-shrink-0 flex items-center gap-2 mt-2 sm:mt-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setInvitationTemplateModalOpen(true);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -709,6 +773,20 @@ export function OrganizationSettings() {
           subject={invoiceEmailTemplate.subject}
           template={invoiceEmailTemplate.template}
           saving={savingTemplate}
+          templateType="invoice"
+        />
+      )}
+
+      {/* Story 7.2: Invitation Template Modal */}
+      {invitationEmailTemplate && (
+        <EmailTemplateModal
+          open={invitationTemplateModalOpen}
+          onClose={() => setInvitationTemplateModalOpen(false)}
+          onSave={handleSaveInvitationEmailTemplate}
+          subject={invitationEmailTemplate.subject}
+          template={invitationEmailTemplate.template}
+          saving={savingInvitationTemplate}
+          templateType="invitation"
         />
       )}
     </div>

@@ -24,6 +24,27 @@ Check out the [Convex docs](https://docs.convex.dev/) for more information on ho
 * Check out the [Hosting and Deployment](https://docs.convex.dev/production/) docs for how to deploy your app
 * Read the [Best Practices](https://docs.convex.dev/understanding/best-practices/) guide for tips on how to improve you app further
 
+## Développement
+
+### Port Vite et SITE_URL
+
+Vite utilise par défaut le port `5173`. Si ce port est occupé, Vite utilise automatiquement le prochain port disponible (`5174`, `5175`, etc.).
+
+**Important :** La variable d'environnement `SITE_URL` dans Convex doit correspondre au port réellement utilisé par Vite. Cette variable est utilisée pour générer les liens dans les emails (invitations, etc.).
+
+1. Lancer l'application et noter le port affiché :
+   ```
+   pnpm dev
+   # ➜  Local:   http://localhost:5174/   ← Noter ce port
+   ```
+
+2. Si le port diffère de `5173`, mettre à jour `SITE_URL` dans les variables d'environnement Convex :
+   ```bash
+   npx convex env set SITE_URL "http://localhost:5174"
+   ```
+
+En production, `SITE_URL` doit être configuré avec l'URL de production (ex: `https://votre-domaine.com`).
+
 ## HTTP API
 
 User-defined http routes are defined in the `convex/router.ts` file. We split these routes into a separate file from `convex/http.ts` to allow us to prevent the LLM from modifying the authentication routes.

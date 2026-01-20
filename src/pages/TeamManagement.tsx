@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import {
   UserPlus,
@@ -32,6 +32,7 @@ export function TeamManagement() {
   const invitations = useQuery(api.organizations.listInvitations);
   const deleteInvitation = useMutation(api.organizations.deleteInvitation);
   const regenerateToken = useMutation(api.organizations.regenerateInvitationToken);
+  const sendInvitationEmail = useAction(api.invitationEmails.sendInvitationEmail);
   const updateUserRole = useMutation(api.organizations.updateUserRole);
   const removeUser = useMutation(api.organizations.removeUser);
 
@@ -63,8 +64,8 @@ export function TeamManagement() {
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString("fr-FR", {
-      day: "numeric",
-      month: "long",
+      day: "2-digit",
+      month: "2-digit",
       year: "numeric",
     });
   };
@@ -89,7 +90,7 @@ export function TeamManagement() {
   const getStatusBadge = (status: "pending" | "accepted" | "expired") => {
     if (status === "pending") {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 whitespace-nowrap flex-shrink-0">
           <Clock size={12} />
           En attente
         </span>
@@ -97,14 +98,14 @@ export function TeamManagement() {
     }
     if (status === "accepted") {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 whitespace-nowrap flex-shrink-0">
           <CheckCircle size={12} />
           Acceptée
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 whitespace-nowrap flex-shrink-0">
         <XCircle size={12} />
         Expirée
       </span>
@@ -119,8 +120,24 @@ export function TeamManagement() {
 
   const handleRegenerate = async (invitationId: any) => {
     try {
-      await regenerateToken({ invitationId });
-      toast.success("Lien d'invitation regénéré !");
+      const result = await regenerateToken({ invitationId });
+
+      // Try to send email with new link
+      try {
+        const emailResult = await sendInvitationEmail({
+          invitationId: result.invitationId,
+          organizationId: result.organizationId,
+          inviterUserId: result.inviterUserId,
+        });
+
+        if (emailResult.sent) {
+          toast.success("Nouveau lien envoyé par email");
+        } else {
+          toast.success("Lien regénéré (email non envoyé)");
+        }
+      } catch {
+        toast.success("Lien regénéré (email non envoyé)");
+      }
     } catch (error: any) {
       toast.error(error.message || "Erreur lors de la regénération.");
     }
@@ -190,7 +207,7 @@ export function TeamManagement() {
   );
 
   return (
-    <div className="max-w-3xl mx-auto px-4 md:px-6 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 md:px-0 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>

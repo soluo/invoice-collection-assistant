@@ -1,7 +1,7 @@
-import { useMutation } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { ConvexError } from "convex/values";
 import { useState } from "react";
-import { X, Copy, Check } from "lucide-react";
+import { X, Copy, Check, Mail, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
 import type { ValidationErrorData } from "../../convex/errors";
@@ -13,12 +13,16 @@ interface InviteUserModalProps {
 
 export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
   const inviteUser = useMutation(api.organizations.inviteUser);
+  const sendInvitationEmail = useAction(api.invitationEmails.sendInvitationEmail);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"admin" | "technicien">("technicien");
   const [submitting, setSubmitting] = useState(false);
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState<boolean | null>(null); // null = unknown, true = sent, false = not sent
+  const [emailSendError, setEmailSendError] = useState<string | null>(null);
+  const [invitedEmail, setInvitedEmail] = useState<string>(""); // Store the invited email for display after success
 
   if (!isOpen) return null;
 
@@ -32,11 +36,42 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
     e.preventDefault();
     setSubmitting(true);
     setEmailError(null);
+    setEmailSent(null);
+    setEmailSendError(null);
 
     try {
       const result = await inviteUser({ email, role });
       setInvitationToken(result.token);
-      toast.success("Invitation créée avec succès !");
+      setInvitedEmail(email); // Store email before resetting
+
+      // Try to send invitation email (non-blocking)
+      try {
+        const emailResult = await sendInvitationEmail({
+          invitationId: result.invitationId,
+          organizationId: result.organizationId,
+          inviterUserId: result.inviterUserId,
+        });
+
+        if (emailResult.sent) {
+          setEmailSent(true);
+          toast.success(`Invitation envoyée par email à ${email}`);
+        } else {
+          setEmailSent(false);
+          // Translate error codes to user-friendly messages
+          if (emailResult.error === "no_oauth") {
+            setEmailSendError("Compte email non connecté");
+          } else {
+            setEmailSendError("Échec de l'envoi de l'email");
+          }
+          toast.info("Invitation créée - partagez le lien manuellement");
+        }
+      } catch {
+        // Email send failed but invitation was created
+        setEmailSent(false);
+        setEmailSendError("Erreur lors de l'envoi de l'email");
+        toast.info("Invitation créée - partagez le lien manuellement");
+      }
+
       setEmail("");
     } catch (error) {
       // Gérer les erreurs de validation structurées (ConvexError)
@@ -62,6 +97,9 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
     setRole("technicien");
     setCopied(false);
     setEmailError(null);
+    setEmailSent(null);
+    setEmailSendError(null);
+    setInvitedEmail("");
     onClose();
   };
 
@@ -120,6 +158,10 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
                 }`}
                 placeholder="utilisateur@example.com"
                 required
+                autoComplete="off"
+                data-1p-ignore
+                data-lpignore="true"
+                data-form-type="other"
               />
               {emailError && (
                 <p className="mt-2 text-sm text-red-600">{emailError}</p>
@@ -168,14 +210,41 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
           </form>
         ) : (
           <div className="space-y-5">
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-              <p className="text-emerald-800 font-semibold mb-1">
-                Invitation créée !
-              </p>
-              <p className="text-emerald-700 text-sm">
-                Partagez ce lien avec {email} pour qu'il rejoigne votre organisation.
-              </p>
-            </div>
+            {/* Email status message */}
+            {emailSent === true ? (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Mail size={18} className="text-emerald-600" />
+                  <p className="text-emerald-800 font-semibold">
+                    Invitation envoyée par email !
+                  </p>
+                </div>
+                <p className="text-emerald-700 text-sm">
+                  L'invité recevra un email avec le lien d'invitation.
+                </p>
+              </div>
+            ) : emailSent === false ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <AlertCircle size={18} className="text-amber-600" />
+                  <p className="text-amber-800 font-semibold">
+                    Email non envoyé
+                  </p>
+                </div>
+                <p className="text-amber-700 text-sm">
+                  {emailSendError || "Partagez le lien manuellement."}
+                </p>
+              </div>
+            ) : (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                <p className="text-emerald-800 font-semibold mb-1">
+                  Invitation créée !
+                </p>
+                <p className="text-emerald-700 text-sm">
+                  Partagez ce lien pour qu'il rejoigne votre organisation.
+                </p>
+              </div>
+            )}
 
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
               <p className="text-xs text-slate-600 mb-2 font-semibold uppercase tracking-wide">
@@ -198,7 +267,7 @@ export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
             <div className="bg-brand-50 border border-brand-200 rounded-xl p-4">
               <p className="text-brand-800 text-sm">
                 <strong>Note :</strong> Le lien expire dans 7 jours. L'utilisateur devra créer son
-                compte avec l'email <strong>{email}</strong>.
+                compte avec l'email <strong>{invitedEmail}</strong>.
               </p>
             </div>
 

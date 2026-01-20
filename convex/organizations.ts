@@ -2,7 +2,13 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { normalizeEmail } from "./utils";
-import { getDefaultReminderSteps, DEFAULT_INVOICE_EMAIL_SUBJECT, DEFAULT_INVOICE_EMAIL_TEMPLATE } from "./reminderDefaults";
+import {
+  getDefaultReminderSteps,
+  DEFAULT_INVOICE_EMAIL_SUBJECT,
+  DEFAULT_INVOICE_EMAIL_TEMPLATE,
+  DEFAULT_INVITATION_EMAIL_SUBJECT,
+  DEFAULT_INVITATION_EMAIL_TEMPLATE,
+} from "./reminderDefaults";
 import { validationError, ErrorCodes } from "./errors";
 
 /**
@@ -68,6 +74,8 @@ export const inviteUser = mutation({
   returns: v.object({
     invitationId: v.id("invitations"),
     token: v.string(),
+    organizationId: v.id("organizations"),
+    inviterUserId: v.id("users"),
   }),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -167,12 +175,12 @@ export const inviteUser = mutation({
       createdAt: Date.now(),
     });
 
-    // TODO: Envoyer l'email d'invitation avec le token
-    // Pour l'instant, on retourne juste le token
-
+    // Story 7.2: Return all info needed for frontend to call sendInvitationEmail action
     return {
       invitationId,
       token,
+      organizationId: user.organizationId,
+      inviterUserId: userId,
     };
   },
 });
@@ -392,6 +400,9 @@ export const getCurrentOrganization = query({
       // Story 7.1: Invoice email template
       invoiceEmailSubject: v.optional(v.string()),
       invoiceEmailTemplate: v.optional(v.string()),
+      // Story 7.2: Invitation email template
+      invitationEmailSubject: v.optional(v.string()),
+      invitationEmailTemplate: v.optional(v.string()),
     }),
     v.null()
   ),
@@ -428,6 +439,9 @@ export const getCurrentOrganization = query({
       // Story 7.1: Invoice email template (with defaults)
       invoiceEmailSubject: organization.invoiceEmailSubject,
       invoiceEmailTemplate: organization.invoiceEmailTemplate,
+      // Story 7.2: Invitation email template
+      invitationEmailSubject: organization.invitationEmailSubject,
+      invitationEmailTemplate: organization.invitationEmailTemplate,
     };
   },
 });
@@ -976,7 +990,12 @@ export const regenerateInvitationToken = mutation({
   args: {
     invitationId: v.id("invitations"),
   },
-  returns: v.string(),
+  returns: v.object({
+    token: v.string(),
+    invitationId: v.id("invitations"),
+    organizationId: v.id("organizations"),
+    inviterUserId: v.id("users"),
+  }),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
@@ -985,6 +1004,9 @@ export const regenerateInvitationToken = mutation({
     const user = await ctx.db.get(userId);
     if (user?.role !== "admin") {
       throw new Error("Seuls les admins peuvent regénérer des invitations");
+    }
+    if (!user.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
     }
 
     const invitation = await ctx.db.get(args.invitationId);
@@ -1005,7 +1027,13 @@ export const regenerateInvitationToken = mutation({
       status: "pending", // Réinitialiser le statut au cas où il était expiré
     });
 
-    return newToken;
+    // Story 7.2: Return all info needed for frontend to call sendInvitationEmail action
+    return {
+      token: newToken,
+      invitationId: args.invitationId,
+      organizationId: user.organizationId,
+      inviterUserId: userId,
+    };
   },
 });
 
@@ -1090,6 +1118,91 @@ export const getInvoiceEmailTemplate = query({
     return {
       subject: organization.invoiceEmailSubject || DEFAULT_INVOICE_EMAIL_SUBJECT,
       template: organization.invoiceEmailTemplate || DEFAULT_INVOICE_EMAIL_TEMPLATE,
+    };
+  },
+});
+
+/**
+ * Story 7.2: Mutation pour mettre à jour le template d'email d'invitation
+ * Admin-only access
+ */
+export const updateInvitationEmailTemplate = mutation({
+  args: {
+    subject: v.string(),
+    template: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+
+    if (user.role !== "admin") {
+      throw new Error("Seuls les admins peuvent modifier les modèles d'email");
+    }
+
+    // Validation: subject et template ne doivent pas être vides
+    if (!args.subject.trim()) {
+      throw new Error("L'objet de l'email ne peut pas être vide");
+    }
+    if (!args.template.trim()) {
+      throw new Error("Le contenu de l'email ne peut pas être vide");
+    }
+
+    await ctx.db.patch(user.organizationId, {
+      invitationEmailSubject: args.subject.trim(),
+      invitationEmailTemplate: args.template.trim(),
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Story 7.2: Query pour récupérer le template d'email d'invitation
+ * Retourne les valeurs par défaut si non configuré
+ */
+export const getInvitationEmailTemplate = query({
+  args: {},
+  returns: v.object({
+    subject: v.string(),
+    template: v.string(),
+  }),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      // Retourner les valeurs par défaut si non authentifié
+      return {
+        subject: DEFAULT_INVITATION_EMAIL_SUBJECT,
+        template: DEFAULT_INVITATION_EMAIL_TEMPLATE,
+      };
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      return {
+        subject: DEFAULT_INVITATION_EMAIL_SUBJECT,
+        template: DEFAULT_INVITATION_EMAIL_TEMPLATE,
+      };
+    }
+
+    const organization = await ctx.db.get(user.organizationId);
+    if (!organization) {
+      return {
+        subject: DEFAULT_INVITATION_EMAIL_SUBJECT,
+        template: DEFAULT_INVITATION_EMAIL_TEMPLATE,
+      };
+    }
+
+    return {
+      subject: organization.invitationEmailSubject || DEFAULT_INVITATION_EMAIL_SUBJECT,
+      template: organization.invitationEmailTemplate || DEFAULT_INVITATION_EMAIL_TEMPLATE,
     };
   },
 });

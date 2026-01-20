@@ -70,3 +70,20 @@ Date d'échéance : {date_echeance}
 Nous vous remercions de procéder au règlement avant la date d'échéance.
 
 Cordialement,`;
+
+/**
+ * Template par défaut pour les emails d'invitation (Story 7.2)
+ * Variables disponibles: {email_invite}, {nom_organisation}, {role}, {lien_invitation}, {inviteur}
+ */
+export const DEFAULT_INVITATION_EMAIL_SUBJECT = "Invitation à rejoindre {nom_organisation} sur RelanceZen";
+
+export const DEFAULT_INVITATION_EMAIL_TEMPLATE = `Bonjour,
+
+{inviteur} vous invite à rejoindre l'équipe {nom_organisation} sur RelanceZen en tant que {role}.
+
+Cliquez sur le lien ci-dessous pour créer votre compte :
+{lien_invitation}
+
+Ce lien est valable pendant 7 jours.
+
+À très bientôt sur RelanceZen !`;
