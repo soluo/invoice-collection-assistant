@@ -403,6 +403,8 @@ export const getCurrentOrganization = query({
       // Story 7.2: Invitation email template
       invitationEmailSubject: v.optional(v.string()),
       invitationEmailTemplate: v.optional(v.string()),
+      // Story 7.3: PDF attachment to reminders
+      attachPdfToReminders: v.optional(v.boolean()),
     }),
     v.null()
   ),
@@ -442,6 +444,8 @@ export const getCurrentOrganization = query({
       // Story 7.2: Invitation email template
       invitationEmailSubject: organization.invitationEmailSubject,
       invitationEmailTemplate: organization.invitationEmailTemplate,
+      // Story 7.3: PDF attachment to reminders (default true)
+      attachPdfToReminders: organization.attachPdfToReminders,
     };
   },
 });
@@ -1119,6 +1123,38 @@ export const getInvoiceEmailTemplate = query({
       subject: organization.invoiceEmailSubject || DEFAULT_INVOICE_EMAIL_SUBJECT,
       template: organization.invoiceEmailTemplate || DEFAULT_INVOICE_EMAIL_TEMPLATE,
     };
+  },
+});
+
+/**
+ * Story 7.3: Mutation pour mettre à jour le toggle "Joindre le PDF aux relances"
+ * Admin-only access
+ */
+export const updateAttachPdfToReminders = mutation({
+  args: {
+    attachPdfToReminders: v.boolean(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+
+    if (user.role !== "admin") {
+      throw new Error("Accès réservé aux administrateurs");
+    }
+
+    await ctx.db.patch(user.organizationId, {
+      attachPdfToReminders: args.attachPdfToReminders,
+    });
+
+    return null;
   },
 });
 

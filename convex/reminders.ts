@@ -12,6 +12,21 @@ import { Id } from "./_generated/dataModel";
 import { getReminderNumber, getReminderStatusFromNumber } from "./lib/invoiceStatus";
 
 /**
+ * Story 7.3: Convert ArrayBuffer to base64 string (web-compatible, no Buffer)
+ * Copied from invoiceEmails.ts for consistency
+ */
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000; // 32KB chunks to avoid call stack issues
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
+/**
  * ✅ V2 Phase 2.8 : Créer une relance
  * Note: Cette fonction est peu utilisée car les relances sont généralement créées via invoices.sendReminder
  */
@@ -142,6 +157,9 @@ export const listForOrganization = query({
                 sendStatus: invoice.sendStatus,
                 paymentStatus: invoice.paymentStatus,
                 reminderStatus: invoice.reminderStatus,
+                // Story 7.3: Include PDF storage ID for preview indicator
+                pdfStorageId: invoice.pdfStorageId ?? null,
+                createdBy: invoice.createdBy,
               }
             : null,
           creator: creator
@@ -185,6 +203,9 @@ export const getReminderForSending = internalQuery({
           clientName: v.string(),
           contactEmail: v.optional(v.string()),
           createdBy: v.id("users"),
+          // Story 7.3: Include PDF storage ID and invoice number for attachments
+          pdfStorageId: v.optional(v.id("_storage")),
+          invoiceNumber: v.string(),
         }),
         v.null()
       ),
@@ -214,6 +235,9 @@ export const getReminderForSending = internalQuery({
             clientName: invoice.clientName,
             contactEmail: invoice.contactEmail,
             createdBy: invoice.createdBy,
+            // Story 7.3: Include PDF storage ID and invoice number for attachments
+            pdfStorageId: invoice.pdfStorageId,
+            invoiceNumber: invoice.invoiceNumber,
           }
         : null,
     };
@@ -404,30 +428,82 @@ export const sendReminderEmail = action({
       expiresAt = newExpiresAt;
     }
 
+    // ===== Story 7.3: Prepare PDF attachment if enabled =====
+    const attachments: Array<{
+      "@odata.type": string;
+      name: string;
+      contentType: string;
+      contentBytes: string;
+    }> = [];
+
+    // Check if PDF attachment is enabled (default true if undefined)
+    const attachPdfEnabled = organizationTokens.attachPdfToReminders !== false;
+
+    if (attachPdfEnabled && invoice.pdfStorageId) {
+      try {
+        // Get PDF URL from storage
+        const pdfUrl = await ctx.storage.getUrl(invoice.pdfStorageId);
+        if (pdfUrl) {
+          // Fetch PDF content
+          const pdfResponse = await fetch(pdfUrl);
+          if (pdfResponse.ok) {
+            const pdfBuffer = await pdfResponse.arrayBuffer();
+            const base64Content = arrayBufferToBase64(pdfBuffer);
+
+            attachments.push({
+              "@odata.type": "#microsoft.graph.fileAttachment",
+              name: `facture-${invoice.invoiceNumber}.pdf`,
+              contentType: "application/pdf",
+              contentBytes: base64Content,
+            });
+          }
+        }
+      } catch (error) {
+        // Continue without attachment if PDF fetch fails - graceful handling (AC3)
+        console.error("Failed to attach PDF to reminder:", error);
+      }
+    }
+
+    // Prepare Graph API request body
+    const graphBody: {
+      message: {
+        subject: string;
+        body: { contentType: string; content: string };
+        toRecipients: Array<{ emailAddress: { address: string; name: string } }>;
+        attachments?: typeof attachments;
+      };
+      saveToSentItems: boolean;
+    } = {
+      message: {
+        subject: context.reminder.data?.emailSubject || "Relance",
+        body: {
+          contentType: "Text",
+          content: context.reminder.data?.emailContent || "",
+        },
+        toRecipients: [
+          {
+            emailAddress: {
+              address: invoice.contactEmail, // ✅ V2 Phase 2.6 : Renommé de clientEmail
+              name: invoice.clientName,
+            },
+          },
+        ],
+      },
+      saveToSentItems: true,
+    };
+
+    // Only add attachments if there are any
+    if (attachments.length > 0) {
+      graphBody.message.attachments = attachments;
+    }
+
     const graphResponse = await fetch("https://graph.microsoft.com/v1.0/me/sendMail", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        message: {
-          subject: context.reminder.data?.emailSubject || "Relance",
-          body: {
-            contentType: "Text",
-            content: context.reminder.data?.emailContent || "",
-          },
-          toRecipients: [
-            {
-              emailAddress: {
-                address: invoice.contactEmail, // ✅ V2 Phase 2.6 : Renommé de clientEmail
-                name: invoice.clientName,
-              },
-            },
-          ],
-        },
-        saveToSentItems: true,
-      }),
+      body: JSON.stringify(graphBody),
     });
 
     const attemptTime = Date.now();

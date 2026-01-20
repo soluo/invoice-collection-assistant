@@ -4,6 +4,21 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 
 /**
+ * Story 7.3: Convert ArrayBuffer to base64 string (web-compatible, no Buffer)
+ * Copied from invoiceEmails.ts for consistency
+ */
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000; // 32KB chunks to avoid call stack issues
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
+/**
  * Send a test email to verify OAuth configuration is working
  * Admin only - uses Microsoft Graph API via connected OAuth account
  */
@@ -131,6 +146,8 @@ export const getInvoiceForTestEmail = internalQuery({
       amountTTC: v.number(),
       dueDate: v.string(),
       invoiceDate: v.string(),
+      // Story 7.3: Include PDF storage ID for attachments
+      pdfStorageId: v.optional(v.id("_storage")),
     }),
     v.null()
   ),
@@ -147,6 +164,8 @@ export const getInvoiceForTestEmail = internalQuery({
       amountTTC: invoice.amountTTC,
       dueDate: invoice.dueDate,
       invoiceDate: invoice.invoiceDate,
+      // Story 7.3: Include PDF storage ID for attachments
+      pdfStorageId: invoice.pdfStorageId,
     };
   },
 });
@@ -173,6 +192,8 @@ export const getOrgWithTokensAndSteps = internalQuery({
           emailTemplate: v.optional(v.string()),
         })
       ),
+      // Story 7.3: Include PDF attachment setting
+      attachPdfToReminders: v.optional(v.boolean()),
     }),
     v.null()
   ),
@@ -186,6 +207,8 @@ export const getOrgWithTokensAndSteps = internalQuery({
       emailRefreshToken: org.emailRefreshToken,
       emailTokenExpiresAt: org.emailTokenExpiresAt,
       reminderSteps: org.reminderSteps || [],
+      // Story 7.3: Include PDF attachment setting (default true)
+      attachPdfToReminders: org.attachPdfToReminders,
     };
   },
 });
@@ -199,6 +222,8 @@ type InvoiceForTestEmail = {
   amountTTC: number;
   dueDate: string;
   invoiceDate: string;
+  // Story 7.3: Include PDF storage ID for attachments
+  pdfStorageId?: string;
 } | null;
 
 type ReminderStep = {
@@ -215,6 +240,8 @@ type OrgWithTokensAndSteps = {
   emailRefreshToken?: string;
   emailTokenExpiresAt?: number;
   reminderSteps: ReminderStep[];
+  // Story 7.3: Include PDF attachment setting
+  attachPdfToReminders?: boolean;
 } | null;
 
 /**
@@ -340,7 +367,74 @@ export const sendSimulatedTestEmail = action({
       accessToken = result.accessToken;
     }
 
+    // ===== Story 7.3: Prepare PDF attachment if enabled (AC5: Simulated emails also respect setting) =====
+    const attachments: Array<{
+      "@odata.type": string;
+      name: string;
+      contentType: string;
+      contentBytes: string;
+    }> = [];
+
+    // Check if PDF attachment is enabled (default true if undefined)
+    const attachPdfEnabled = org.attachPdfToReminders !== false;
+
+    if (attachPdfEnabled && invoice.pdfStorageId) {
+      try {
+        // Get PDF URL from storage
+        const pdfUrl = await ctx.storage.getUrl(invoice.pdfStorageId);
+        if (pdfUrl) {
+          // Fetch PDF content
+          const pdfResponse = await fetch(pdfUrl);
+          if (pdfResponse.ok) {
+            const pdfBuffer = await pdfResponse.arrayBuffer();
+            const base64Content = arrayBufferToBase64(pdfBuffer);
+
+            attachments.push({
+              "@odata.type": "#microsoft.graph.fileAttachment",
+              name: `facture-${invoice.invoiceNumber}.pdf`,
+              contentType: "application/pdf",
+              contentBytes: base64Content,
+            });
+          }
+        }
+      } catch (error) {
+        // Continue without attachment if PDF fetch fails - graceful handling
+        console.error("Failed to attach PDF to simulated test email:", error);
+      }
+    }
+
     // 9. Send via Microsoft Graph API
+    const graphBody: {
+      message: {
+        subject: string;
+        body: { contentType: string; content: string };
+        toRecipients: Array<{ emailAddress: { address: string } }>;
+        attachments?: typeof attachments;
+      };
+      saveToSentItems: boolean;
+    } = {
+      message: {
+        subject: `[TEST] ${emailSubject}`,
+        body: {
+          contentType: "Text",
+          content: `--- EMAIL DE TEST (SIMULATION) ---\n\nDestinataire réel: ${invoice.contactEmail || "Non spécifié"}\n\n--- CONTENU DE L'EMAIL ---\n\n${emailContent}`,
+        },
+        toRecipients: [
+          {
+            emailAddress: {
+              address: recipientEmail,
+            },
+          },
+        ],
+      },
+      saveToSentItems: true,
+    };
+
+    // Only add attachments if there are any
+    if (attachments.length > 0) {
+      graphBody.message.attachments = attachments;
+    }
+
     const graphResponse = await fetch(
       "https://graph.microsoft.com/v1.0/me/sendMail",
       {
@@ -349,23 +443,7 @@ export const sendSimulatedTestEmail = action({
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          message: {
-            subject: `[TEST] ${emailSubject}`,
-            body: {
-              contentType: "Text",
-              content: `--- EMAIL DE TEST (SIMULATION) ---\n\nDestinataire réel: ${invoice.contactEmail || "Non spécifié"}\n\n--- CONTENU DE L'EMAIL ---\n\n${emailContent}`,
-            },
-            toRecipients: [
-              {
-                emailAddress: {
-                  address: recipientEmail,
-                },
-              },
-            ],
-          },
-          saveToSentItems: true,
-        }),
+        body: JSON.stringify(graphBody),
       }
     );
 

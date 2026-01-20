@@ -13,7 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { X, Edit, Mail, Send } from "lucide-react";
+import { X, Edit, Mail, Send, FileText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip } from "@/components/ui/simple-tooltip";
 import { toast } from "sonner";
 
 interface EmailPreviewModalFollowUpProps {
@@ -34,6 +36,11 @@ export function EmailPreviewModalFollowUp({
   const sendReminder = useAction(api.reminders.sendReminderEmail);
   const sendSimulatedTestEmail = useAction(api.emails.sendSimulatedTestEmail);
   const currentUser = useQuery(api.auth.loggedInUser);
+  // Story 7.3: Get PDF URL for clickable badge
+  const pdfUrl = useQuery(
+    api.invoices.getPdfUrl,
+    reminder.invoice?.pdfStorageId ? { storageId: reminder.invoice.pdfStorageId } : "skip"
+  );
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
 
@@ -180,6 +187,32 @@ export function EmailPreviewModalFollowUp({
               {reminder.data?.emailContent || "Contenu indisponible"}
             </div>
           </div>
+
+          {/* Story 7.3: PDF attachment indicator (AC4) - clickable badge */}
+          {organization?.attachPdfToReminders !== false && (
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-900">Pièce jointe</span>
+              {reminder.invoice?.pdfStorageId ? (
+                <Tooltip content="Afficher la facture">
+                  <a
+                    href={pdfUrl || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={pdfUrl ? "inline-block" : "inline-block pointer-events-none"}
+                  >
+                    <Badge variant="secondary" className="gap-2 py-1.5 px-3 hover:bg-gray-200 transition-colors cursor-pointer">
+                      <FileText className="h-4 w-4" />
+                      facture-{reminder.invoice?.invoiceNumber || "N/A"}.pdf
+                    </Badge>
+                  </a>
+                </Tooltip>
+              ) : (
+                <span className="text-sm text-gray-400 italic">
+                  Aucun PDF disponible
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Status messages */}
           {isSimulation && (

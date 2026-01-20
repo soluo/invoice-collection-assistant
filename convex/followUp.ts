@@ -37,6 +37,8 @@ export const getUpcomingReminders = query({
           sendStatus: v.string(),
           paymentStatus: v.string(),
           reminderStatus: v.optional(v.string()),
+          // Story 7.3: Include PDF storage ID for preview indicator
+          pdfStorageId: v.optional(v.id("_storage")),
         }),
         v.null()
       ),
@@ -115,6 +117,8 @@ export const getUpcomingReminders = query({
                   sendStatus: invoice.sendStatus,
                   paymentStatus: invoice.paymentStatus,
                   reminderStatus: invoice.reminderStatus,
+                  // Story 7.3: Include PDF storage ID for preview indicator
+                  pdfStorageId: invoice.pdfStorageId,
                 }
               : null,
             daysOverdue,
@@ -637,6 +641,8 @@ export const generateSimulatedReminders = query({
           sendStatus: v.string(),
           paymentStatus: v.string(),
           reminderStatus: v.optional(v.string()),
+          // Story 7.3: Include PDF storage ID for preview indicator
+          pdfStorageId: v.optional(v.id("_storage")),
         }),
         v.null()
       ),
@@ -704,6 +710,8 @@ export const generateSimulatedReminders = query({
         sendStatus: string;
         paymentStatus: string;
         reminderStatus?: string;
+        // Story 7.3: Include PDF storage ID for preview indicator
+        pdfStorageId?: typeof invoices[0]["pdfStorageId"];
       } | null;
       daysOverdue?: number;
     }> = [];
@@ -778,6 +786,8 @@ export const generateSimulatedReminders = query({
               sendStatus: invoice.sendStatus,
               paymentStatus: invoice.paymentStatus,
               reminderStatus: invoice.reminderStatus,
+              // Story 7.3: Include PDF storage ID for preview indicator
+              pdfStorageId: invoice.pdfStorageId,
             },
             daysOverdue,
           });

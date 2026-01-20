@@ -56,6 +56,9 @@ const applicationTables = {
     // ✅ Story 7.2 : Template pour les emails d'invitation
     invitationEmailSubject: v.optional(v.string()),
     invitationEmailTemplate: v.optional(v.string()),
+
+    // ✅ Story 7.3 : Pièces jointes aux relances
+    attachPdfToReminders: v.optional(v.boolean()), // Default true via code
   }),
 
   invitations: defineTable({

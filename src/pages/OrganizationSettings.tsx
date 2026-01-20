@@ -26,6 +26,8 @@ export function OrganizationSettings() {
   const deleteReminderStep = useMutation(api.organizations.deleteReminderStep);
   const updateSenderName = useMutation(api.organizations.updateSenderName);
   const updateReminderSendTime = useMutation(api.organizations.updateReminderSendTime);
+  // Story 7.3: PDF attachment to reminders
+  const updateAttachPdfToReminders = useMutation(api.organizations.updateAttachPdfToReminders);
   const getOAuthUrl = useQuery(api.oauth.getOAuthUrl);
   const disconnectEmail = useMutation(api.oauth.disconnectEmailProvider);
   const refreshTokenIfNeeded = useAction(api.oauth.refreshTokenIfNeeded);
@@ -51,6 +53,8 @@ export function OrganizationSettings() {
   const [autoSendEnabled, setAutoSendEnabled] = useState(false);
   const [reminderSendTime, setReminderSendTime] = useState("10:00");
   const [savingSendTime, setSavingSendTime] = useState(false);
+  // Story 7.3: PDF attachment setting
+  const [attachPdfToReminders, setAttachPdfToReminders] = useState(true);
   const [reminderSteps, setReminderSteps] = useState<ReminderStep[]>([]);
   const [stepModalOpen, setStepModalOpen] = useState(false);
   const [editingStep, setEditingStep] = useState<ReminderStep | null>(null);
@@ -84,6 +88,8 @@ export function OrganizationSettings() {
       setSenderDisplayName(organization.senderName || "");
       setAutoSendEnabled(organization.autoSendEnabled ?? false);
       setReminderSendTime(organization.reminderSendTime || "10:00");
+      // Story 7.3: Default to true if undefined
+      setAttachPdfToReminders(organization.attachPdfToReminders !== false);
       setReminderSteps(organization.reminderSteps || []);
     }
   }, [organization]);
@@ -198,6 +204,21 @@ export function OrganizationSettings() {
         checked
           ? "Envoi automatique activé"
           : "Envoi automatique désactivé"
+      );
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de la mise à jour");
+    }
+  };
+
+  // Story 7.3: Toggle PDF attachment to reminders
+  const handleToggleAttachPdf = async (checked: boolean) => {
+    try {
+      await updateAttachPdfToReminders({ attachPdfToReminders: checked });
+      setAttachPdfToReminders(checked);
+      toast.success(
+        checked
+          ? "Pièces jointes PDF activées"
+          : "Pièces jointes PDF désactivées"
       );
     } catch (error: any) {
       toast.error(error.message || "Erreur lors de la mise à jour");
@@ -568,6 +589,24 @@ export function OrganizationSettings() {
             <p className="text-xs text-gray-500 mt-2">
               Plage autorisée : 06:00 - 21:59
             </p>
+          </div>
+
+          {/* Story 7.3: PDF attachment toggle (AC2) */}
+          <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+            <div className="flex-1 min-w-0">
+              <Label htmlFor="attachPdfToReminders" className="text-base font-medium cursor-pointer">
+                Joindre le PDF de la facture aux relances
+              </Label>
+              <p className="text-sm text-gray-600 mt-1">
+                Attacher automatiquement le PDF de la facture aux emails de relance
+              </p>
+            </div>
+            <Switch
+              id="attachPdfToReminders"
+              checked={attachPdfToReminders}
+              onCheckedChange={handleToggleAttachPdf}
+              className="flex-shrink-0 mt-0.5"
+            />
           </div>
 
           {/* Reminder steps sequence */}

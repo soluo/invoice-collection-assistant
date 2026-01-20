@@ -107,7 +107,7 @@ development_status:
   epic-7: in-progress
   7-1-template-envoi-initial-facture: done
   7-2-template-email-invitation: done
-  7-3-pieces-jointes-aux-relances: ready-for-dev
+  7-3-pieces-jointes-aux-relances: in-progress
   7-4-signature-email-avec-image: backlog
   epic-7-retrospective: optional
 

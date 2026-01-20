@@ -187,6 +187,8 @@ export const getOrganization = internalQuery({
       emailAccessToken: v.optional(v.string()),
       emailRefreshToken: v.optional(v.string()),
       emailTokenExpiresAt: v.optional(v.number()),
+      // Story 7.3: Include PDF attachment setting
+      attachPdfToReminders: v.optional(v.boolean()),
     }),
     v.null()
   ),
@@ -197,6 +199,8 @@ export const getOrganization = internalQuery({
       emailAccessToken: org.emailAccessToken,
       emailRefreshToken: org.emailRefreshToken,
       emailTokenExpiresAt: org.emailTokenExpiresAt,
+      // Story 7.3: Include PDF attachment setting (default true)
+      attachPdfToReminders: org.attachPdfToReminders,
     };
   },
 });
