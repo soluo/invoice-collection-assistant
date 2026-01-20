@@ -14,6 +14,7 @@ import { isAdminRole } from "@/lib/utils";
 import { Tooltip } from "@/components/ui/simple-tooltip";
 import { TestEmailSection } from "@/components/TestEmailSection";
 import { EmailTemplateModal } from "@/components/EmailTemplateModal";
+import { SignatureEditor } from "@/components/SignatureEditor";
 
 const TOKEN_REFRESH_THRESHOLD_MS = 10 * 60 * 1000;
 
@@ -792,6 +793,20 @@ export function OrganizationSettings() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Story 7.4: Signature Email Section */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-gray-900">
+          Signature email
+        </h2>
+        <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+          <SignatureEditor
+            organizationId={organization._id}
+            initialSignature={organization.signature}
+            signatureImageId={organization.signatureImageId}
+          />
         </div>
       </section>
 

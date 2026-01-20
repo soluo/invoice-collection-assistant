@@ -450,6 +450,23 @@ export const sendReminderEmail = action({
       }
     }
 
+    // ===== Story 7.4: Prepare HTML email content =====
+    const { wrapEmailAsHtml } = await import("./lib/emailHtml");
+
+    // Get the plain text body (without signature - Story 7.4 change)
+    const emailBody = context.reminder.data?.emailContent || "";
+
+    // Get the current signature from organization (may be HTML with images)
+    const organizationSignature = organizationTokens.signature || "";
+
+    // Wrap as HTML with signature
+    const htmlContent = wrapEmailAsHtml(
+      emailBody,
+      organizationSignature,
+      context.reminder.organizationId.toString(),
+      process.env.CONVEX_SITE_URL
+    );
+
     // Prepare Graph API request body
     const graphBody: {
       message: {
@@ -463,8 +480,8 @@ export const sendReminderEmail = action({
       message: {
         subject: context.reminder.data?.emailSubject || "Relance",
         body: {
-          contentType: "Text",
-          content: context.reminder.data?.emailContent || "",
+          contentType: "HTML",
+          content: htmlContent,
         },
         toRecipients: [
           {
@@ -991,12 +1008,14 @@ async function createReminderRecord(
 
 /**
  * Helper : remplacer les placeholders dans les templates d'email
+ * Note Story 7.4: La signature n'est plus ajoutée ici - elle est gérée séparément à l'envoi
+ * pour supporter les signatures HTML avec images
  */
 function replaceTemplatePlaceholders(
   template: string,
   invoice: any,
   daysPastDue: number,
-  signature?: string
+  _signature?: string // Kept for backwards compatibility but no longer used
 ): string {
   // Format amount in French locale (123,45)
   const formattedAmount = invoice.amountTTC.toLocaleString("fr-FR", {
@@ -1004,7 +1023,7 @@ function replaceTemplatePlaceholders(
     maximumFractionDigits: 2,
   });
 
-  let result = template
+  const result = template
     .replace(/{numero_facture}/g, invoice.invoiceNumber)
     .replace(/{montant}/g, formattedAmount)
     .replace(/{date_facture}/g, invoice.invoiceDate)
@@ -1012,10 +1031,8 @@ function replaceTemplatePlaceholders(
     .replace(/{nom_client}/g, invoice.clientName)
     .replace(/{jours_retard}/g, daysPastDue.toString());
 
-  // Ajouter la signature si fournie
-  if (signature) {
-    result += `\n\n${signature}`;
-  }
+  // Story 7.4: Signature is now added at send time, not at reminder creation
+  // This allows HTML signatures with images to be properly handled
 
   return result;
 }

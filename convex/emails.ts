@@ -181,6 +181,8 @@ export const getOrgWithTokensAndSteps = internalQuery({
       ),
       // Story 7.3: Include PDF attachment setting
       attachPdfToReminders: v.optional(v.boolean()),
+      // Story 7.4: Include signature for HTML emails
+      signature: v.string(),
     }),
     v.null()
   ),
@@ -196,6 +198,8 @@ export const getOrgWithTokensAndSteps = internalQuery({
       reminderSteps: org.reminderSteps || [],
       // Story 7.3: Include PDF attachment setting (default true)
       attachPdfToReminders: org.attachPdfToReminders,
+      // Story 7.4: Include signature for HTML emails
+      signature: org.signature,
     };
   },
 });
@@ -229,6 +233,8 @@ type OrgWithTokensAndSteps = {
   reminderSteps: ReminderStep[];
   // Story 7.3: Include PDF attachment setting
   attachPdfToReminders?: boolean;
+  // Story 7.4: Include signature for HTML emails
+  signature: string;
 } | null;
 
 /**
@@ -391,6 +397,20 @@ export const sendSimulatedTestEmail = action({
     }
 
     // 9. Send via Microsoft Graph API
+    // Story 7.4: Wrap simulated email as HTML with signature
+    const { wrapEmailAsHtml } = await import("./lib/emailHtml");
+
+    // Add test header to the content
+    const testHeader = `--- EMAIL DE TEST (SIMULATION) ---\n\nDestinataire réel: ${invoice.contactEmail || "Non spécifié"}\n\n--- CONTENU DE L'EMAIL ---\n\n`;
+    const fullContent = testHeader + emailContent;
+
+    const htmlContent = wrapEmailAsHtml(
+      fullContent,
+      org.signature,
+      user.organizationId.toString(),
+      process.env.CONVEX_SITE_URL
+    );
+
     const graphBody: {
       message: {
         subject: string;
@@ -403,8 +423,8 @@ export const sendSimulatedTestEmail = action({
       message: {
         subject: `[TEST] ${emailSubject}`,
         body: {
-          contentType: "Text",
-          content: `--- EMAIL DE TEST (SIMULATION) ---\n\nDestinataire réel: ${invoice.contactEmail || "Non spécifié"}\n\n--- CONTENU DE L'EMAIL ---\n\n${emailContent}`,
+          contentType: "HTML",
+          content: htmlContent,
         },
         toRecipients: [
           {

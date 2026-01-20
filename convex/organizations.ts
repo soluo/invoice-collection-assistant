@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalQuery } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { normalizeEmail } from "./utils";
 import { hasAdminRole } from "./permissions";
@@ -406,6 +406,8 @@ export const getCurrentOrganization = query({
       invitationEmailTemplate: v.optional(v.string()),
       // Story 7.3: PDF attachment to reminders
       attachPdfToReminders: v.optional(v.boolean()),
+      // Story 7.4: Signature image
+      signatureImageId: v.optional(v.id("_storage")),
     }),
     v.null()
   ),
@@ -447,6 +449,8 @@ export const getCurrentOrganization = query({
       invitationEmailTemplate: organization.invitationEmailTemplate,
       // Story 7.3: PDF attachment to reminders (default true)
       attachPdfToReminders: organization.attachPdfToReminders,
+      // Story 7.4: Signature image
+      signatureImageId: organization.signatureImageId,
     };
   },
 });
@@ -1359,6 +1363,165 @@ export const removeUser = mutation({
       role: undefined,
       invitedBy: undefined,
     });
+
+    return null;
+  },
+});
+
+// ============================================
+// Story 7.4: Signature Email avec Image
+// ============================================
+
+/**
+ * Internal query for HTTP endpoint to fetch signature image
+ * Called from router.ts to serve signature images publicly
+ */
+export const getSignatureImageForHttp = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.union(
+    v.object({
+      signatureImageId: v.optional(v.id("_storage")),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, args) => {
+    const organization = await ctx.db.get(args.organizationId);
+    if (!organization) {
+      return null;
+    }
+    return {
+      signatureImageId: organization.signatureImageId,
+    };
+  },
+});
+
+/**
+ * Story 7.4: Mutation pour mettre à jour la signature HTML
+ * Admin-only access
+ */
+export const updateSignature = mutation({
+  args: {
+    signature: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+
+    if (!hasAdminRole(user.role)) {
+      throw new Error("Accès réservé aux administrateurs");
+    }
+
+    await ctx.db.patch(user.organizationId, {
+      signature: args.signature,
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Story 7.4: Mutation pour générer une URL d'upload pour l'image de signature
+ * Admin-only access
+ */
+export const generateSignatureImageUploadUrl = mutation({
+  args: {},
+  returns: v.string(),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+
+    if (!hasAdminRole(user.role)) {
+      throw new Error("Accès réservé aux administrateurs");
+    }
+
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/**
+ * Story 7.4: Mutation pour sauvegarder l'image de signature après upload
+ * Admin-only access
+ */
+export const saveSignatureImage = mutation({
+  args: {
+    storageId: v.id("_storage"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+
+    if (!hasAdminRole(user.role)) {
+      throw new Error("Accès réservé aux administrateurs");
+    }
+
+    // Delete old image if exists
+    const organization = await ctx.db.get(user.organizationId);
+    if (organization?.signatureImageId) {
+      await ctx.storage.delete(organization.signatureImageId);
+    }
+
+    await ctx.db.patch(user.organizationId, {
+      signatureImageId: args.storageId,
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Story 7.4: Mutation pour supprimer l'image de signature
+ * Admin-only access
+ */
+export const removeSignatureImage = mutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      throw new Error("Vous n'appartenez à aucune organisation");
+    }
+
+    if (!hasAdminRole(user.role)) {
+      throw new Error("Accès réservé aux administrateurs");
+    }
+
+    const organization = await ctx.db.get(user.organizationId);
+    if (organization?.signatureImageId) {
+      await ctx.storage.delete(organization.signatureImageId);
+      await ctx.db.patch(user.organizationId, {
+        signatureImageId: undefined,
+      });
+    }
 
     return null;
   },

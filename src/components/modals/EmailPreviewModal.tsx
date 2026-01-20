@@ -1,4 +1,6 @@
 import { Info, Send, X } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,6 +31,10 @@ export default function EmailPreviewModal({
   reminder,
   onConfirm,
 }: EmailPreviewModalProps) {
+  // Story 7.4: Get organization signature for preview
+  const organization = useQuery(api.organizations.getCurrentOrganization);
+  const signature = organization?.signature || "";
+
   if (!reminder) return null;
 
   return (
@@ -59,9 +65,18 @@ export default function EmailPreviewModal({
           {/* Message */}
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-1">MESSAGE</p>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-900 whitespace-pre-wrap max-h-64 overflow-y-auto">
-              {reminder.emailContent ||
-                `Bonjour,\n\nNous constatons que la facture ${reminder.invoiceNumber} d'un montant de ${reminder.amount.toLocaleString("fr-FR")} € n'a pas encore été réglée.\n\nMerci de bien vouloir procéder au paiement dans les meilleurs délais.\n\nCordialement`}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-900 max-h-64 overflow-y-auto">
+              <div className="whitespace-pre-wrap">
+                {reminder.emailContent ||
+                  `Bonjour,\n\nNous constatons que la facture ${reminder.invoiceNumber} d'un montant de ${reminder.amount.toLocaleString("fr-FR")} € n'a pas encore été réglée.\n\nMerci de bien vouloir procéder au paiement dans les meilleurs délais.\n\nCordialement`}
+              </div>
+              {/* Story 7.4: Display signature */}
+              {signature && (
+                <div
+                  className="mt-4 prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: signature }}
+                />
+              )}
             </div>
           </div>
 

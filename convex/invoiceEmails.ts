@@ -254,10 +254,7 @@ export const sendInvoiceEmail = action({
         .replace(/{date_echeance}/g, formatDateFr(invoice.dueDate));
     }
 
-    // Add signature
-    if (org.signature) {
-      emailContent += `\n\n${org.signature}`;
-    }
+    // Story 7.4: Signature is now added when wrapping as HTML (not concatenated to text)
 
     // 6. Prepare attachments
     const attachments: Array<{
@@ -297,6 +294,15 @@ export const sendInvoiceEmail = action({
     // Use contact name if available for better email display
     const recipientName = invoice.contactName || invoice.clientName;
 
+    // Story 7.4: Wrap email content as HTML with signature
+    const { wrapEmailAsHtml } = await import("./lib/emailHtml");
+    const htmlContent = wrapEmailAsHtml(
+      emailContent,
+      org.signature,
+      invoice.organizationId.toString(),
+      process.env.CONVEX_SITE_URL
+    );
+
     const graphBody: {
       message: {
         subject: string;
@@ -309,8 +315,8 @@ export const sendInvoiceEmail = action({
       message: {
         subject: emailSubject,
         body: {
-          contentType: "Text",
-          content: emailContent,
+          contentType: "HTML",
+          content: htmlContent,
         },
         toRecipients: [
           {

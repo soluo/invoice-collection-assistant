@@ -178,6 +178,13 @@ export function EmailPreviewModalFollowUp({
               <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
                 {reminder.data?.emailContent || "Contenu indisponible"}
               </div>
+              {/* Story 7.4: Display signature */}
+              {organization?.signature && (
+                <div
+                  className="mt-4 prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: organization.signature }}
+                />
+              )}
             </div>
 
             {/* Story 7.3: PDF attachment indicator (AC4) - clickable badge */}

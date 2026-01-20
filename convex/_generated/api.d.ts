@@ -20,6 +20,7 @@ import type * as invitationEmails from "../invitationEmails.js";
 import type * as invoiceEmails from "../invoiceEmails.js";
 import type * as invoiceNotes from "../invoiceNotes.js";
 import type * as invoices from "../invoices.js";
+import type * as lib_emailHtml from "../lib/emailHtml.js";
 import type * as lib_encoding from "../lib/encoding.js";
 import type * as lib_invoiceStatus from "../lib/invoiceStatus.js";
 import type * as oauth from "../oauth.js";
@@ -53,6 +54,7 @@ declare const fullApi: ApiFromModules<{
   invoiceEmails: typeof invoiceEmails;
   invoiceNotes: typeof invoiceNotes;
   invoices: typeof invoices;
+  "lib/emailHtml": typeof lib_emailHtml;
   "lib/encoding": typeof lib_encoding;
   "lib/invoiceStatus": typeof lib_invoiceStatus;
   oauth: typeof oauth;

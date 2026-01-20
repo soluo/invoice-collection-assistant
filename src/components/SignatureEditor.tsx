@@ -1,0 +1,356 @@
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useMutation } from "convex/react";
+import { Bold, ImageIcon, X, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { api } from "../../convex/_generated/api";
+import { Button } from "@/components/ui/button";
+import type { Id } from "../../convex/_generated/dataModel";
+
+interface SignatureEditorProps {
+  organizationId: Id<"organizations">;
+  initialSignature: string;
+  signatureImageId?: Id<"_storage">;
+}
+
+export function SignatureEditor({
+  organizationId,
+  initialSignature,
+  signatureImageId,
+}: SignatureEditorProps) {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const savedSelectionRef = useRef<Range | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [currentContent, setCurrentContent] = useState(initialSignature);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Mutations
+  const updateSignature = useMutation(api.organizations.updateSignature);
+  const generateUploadUrl = useMutation(api.organizations.generateSignatureImageUploadUrl);
+  const saveSignatureImage = useMutation(api.organizations.saveSignatureImage);
+  const removeSignatureImage = useMutation(api.organizations.removeSignatureImage);
+
+  // Get Convex site URL for image preview
+  // Derive from VITE_CONVEX_URL: https://xxx.convex.cloud -> https://xxx.convex.site
+  const convexUrl = import.meta.env.VITE_CONVEX_URL as string || "";
+  const convexSiteUrl = convexUrl.replace(".convex.cloud", ".convex.site");
+
+  // Initialize currentContent and editor from initialSignature
+  useEffect(() => {
+    if (initialSignature) {
+      const isHtml = initialSignature.trim().startsWith("<");
+      const htmlContent = isHtml
+        ? initialSignature
+        : initialSignature
+            .split("\n")
+            .filter((line) => line.trim())
+            .map((line) => `<p>${escapeHtml(line)}</p>`)
+            .join("");
+      setCurrentContent(htmlContent);
+      // Also update editor if it exists
+      if (editorRef.current) {
+        editorRef.current.innerHTML = htmlContent;
+      }
+    }
+  }, [initialSignature]);
+
+  // Escape HTML for safety
+  const escapeHtml = (text: string): string => {
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  };
+
+  // Handle editor content change
+  const handleInput = useCallback(() => {
+    if (editorRef.current) {
+      const newContent = editorRef.current.innerHTML;
+      setCurrentContent(newContent);
+      setHasChanges(newContent !== initialSignature);
+    }
+  }, [initialSignature]);
+
+  // Save current selection/cursor position
+  const saveSelection = () => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
+    }
+  };
+
+  // Handle bold command
+  const handleBold = () => {
+    document.execCommand("bold", false);
+    editorRef.current?.focus();
+  };
+
+  // Handle image upload click - save cursor position first
+  const handleImageClick = () => {
+    saveSelection();
+    fileInputRef.current?.click();
+  };
+
+  // Handle file selection
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ["image/png", "image/jpeg", "image/gif"];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Format non supporté. Utilisez PNG, JPG ou GIF.");
+      return;
+    }
+
+    // Validate file size (max 500KB)
+    const maxSize = 500 * 1024; // 500KB
+    if (file.size > maxSize) {
+      toast.error("L'image est trop volumineuse. Maximum 500 Ko.");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      // 1. Get upload URL
+      const uploadUrl = await generateUploadUrl();
+
+      // 2. Upload file
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const { storageId } = await response.json();
+
+      // 3. Save storage ID to organization
+      await saveSignatureImage({ storageId });
+
+      // 4. Insert image in editor
+      // Remove any existing image first
+      if (editorRef.current) {
+        const existingImages = editorRef.current.querySelectorAll("img");
+        existingImages.forEach((img) => img.parentElement?.remove() || img.remove());
+
+        // Create image element
+        const imgHtml = `<img src="${convexSiteUrl}/signature-image?orgId=${organizationId}" alt="Signature" style="max-width: 600px; height: auto;" />`;
+
+        // Try to insert at saved cursor position, otherwise append
+        if (savedSelectionRef.current && editorRef.current.contains(savedSelectionRef.current.commonAncestorContainer)) {
+          const selection = window.getSelection();
+          selection?.removeAllRanges();
+          selection?.addRange(savedSelectionRef.current);
+          document.execCommand("insertHTML", false, `<p>${imgHtml}</p>`);
+        } else {
+          // Fallback: append at the end
+          editorRef.current.innerHTML += `<p>${imgHtml}</p>`;
+        }
+        handleInput();
+        editorRef.current.focus();
+      }
+
+      toast.success("Image ajoutée");
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Erreur lors de l'upload de l'image");
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  // Handle remove image
+  const handleRemoveImage = async () => {
+    if (!confirm("Supprimer l'image de signature ?")) return;
+
+    setIsUploading(true);
+    try {
+      // Try to remove from storage (may fail if signatureImageId doesn't exist, that's OK)
+      try {
+        await removeSignatureImage();
+      } catch {
+        // Ignore error - image may already be removed from storage
+      }
+
+      // Remove image from editor HTML
+      if (editorRef.current) {
+        const images = editorRef.current.querySelectorAll("img");
+        images.forEach((img) => img.parentElement?.remove() || img.remove());
+        handleInput();
+      }
+
+      toast.success("Image supprimée");
+    } catch (error) {
+      console.error("Remove error:", error);
+      toast.error("Erreur lors de la suppression");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Handle save
+  const handleSave = async () => {
+    if (!editorRef.current) return;
+
+    setIsSaving(true);
+    try {
+      const htmlContent = editorRef.current.innerHTML;
+      await updateSignature({ signature: htmlContent });
+      setHasChanges(false);
+      setIsEditing(false);
+      toast.success("Signature enregistrée");
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("Erreur lors de l'enregistrement");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle cancel editing
+  const handleCancelEdit = () => {
+    // Reset content to initial signature
+    const isHtml = initialSignature.trim().startsWith("<");
+    const htmlContent = isHtml
+      ? initialSignature
+      : initialSignature
+          .split("\n")
+          .filter((line) => line.trim())
+          .map((line) => `<p>${escapeHtml(line)}</p>`)
+          .join("");
+    setCurrentContent(htmlContent);
+    // Also reset editor
+    if (editorRef.current) {
+      editorRef.current.innerHTML = htmlContent;
+    }
+    setHasChanges(false);
+    setIsEditing(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Edit mode */}
+      <div className={isEditing ? "" : "hidden"}>
+        {/* Toolbar */}
+        <div className="flex items-center gap-2 border-b border-gray-200 pb-2 mb-4">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleBold}
+            title="Gras"
+          >
+            <Bold className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleImageClick}
+            disabled={isUploading}
+            title="Ajouter une image"
+          >
+            {isUploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ImageIcon className="h-4 w-4" />
+            )}
+          </Button>
+          {/* Show remove button if signatureImageId exists OR if content contains an image */}
+          {(signatureImageId || currentContent.includes("<img")) && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleRemoveImage}
+              disabled={isUploading}
+              title="Supprimer l'image"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/gif"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+        </div>
+
+        {/* Editor */}
+        <div
+          ref={editorRef}
+          contentEditable
+          onInput={handleInput}
+          className="min-h-[120px] border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white prose prose-sm max-w-none"
+          style={{ whiteSpace: "pre-wrap" }}
+        />
+
+        {/* Action buttons */}
+        <div className="flex justify-end gap-2 mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCancelEdit}
+            disabled={isSaving}
+          >
+            Annuler
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || !hasChanges}
+            size="sm"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Enregistrement...
+              </>
+            ) : (
+              "Enregistrer"
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Preview mode */}
+      <div className={isEditing ? "hidden" : ""}>
+        {currentContent ? (
+          <div
+            className="prose prose-sm max-w-none"
+            dangerouslySetInnerHTML={{ __html: currentContent }}
+          />
+        ) : (
+          <p className="text-sm text-gray-400 italic">
+            Aucune signature configurée
+          </p>
+        )}
+
+        {/* Edit button */}
+        <div className="flex justify-end mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsEditing(true)}
+          >
+            Modifier
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

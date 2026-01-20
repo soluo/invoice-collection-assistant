@@ -59,6 +59,9 @@ const applicationTables = {
 
     // ✅ Story 7.3 : Pièces jointes aux relances
     attachPdfToReminders: v.optional(v.boolean()), // Default true via code
+
+    // ✅ Story 7.4 : Signature email avec image
+    signatureImageId: v.optional(v.id("_storage")), // Image de signature uploadée
   }),
 
   invitations: defineTable({

@@ -1,8 +1,56 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
 
 const http = httpRouter();
+
+/**
+ * Story 7.4: Route publique pour servir l'image de signature d'une organisation
+ * URL: /signature-image?orgId={orgId}
+ */
+http.route({
+  path: "/signature-image",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const orgId = url.searchParams.get("orgId");
+
+    if (!orgId) {
+      return new Response("Organization ID required", { status: 400 });
+    }
+
+    try {
+      // Get organization's signature image
+      const org = await ctx.runQuery(internal.organizations.getSignatureImageForHttp, {
+        organizationId: orgId as Id<"organizations">,
+      });
+
+      if (!org?.signatureImageId) {
+        return new Response("Not found", { status: 404 });
+      }
+
+      // Fetch image from storage
+      const imageBlob = await ctx.storage.get(org.signatureImageId);
+      if (!imageBlob) {
+        return new Response("Not found", { status: 404 });
+      }
+
+      // Determine content type from blob type or default to PNG
+      const contentType = imageBlob.type || "image/png";
+
+      return new Response(imageBlob, {
+        headers: {
+          "Content-Type": contentType,
+          "Cache-Control": "public, max-age=3600",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    } catch {
+      return new Response("Not found", { status: 404 });
+    }
+  }),
+});
 
 /**
  * Route callback OAuth Microsoft

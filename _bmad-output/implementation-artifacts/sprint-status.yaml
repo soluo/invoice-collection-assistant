@@ -108,7 +108,7 @@ development_status:
   7-1-template-envoi-initial-facture: done
   7-2-template-email-invitation: done
   7-3-pieces-jointes-aux-relances: done
-  7-4-signature-email-avec-image: ready-for-dev
+  7-4-signature-email-avec-image: review
   epic-7-retrospective: optional
 
   # Epic 8: Gestion Chèques Avancée (Priority: Medium)

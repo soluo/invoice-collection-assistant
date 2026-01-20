@@ -218,10 +218,14 @@ export const sendInvitationEmail = action({
       .replace(/{lien_invitation}/g, invitationUrl)
       .replace(/{inviteur}/g, inviterName);
 
-    // Add signature if available
-    if (org.signature) {
-      emailContent += `\n\n${org.signature}`;
-    }
+    // Story 7.4: Wrap email as HTML with signature
+    const { wrapEmailAsHtml } = await import("./lib/emailHtml");
+    const htmlContent = wrapEmailAsHtml(
+      emailContent,
+      org.signature || "",
+      invitation.organizationId.toString(),
+      process.env.CONVEX_SITE_URL
+    );
 
     // 8. Send email via Microsoft Graph API
     try {
@@ -237,8 +241,8 @@ export const sendInvitationEmail = action({
             message: {
               subject: emailSubject,
               body: {
-                contentType: "Text",
-                content: emailContent,
+                contentType: "HTML",
+                content: htmlContent,
               },
               toRecipients: [
                 {

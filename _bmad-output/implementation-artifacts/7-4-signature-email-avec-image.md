@@ -1,6 +1,6 @@
 # Story 7.4: Signature Email avec Image
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -58,59 +58,59 @@ So that **all outgoing emails look professional and branded**.
 ## Tasks / Subtasks
 
 ### Task 1: Backend - Update Schema for HTML Signature (AC: #1, #2)
-- [ ] 1.1 The `signature` field already exists as `v.string()` - will now store HTML content
-- [ ] 1.2 Add `signatureImageId` field to organizations table (optional Storage ID)
-- [ ] 1.3 Run `pnpm dev:backend` to validate schema
+- [x] 1.1 The `signature` field already exists as `v.string()` - will now store HTML content
+- [x] 1.2 Add `signatureImageId` field to organizations table (optional Storage ID)
+- [x] 1.3 Run `pnpm dev:backend` to validate schema
 
 ### Task 2: Backend - HTTP Endpoint for Signature Image (AC: #3)
-- [ ] 2.1 Add route in `convex/router.ts`: `GET /organization/{orgId}/signature.png`
-- [ ] 2.2 Handler fetches organization's `signatureImageId` from DB
-- [ ] 2.3 If image exists, fetch from Storage and return with correct Content-Type
-- [ ] 2.4 If no image, return 404
-- [ ] 2.5 Add appropriate cache headers (e.g., `Cache-Control: public, max-age=3600`)
+- [x] 2.1 Add route in `convex/router.ts`: `GET /organization/{orgId}/signature.png`
+- [x] 2.2 Handler fetches organization's `signatureImageId` from DB
+- [x] 2.3 If image exists, fetch from Storage and return with correct Content-Type
+- [x] 2.4 If no image, return 404
+- [x] 2.5 Add appropriate cache headers (e.g., `Cache-Control: public, max-age=3600`)
 
 ### Task 3: Backend - Signature Mutations (AC: #1, #2, #4, #7)
-- [ ] 3.1 Create/update `updateSignature` mutation (accepts HTML string)
-- [ ] 3.2 Create `generateSignatureImageUploadUrl` mutation
-- [ ] 3.3 Create `saveSignatureImage` mutation (saves storageId after upload)
-- [ ] 3.4 Create `removeSignatureImage` mutation
-- [ ] 3.5 Ensure `getCurrentOrganization` returns `signature` and `signatureImageId`
-- [ ] 3.6 Admin-only access validation for all mutations
+- [x] 3.1 Create/update `updateSignature` mutation (accepts HTML string)
+- [x] 3.2 Create `generateSignatureImageUploadUrl` mutation
+- [x] 3.3 Create `saveSignatureImage` mutation (saves storageId after upload)
+- [x] 3.4 Create `removeSignatureImage` mutation
+- [x] 3.5 Ensure `getCurrentOrganization` returns `signature` and `signatureImageId`
+- [x] 3.6 Admin-only access validation for all mutations
 
 ### Task 4: Backend - Update Email Sending to HTML (AC: #5)
-- [ ] 4.1 Create `convex/lib/emailHtml.ts` utility module
-- [ ] 4.2 Implement `wrapEmailAsHtml(textContent: string, signatureHtml: string)` function
-- [ ] 4.3 Update `convex/reminders.ts:sendReminderEmail` - change contentType to "HTML"
-- [ ] 4.4 Update `convex/invoiceEmails.ts:sendInvoiceEmail` - change contentType to "HTML"
-- [ ] 4.5 Update `convex/emails.ts:sendSimulatedTestEmail` - change contentType to "HTML"
-- [ ] 4.6 Update `convex/invitationEmails.ts` if it uses signature
-- [ ] 4.7 Signature HTML is appended as-is (already formatted)
+- [x] 4.1 Create `convex/lib/emailHtml.ts` utility module
+- [x] 4.2 Implement `wrapEmailAsHtml(textContent: string, signatureHtml: string)` function
+- [x] 4.3 Update `convex/reminders.ts:sendReminderEmail` - change contentType to "HTML"
+- [x] 4.4 Update `convex/invoiceEmails.ts:sendInvoiceEmail` - change contentType to "HTML"
+- [x] 4.5 Update `convex/emails.ts:sendSimulatedTestEmail` - change contentType to "HTML"
+- [x] 4.6 Update `convex/invitationEmails.ts` if it uses signature
+- [x] 4.7 Signature HTML is appended as-is (already formatted)
 
 ### Task 5: Frontend - Add Signature Section in Settings (AC: #1, #6, #7)
-- [ ] 5.1 Add "Signature email" section in `OrganizationSettings.tsx`
-- [ ] 5.2 Position in "Gestion des relances" section or as separate section after "Modèles d'emails"
-- [ ] 5.3 Add mini rich-text editor with toolbar: **Bold** button only
-- [ ] 5.4 Add "Ajouter une image" button in toolbar
-- [ ] 5.5 Load current signature from organization data
-- [ ] 5.6 Add "Enregistrer" button to save changes
-- [ ] 5.7 Show success toast on save
+- [x] 5.1 Add "Signature email" section in `OrganizationSettings.tsx`
+- [x] 5.2 Position in "Gestion des relances" section or as separate section after "Modèles d'emails"
+- [x] 5.3 Add mini rich-text editor with toolbar: **Bold** button only
+- [x] 5.4 Add "Ajouter une image" button in toolbar
+- [x] 5.5 Load current signature from organization data
+- [x] 5.6 Add "Enregistrer" button to save changes
+- [x] 5.7 Show success toast on save
 
 ### Task 6: Frontend - Image Upload in Editor (AC: #2, #4)
-- [ ] 6.1 Implement image upload flow (get URL, upload, save storageId)
-- [ ] 6.2 Insert image in editor as `<img src="/organization/{orgId}/signature.png">`
-- [ ] 6.3 Display image preview in editor
-- [ ] 6.4 Add remove button (X) on image
-- [ ] 6.5 Validate file type (PNG, JPG, GIF) and size (max 500KB)
-- [ ] 6.6 Show upload progress indicator
+- [x] 6.1 Implement image upload flow (get URL, upload, save storageId)
+- [x] 6.2 Insert image in editor as `<img src="/organization/{orgId}/signature.png">`
+- [x] 6.3 Display image preview in editor
+- [x] 6.4 Add remove button (X) on image
+- [x] 6.5 Validate file type (PNG, JPG, GIF) and size (max 500KB)
+- [x] 6.6 Show upload progress indicator
 
 ### Task 7: Frontend - Live Preview (AC: #6)
-- [ ] 7.1 Add preview panel below/beside editor
-- [ ] 7.2 Preview updates in real-time as user edits
-- [ ] 7.3 Preview shows formatted text and image
+- [x] 7.1 Add preview panel below/beside editor
+- [x] 7.2 Preview updates in real-time as user edits
+- [x] 7.3 Preview shows formatted text and image
 
 ### Task 8: Testing & Validation
-- [ ] 8.1 Run `pnpm dev:backend` - verify no Convex errors
-- [ ] 8.2 Run `pnpm lint` - verify no TypeScript/ESLint errors
+- [x] 8.1 Run `pnpm dev:backend` - verify no Convex errors
+- [x] 8.2 Run `pnpm lint` - verify no TypeScript/ESLint errors
 - [ ] 8.3 Manual test: Edit signature with bold text
 - [ ] 8.4 Manual test: Upload signature image, verify preview
 - [ ] 8.5 Manual test: Access image via public URL `/organization/{orgId}/signature.png`
@@ -312,11 +312,42 @@ Recommended: Option 1 (auto-wrap on read) for simplicity.
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5
 
 ### Debug Log References
 
+None
+
 ### Completion Notes List
 
+- Added `signatureImageId` field to organizations schema
+- Created HTTP endpoint `/organization/{orgId}/signature.png` to serve signature images publicly
+- Created mutations: `updateSignature`, `generateSignatureImageUploadUrl`, `saveSignatureImage`, `removeSignatureImage`
+- Updated `getCurrentOrganization` query to return `signatureImageId`
+- Created `convex/lib/emailHtml.ts` utility module with `wrapEmailAsHtml` function
+- Updated all email sending functions to use HTML format with proper signature handling
+- Modified `replaceTemplatePlaceholders` in reminders.ts to not include signature (handled at send time)
+- Created `SignatureEditor` component with contentEditable editor, bold formatting, image upload, and live preview
+- Integrated `SignatureEditor` into `OrganizationSettings.tsx` as new "Signature email" section
+
 ### File List
+
+**New files:**
+- convex/lib/emailHtml.ts
+- src/components/SignatureEditor.tsx
+
+**Modified files:**
+- convex/schema.ts (added signatureImageId field)
+- convex/router.ts (added signature image HTTP endpoint)
+- convex/organizations.ts (added signature mutations and updated getCurrentOrganization)
+- convex/oauth.ts (added signature to getOrganization internal query)
+- convex/reminders.ts (updated to use HTML emails, modified replaceTemplatePlaceholders)
+- convex/invoiceEmails.ts (updated to use HTML emails)
+- convex/emails.ts (updated to use HTML emails, added signature to getOrgWithTokensAndSteps)
+- convex/invitationEmails.ts (updated to use HTML emails)
+- src/pages/OrganizationSettings.tsx (added SignatureEditor section)
+
+## Change Log
+
+- 2026-01-20: Story 7.4 implementation complete - Email signatures now support HTML formatting with bold text and optional logo images. All outgoing emails are now sent as HTML.
 

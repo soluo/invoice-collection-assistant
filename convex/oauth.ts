@@ -190,6 +190,8 @@ export const getOrganization = internalQuery({
       emailTokenExpiresAt: v.optional(v.number()),
       // Story 7.3: Include PDF attachment setting
       attachPdfToReminders: v.optional(v.boolean()),
+      // Story 7.4: Include signature for HTML emails
+      signature: v.string(),
     }),
     v.null()
   ),
@@ -202,6 +204,8 @@ export const getOrganization = internalQuery({
       emailTokenExpiresAt: org.emailTokenExpiresAt,
       // Story 7.3: Include PDF attachment setting (default true)
       attachPdfToReminders: org.attachPdfToReminders,
+      // Story 7.4: Include signature for HTML emails
+      signature: org.signature,
     };
   },
 });
