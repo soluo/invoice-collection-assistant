@@ -182,6 +182,7 @@ function mapSignInError(error: unknown): string {
 function normaliseMessage(rawMessage: string): string {
   const lower = rawMessage.toLowerCase();
 
+  // Erreurs d'authentification connues (dev) → message user-friendly
   if (
     lower.includes("invalid password") ||
     lower.includes("invalidaccountid") ||
@@ -193,9 +194,17 @@ function normaliseMessage(rawMessage: string): string {
     return "Identifiants incorrects";
   }
 
-  if (rawMessage) {
-    return rawMessage;
+  // Erreurs Convex auth:signIn en prod → identifiants incorrects
+  // Ex: "[CONVEX A(auth:signIn)] [Request ID: ...] Server Error Called by client"
+  if (lower.includes("auth:signin")) {
+    return "Identifiants incorrects";
   }
 
+  // Autres erreurs Convex (vraies erreurs techniques)
+  if (lower.includes("[convex") || lower.includes("server error")) {
+    return "Une erreur technique est survenue. Veuillez réessayer.";
+  }
+
+  // Fallback
   return "Une erreur est survenue. Veuillez réessayer.";
 }
