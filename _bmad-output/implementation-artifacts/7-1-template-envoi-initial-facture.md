@@ -1,6 +1,6 @@
 # Story 7.1: Template Envoi Initial Facture
 
-Status: review
+Status: done
 
 ## Story
 

@@ -116,6 +116,10 @@ export function InvoiceEditModal({ invoice, onClose }: InvoiceEditModalProps) {
               value={formData.contactEmail}
               onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
               placeholder="email@exemple.fr"
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
+              data-form-type="other"
             />
           </div>
 

@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip } from "@/components/ui/simple-tooltip";
 import { Mail, AlertTriangle, Loader2, Settings, FileText } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { toast } from "sonner";
@@ -37,6 +38,10 @@ export function SendInvoiceEmailModal({
   const invoice = useQuery(api.invoices.getById, { invoiceId });
   const organization = useQuery(api.organizations.getCurrentOrganization);
   const emailTemplate = useQuery(api.organizations.getInvoiceEmailTemplate);
+  const pdfUrl = useQuery(
+    api.invoices.getPdfUrl,
+    invoice?.pdfStorageId ? { storageId: invoice.pdfStorageId } : "skip"
+  );
   const sendInvoiceEmail = useAction(api.invoiceEmails.sendInvoiceEmail);
 
   // Determine blocking issues
@@ -132,53 +137,77 @@ export function SendInvoiceEmailModal({
         ) : (
           <>
             {/* Alerts for issues */}
-            <div className="space-y-3">
-              {/* AC5: Missing contact email - blocking */}
-              {missingContactEmail && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    Ajoutez un email de contact avant d'envoyer la facture.
-                  </AlertDescription>
-                </Alert>
-              )}
+            {(missingContactEmail || missingOAuth || (missingPdf && !hasBlockingIssue)) && (
+              <div className="space-y-3 mb-4">
+                {/* AC5: Missing contact email - blocking */}
+                {missingContactEmail && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      Ajoutez un email de contact avant d'envoyer la facture.
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-              {/* AC8: OAuth not connected - blocking */}
-              {missingOAuth && !missingContactEmail && (
-                <Alert>
-                  <Settings className="h-4 w-4" />
-                  <AlertDescription className="flex items-center justify-between gap-4">
-                    <span>Connectez votre compte email dans les paramètres.</span>
-                    <NavLink to="/settings#email-connection-section">
-                      <Button size="sm" variant="outline">
-                        <Settings className="h-3 w-3 mr-1" />
-                        Paramètres
-                      </Button>
-                    </NavLink>
-                  </AlertDescription>
-                </Alert>
-              )}
+                {/* AC8: OAuth not connected - blocking */}
+                {missingOAuth && !missingContactEmail && (
+                  <Alert>
+                    <Settings className="h-4 w-4" />
+                    <AlertDescription className="flex items-center justify-between gap-4">
+                      <span>Connectez votre compte email dans les paramètres.</span>
+                      <NavLink to="/settings#email-connection-section">
+                        <Button size="sm" variant="outline">
+                          <Settings className="h-3 w-3 mr-1" />
+                          Paramètres
+                        </Button>
+                      </NavLink>
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-              {/* AC6: No PDF - warning only */}
-              {missingPdf && !hasBlockingIssue && (
-                <Alert className="bg-amber-50 border-amber-200 text-amber-800 [&>svg]:text-amber-600">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription className="text-amber-800">
-                    Aucun PDF attaché. L'email sera envoyé sans pièce jointe.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
+                {/* AC6: No PDF - warning only */}
+                {missingPdf && !hasBlockingIssue && (
+                  <Alert className="bg-amber-50 border-amber-200 text-amber-800 [&>svg]:text-amber-600">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="text-amber-800">
+                      Aucun PDF attaché. L'email sera envoyé sans pièce jointe.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
 
             {/* Main content - always visible but may be disabled */}
-            <div className="space-y-4 py-4">
+            <div className="space-y-4">
+              {/* Sender */}
+              <div className="space-y-2">
+                <Label>Expéditeur</Label>
+                <p className="text-gray-900">
+                  {organization.emailAccountInfo ? (
+                    <>
+                      {organization.senderName || organization.emailAccountInfo.name}{" "}
+                      <span className="text-gray-500">
+                        &lt;{organization.emailAccountInfo.email}&gt;
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-gray-400 italic">Non configuré</span>
+                  )}
+                </p>
+              </div>
+
               {/* Recipient */}
-              <div>
-                <Label className="text-sm font-medium text-gray-500">
-                  Destinataire
-                </Label>
-                <p className="text-gray-900 mt-1">
-                  {invoice.contactEmail || (
+              <div className="space-y-2">
+                <Label>Destinataire</Label>
+                <p className="text-gray-900">
+                  {invoice.contactEmail ? (
+                    <>
+                      {invoice.contactName || invoice.clientName}{" "}
+                      <span className="text-gray-500">
+                        &lt;{invoice.contactEmail}&gt;
+                      </span>
+                    </>
+                  ) : (
                     <span className="text-gray-400 italic">Email manquant</span>
                   )}
                 </p>
@@ -216,15 +245,22 @@ export function SendInvoiceEmailModal({
               </div>
 
               {/* PDF attachment indicator */}
-              <div>
-                <Label className="text-sm font-medium text-gray-500 mb-2 block">
-                  Pièce jointe
-                </Label>
+              <div className="flex items-center gap-3">
+                <Label className="mb-0">Pièce jointe</Label>
                 {invoice.pdfStorageId ? (
-                  <Badge variant="secondary" className="gap-2 py-1.5 px-3">
-                    <FileText className="h-4 w-4" />
-                    facture-{invoice.invoiceNumber}.pdf
-                  </Badge>
+                  <Tooltip content="Afficher la facture">
+                    <a
+                      href={pdfUrl || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={pdfUrl ? "inline-block" : "inline-block pointer-events-none"}
+                    >
+                      <Badge variant="secondary" className="gap-2 py-1.5 px-3 hover:bg-gray-200 transition-colors cursor-pointer">
+                        <FileText className="h-4 w-4" />
+                        facture-{invoice.invoiceNumber}.pdf
+                      </Badge>
+                    </a>
+                  </Tooltip>
                 ) : (
                   <span className="text-sm text-gray-400 italic">
                     Aucun PDF attaché

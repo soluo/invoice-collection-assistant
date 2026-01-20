@@ -8,6 +8,20 @@ import {
 } from "./reminderDefaults";
 
 /**
+ * Convert ArrayBuffer to base64 string (web-compatible, no Buffer)
+ */
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000; // 32KB chunks to avoid call stack issues
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
+/**
  * Story 7.1: Internal query to get invoice data for sending
  */
 export const getInvoiceForEmail = internalQuery({
@@ -19,6 +33,7 @@ export const getInvoiceForEmail = internalQuery({
       _id: v.id("invoices"),
       organizationId: v.id("organizations"),
       clientName: v.string(),
+      contactName: v.optional(v.string()),
       contactEmail: v.optional(v.string()),
       invoiceNumber: v.string(),
       amountTTC: v.number(),
@@ -38,6 +53,7 @@ export const getInvoiceForEmail = internalQuery({
       _id: invoice._id,
       organizationId: invoice.organizationId,
       clientName: invoice.clientName,
+      contactName: invoice.contactName,
       contactEmail: invoice.contactEmail,
       invoiceNumber: invoice.invoiceNumber,
       amountTTC: invoice.amountTTC,
@@ -88,6 +104,7 @@ type InvoiceForEmail = {
   _id: string;
   organizationId: string;
   clientName: string;
+  contactName?: string;
   contactEmail?: string;
   invoiceNumber: string;
   amountTTC: number;
@@ -273,7 +290,7 @@ export const sendInvoiceEmail = action({
           const pdfResponse = await fetch(pdfUrl);
           if (pdfResponse.ok) {
             const pdfBuffer = await pdfResponse.arrayBuffer();
-            const base64Content = Buffer.from(pdfBuffer).toString("base64");
+            const base64Content = arrayBufferToBase64(pdfBuffer);
 
             attachments.push({
               "@odata.type": "#microsoft.graph.fileAttachment",
@@ -290,11 +307,14 @@ export const sendInvoiceEmail = action({
     }
 
     // 7. Send email via Microsoft Graph API
+    // Use contact name if available for better email display
+    const recipientName = invoice.contactName || invoice.clientName;
+
     const graphBody: {
       message: {
         subject: string;
         body: { contentType: string; content: string };
-        toRecipients: Array<{ emailAddress: { address: string } }>;
+        toRecipients: Array<{ emailAddress: { address: string; name?: string } }>;
         attachments?: typeof attachments;
       };
       saveToSentItems: boolean;
@@ -309,6 +329,7 @@ export const sendInvoiceEmail = action({
           {
             emailAddress: {
               address: invoice.contactEmail,
+              name: recipientName,
             },
           },
         ],

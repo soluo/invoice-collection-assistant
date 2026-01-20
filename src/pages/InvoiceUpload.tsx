@@ -545,6 +545,10 @@ export function InvoiceUpload({ onSuccess }: InvoiceUploadProps) {
                     onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
                     className="w-full"
                     disabled={isExtracting}
+                    autoComplete="off"
+                    data-1p-ignore
+                    data-lpignore="true"
+                    data-form-type="other"
                   />
                 </div>
 
