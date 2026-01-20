@@ -250,13 +250,13 @@ This document provides the complete epic and story breakdown for invoice-collect
 
 ### Epic 5: Email Test & Admin Simulation (Priority 3 + NEW Demo)
 
-**Goal:** Admin can test emails and simulate reminders to demonstrate the system to clients.
+**Goal:** Admin can test emails, simulate reminders, and enable automatic email sending.
 
-**User Value:** Confidence in the system + powerful demo capability - test emails before go-live, and show clients in 5 minutes what would happen over 30 days.
+**User Value:** Confidence in the system + powerful demo capability - test emails before go-live, show clients in 5 minutes what would happen over 30 days, and enable fully automatic reminder sending.
 
-**FRs covered:** FR27, FR29, FR30, FR31, FR32
+**FRs covered:** FR27, FR29, FR30, FR31, FR32 + NFR1 (automatic send at configured time)
 
-**Implementation Notes:** Admin-only features. Simulation reuses /follow-up page with date picker (minimal new code). Test send reuses OAuth email logic.
+**Implementation Notes:** Admin-only features. Simulation reuses /follow-up page with date picker (minimal new code). Test send reuses OAuth email logic. Story 5.4 implements the actual automatic sending when `autoSendEnabled` is true.
 
 ---
 
@@ -790,6 +790,47 @@ So that **I can demonstrate real emails to clients and leave no simulation data 
 **Given** I change the date picker back to "today"
 **When** the view refreshes
 **Then** I see only real reminders (simulations are hidden but not deleted until cleanup)
+
+---
+
+### Story 5.4: Envoi Automatique des Relances Email
+
+As an **admin**,
+I want **reminder emails to be sent automatically when auto-send is enabled**,
+So that **I don't have to manually send each reminder and the system handles follow-ups autonomously**.
+
+**Context:** Currently, the cron job at 4h (Paris time) generates reminder records with `completionStatus: "pending"`, but it does NOT actually send the emails. The "Activer l'envoi automatique des relances" toggle in settings updates `autoSendEnabled` but this flag is not used anywhere in the backend.
+
+**Acceptance Criteria:**
+
+**Given** I am an admin and I enable "Activer l'envoi automatique des relances" in settings
+**When** the daily cron generates pending email reminders
+**Then** emails are automatically sent at the configured time (`reminderSendTime`)
+**And** only organizations with `autoSendEnabled: true` have their emails sent
+**And** reminders are marked as "completed" after successful send
+
+**Given** auto-send is enabled and a reminder email fails to send
+**When** the error is detected
+**Then** the reminder is marked as "failed" with error details
+**And** I can see the failed reminders in the /follow-up page
+**And** I can manually retry sending from the UI
+
+**Given** auto-send is disabled (`autoSendEnabled: false`)
+**When** the cron runs
+**Then** reminders are generated but NOT sent automatically
+**And** they remain in "pending" status for manual review and send
+
+**Given** there are pending email reminders scheduled for a specific time
+**When** the configured `reminderSendTime` is reached
+**Then** a second cron job triggers the actual email sending
+**And** only reminders with `reminderDate` matching today and `reminderSendTime` are processed
+
+**Technical Notes:**
+- Option 1: Add a second cron that runs at a flexible time (e.g., every hour between 6h-22h) and checks for pending reminders whose `reminderDate` has passed
+- Option 2: The existing 4h cron schedules individual emails via `ctx.scheduler.runAt()` for the configured `reminderSendTime`
+- Must check `org.autoSendEnabled` before sending
+- Must handle OAuth token refresh before sending batch
+- Consider rate limiting to avoid Microsoft Graph API throttling
 
 ---
 
