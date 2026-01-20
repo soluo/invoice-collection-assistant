@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useMutation } from "convex/react";
-import { Bold, ImageIcon, X, Loader2 } from "lucide-react";
+import { Bold, ImageIcon, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ export function SignatureEditor({
   const [hasChanges, setHasChanges] = useState(false);
   const [currentContent, setCurrentContent] = useState(initialSignature);
   const [isEditing, setIsEditing] = useState(false);
+  const [hoveredImage, setHoveredImage] = useState<{ element: HTMLImageElement; rect: DOMRect } | null>(null);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
 
   // Mutations
   const updateSignature = useMutation(api.organizations.updateSignature);
@@ -217,6 +219,52 @@ export function SignatureEditor({
     }
   };
 
+  // Check if content has an image
+  const hasImage = currentContent.includes("<img");
+
+  // Handle image hover in editor
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || !isEditing) return;
+
+    const handleMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "IMG") {
+        const img = target as HTMLImageElement;
+        const rect = img.getBoundingClientRect();
+        const containerRect = editorContainerRef.current?.getBoundingClientRect();
+        if (containerRect) {
+          setHoveredImage({
+            element: img,
+            rect: new DOMRect(
+              rect.left - containerRect.left,
+              rect.top - containerRect.top,
+              rect.width,
+              rect.height
+            ),
+          });
+        }
+      }
+    };
+
+    const handleMouseOut = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const relatedTarget = e.relatedTarget as HTMLElement;
+      // Only clear if leaving the image and not entering the delete button
+      if (target.tagName === "IMG" && !relatedTarget?.closest(".image-delete-overlay")) {
+        setHoveredImage(null);
+      }
+    };
+
+    editor.addEventListener("mouseover", handleMouseOver);
+    editor.addEventListener("mouseout", handleMouseOut);
+
+    return () => {
+      editor.removeEventListener("mouseover", handleMouseOver);
+      editor.removeEventListener("mouseout", handleMouseOut);
+    };
+  }, [isEditing]);
+
   // Handle cancel editing
   const handleCancelEdit = () => {
     // Reset content to initial signature
@@ -258,28 +306,14 @@ export function SignatureEditor({
             size="sm"
             onClick={handleImageClick}
             disabled={isUploading}
-            title="Ajouter une image"
           >
             {isUploading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
-              <ImageIcon className="h-4 w-4" />
+              <ImageIcon className="h-4 w-4 mr-2" />
             )}
+            {hasImage ? "Remplacer l'image" : "Ajouter une image"}
           </Button>
-          {/* Show remove button if signatureImageId exists OR if content contains an image */}
-          {(signatureImageId || currentContent.includes("<img")) && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleRemoveImage}
-              disabled={isUploading}
-              title="Supprimer l'image"
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
           <input
             ref={fileInputRef}
             type="file"
@@ -289,14 +323,38 @@ export function SignatureEditor({
           />
         </div>
 
-        {/* Editor */}
-        <div
-          ref={editorRef}
-          contentEditable
-          onInput={handleInput}
-          className="min-h-[120px] border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white prose prose-sm max-w-none"
-          style={{ whiteSpace: "pre-wrap" }}
-        />
+        {/* Editor with image overlay */}
+        <div ref={editorContainerRef} className="relative">
+          <div
+            ref={editorRef}
+            contentEditable
+            onInput={handleInput}
+            className="min-h-[120px] border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white prose prose-sm max-w-none"
+            style={{ whiteSpace: "pre-wrap" }}
+          />
+
+          {/* Delete button overlay on image hover */}
+          {hoveredImage && (
+            <div
+              className="image-delete-overlay absolute pointer-events-auto"
+              style={{
+                left: hoveredImage.rect.left + hoveredImage.rect.width / 2 - 20,
+                top: hoveredImage.rect.top + hoveredImage.rect.height / 2 - 20,
+              }}
+              onMouseLeave={() => setHoveredImage(null)}
+            >
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                disabled={isUploading}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-red-600 hover:bg-red-700 text-white shadow-lg transition-colors"
+                title="Supprimer l'image"
+              >
+                <Trash2 className="h-5 w-5" />
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Action buttons */}
         <div className="flex justify-end gap-2 mt-4">
