@@ -3,21 +3,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 import { hasAdminRole } from "./permissions";
-
-/**
- * Story 7.3: Convert ArrayBuffer to base64 string (web-compatible, no Buffer)
- * Copied from invoiceEmails.ts for consistency
- */
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 0x8000; // 32KB chunks to avoid call stack issues
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-    binary += String.fromCharCode(...chunk);
-  }
-  return btoa(binary);
-}
+import { arrayBufferToBase64 } from "./lib/encoding";
 
 /**
  * Send a test email to verify OAuth configuration is working

@@ -10,21 +10,7 @@ import { getUserWithOrg, assertCanAccessInvoice, isAdmin } from "./permissions";
 import { internal, api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { getReminderNumber, getReminderStatusFromNumber } from "./lib/invoiceStatus";
-
-/**
- * Story 7.3: Convert ArrayBuffer to base64 string (web-compatible, no Buffer)
- * Copied from invoiceEmails.ts for consistency
- */
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 0x8000; // 32KB chunks to avoid call stack issues
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-    binary += String.fromCharCode(...chunk);
-  }
-  return btoa(binary);
-}
+import { arrayBufferToBase64 } from "./lib/encoding";
 
 /**
  * ✅ V2 Phase 2.8 : Créer une relance

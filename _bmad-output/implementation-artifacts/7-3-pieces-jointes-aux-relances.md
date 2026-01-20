@@ -1,6 +1,6 @@
 # Story 7.3: Pièces Jointes aux Relances
 
-Status: in-progress
+Status: done
 
 ## Story
 
@@ -352,6 +352,8 @@ N/A - No errors encountered
 - `convex/reminders.ts` - Modified `sendReminderEmail` to attach PDF, updated `getReminderForSending` and `listForOrganization`
 - `convex/emails.ts` - Modified `sendSimulatedTestEmail` to attach PDF
 - `convex/oauth.ts` - Extended `getOrganization` to include `attachPdfToReminders`
+- `convex/followUp.ts` - Added `pdfStorageId` to `getUpcomingReminders` and `generateSimulatedReminders` queries
+- `convex/lib/encoding.ts` - Extracted shared `arrayBufferToBase64` utility (code review fix)
 
 **Frontend files modified:**
 - `src/pages/OrganizationSettings.tsx` - Added toggle in "Gestion des relances" section
@@ -361,3 +363,6 @@ N/A - No errors encountered
 
 - 2026-01-20: Story created via create-story workflow
 - 2026-01-20: Story implemented - all code changes complete, lint passes
+- 2026-01-20: Code review completed - 2 MEDIUM issues fixed:
+  - Added missing `convex/followUp.ts` to File List
+  - Extracted `arrayBufferToBase64` to shared `convex/lib/encoding.ts` (removes 3x code duplication)

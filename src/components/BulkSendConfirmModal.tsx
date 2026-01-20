@@ -3,7 +3,14 @@ import { useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { X, Mail, AlertTriangle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Mail, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 interface BulkSendConfirmModalProps {
@@ -70,25 +77,14 @@ export function BulkSendConfirmModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-      <div className="bg-white w-full max-w-2xl rounded-lg shadow-lg overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Confirmer l'envoi en masse
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-            disabled={isSending}
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+    <Dialog open={true} onOpenChange={(open) => !open && !isSending && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Confirmer l'envoi en masse</DialogTitle>
+        </DialogHeader>
 
         {/* Body */}
-        <div className="px-6 py-5 space-y-4">
+        <div className="space-y-4">
           {/* Warning */}
           <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg p-4">
             <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -149,7 +145,7 @@ export function BulkSendConfirmModal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
+        <DialogFooter>
           <Button
             type="button"
             onClick={onClose}
@@ -170,8 +166,8 @@ export function BulkSendConfirmModal({
               ? "Envoi en cours..."
               : `Confirmer l'envoi (${realReminders.length})`}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

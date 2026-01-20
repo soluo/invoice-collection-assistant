@@ -6,20 +6,7 @@ import {
   DEFAULT_INVOICE_EMAIL_SUBJECT,
   DEFAULT_INVOICE_EMAIL_TEMPLATE,
 } from "./reminderDefaults";
-
-/**
- * Convert ArrayBuffer to base64 string (web-compatible, no Buffer)
- */
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 0x8000; // 32KB chunks to avoid call stack issues
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-    binary += String.fromCharCode(...chunk);
-  }
-  return btoa(binary);
-}
+import { arrayBufferToBase64 } from "./lib/encoding";
 
 /**
  * Story 7.1: Internal query to get invoice data for sending

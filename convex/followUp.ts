@@ -7,6 +7,9 @@ import { internal, api } from "./_generated/api";
  * ✅ V2 : Query pour l'onglet "À Venir" de la page Relances
  * Récupère les relances planifiées (completionStatus='pending') non mises en pause
  * Supporte les relances email ET téléphone
+ *
+ * ✅ Bug Fix: Techniciens voient les relances de leurs factures (invoice.createdBy),
+ *    pas les relances qu'ils ont générées (reminder.userId)
  */
 export const getUpcomingReminders = query({
   args: {},
@@ -49,33 +52,21 @@ export const getUpcomingReminders = query({
   handler: async (ctx) => {
     const user = await getUserWithOrg(ctx);
 
-    // Récupérer les reminders non complétés (pending + failed)
-    // Utilisation de l'index composé pour performance optimale
-    const pendingReminders = isAdmin(user)
-      ? await ctx.db
-          .query("reminders")
-          .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", user.organizationId).eq("completionStatus", "pending")
-          )
-          .collect()
-      : await ctx.db
-          .query("reminders")
-          .withIndex("by_user", (q) => q.eq("userId", user.userId))
-          .filter((q) => q.eq(q.field("completionStatus"), "pending"))
-          .collect();
+    // Récupérer les reminders non complétés (pending + failed) pour l'organisation
+    // On récupère tous les reminders de l'org, puis on filtre par invoice.createdBy pour les techniciens
+    const pendingReminders = await ctx.db
+      .query("reminders")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", user.organizationId).eq("completionStatus", "pending")
+      )
+      .collect();
 
-    const failedReminders = isAdmin(user)
-      ? await ctx.db
-          .query("reminders")
-          .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", user.organizationId).eq("completionStatus", "failed")
-          )
-          .collect()
-      : await ctx.db
-          .query("reminders")
-          .withIndex("by_user", (q) => q.eq("userId", user.userId))
-          .filter((q) => q.eq(q.field("completionStatus"), "failed"))
-          .collect();
+    const failedReminders = await ctx.db
+      .query("reminders")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", user.organizationId).eq("completionStatus", "failed")
+      )
+      .collect();
 
     // Fusionner les résultats
     const reminders = [...pendingReminders, ...failedReminders];
@@ -120,6 +111,8 @@ export const getUpcomingReminders = query({
                   reminderStatus: invoice.reminderStatus,
                   // Story 7.3: Include PDF storage ID for preview indicator
                   pdfStorageId: invoice.pdfStorageId,
+                  // Internal: for technician filtering
+                  _createdBy: invoice.createdBy,
                 }
               : null,
             daysOverdue,
@@ -127,12 +120,38 @@ export const getUpcomingReminders = query({
         })
     );
 
-    // Trier par date de relance (chronologique)
-    return enrichedReminders.sort((a, b) => {
-      const dateA = new Date(a.reminderDate.replace(" ", "T"));
-      const dateB = new Date(b.reminderDate.replace(" ", "T"));
-      return dateA.getTime() - dateB.getTime();
-    });
+    // Filter for technicians: only show reminders for invoices they created
+    const filteredReminders = isAdmin(user)
+      ? enrichedReminders
+      : enrichedReminders.filter(
+          (r) => r.invoice && (r.invoice as any)._createdBy === user.userId
+        );
+
+    // Remove internal _createdBy and sort by date
+    return filteredReminders
+      .map((r) => ({
+        ...r,
+        invoice: r.invoice
+          ? {
+              _id: r.invoice._id,
+              invoiceNumber: r.invoice.invoiceNumber,
+              clientName: r.invoice.clientName,
+              contactEmail: r.invoice.contactEmail,
+              contactPhone: r.invoice.contactPhone,
+              amountTTC: r.invoice.amountTTC,
+              dueDate: r.invoice.dueDate,
+              sendStatus: r.invoice.sendStatus,
+              paymentStatus: r.invoice.paymentStatus,
+              reminderStatus: r.invoice.reminderStatus,
+              pdfStorageId: r.invoice.pdfStorageId,
+            }
+          : null,
+      }))
+      .sort((a, b) => {
+        const dateA = new Date(a.reminderDate.replace(" ", "T"));
+        const dateB = new Date(b.reminderDate.replace(" ", "T"));
+        return dateA.getTime() - dateB.getTime();
+      });
   },
 });
 
@@ -140,6 +159,8 @@ export const getUpcomingReminders = query({
  * ✅ Story 6.4 : Query FILTRÉE pour l'onglet "Historique" de la page Relances
  * Récupère UNIQUEMENT les événements de type reminder_sent
  * Utilisé sur /follow-up pour n'afficher que les relances (pas les imports, paiements, etc.)
+ *
+ * ✅ Code Review Fix: Techniciens ne voient que l'historique de leurs propres factures
  */
 export const getReminderHistoryFiltered = query({
   args: {
@@ -212,6 +233,8 @@ export const getReminderHistoryFiltered = query({
                 invoiceNumber: invoice.invoiceNumber,
                 clientName: invoice.clientName,
                 amountTTC: invoice.amountTTC,
+                // Include createdBy for filtering (not returned to client)
+                _createdBy: invoice.createdBy,
               }
             : null,
           user: eventUser
@@ -225,14 +248,34 @@ export const getReminderHistoryFiltered = query({
       })
     );
 
-    return enrichedEvents;
+    // Filter for technicians: only show events for invoices they created
+    const filteredEvents = isAdmin(user)
+      ? enrichedEvents
+      : enrichedEvents.filter(
+          (event) => event.invoice && (event.invoice as any)._createdBy === user.userId
+        );
+
+    // Remove internal _createdBy field before returning
+    return filteredEvents.map((event) => ({
+      ...event,
+      invoice: event.invoice
+        ? {
+            _id: event.invoice._id,
+            invoiceNumber: event.invoice.invoiceNumber,
+            clientName: event.invoice.clientName,
+            amountTTC: event.invoice.amountTTC,
+          }
+        : null,
+    }));
   },
 });
 
 /**
- * ✅ V2 : Query pour l'onglet "Historique" de la page Relances (LEGACY - non filtré)
+ * ✅ V2 : Query pour l'onglet "Historique" de la page Relances (LEGACY - non filtré par eventType)
  * Récupère TOUS les événements - conservé pour compatibilité
  * @deprecated Utiliser getReminderHistoryFiltered pour /follow-up
+ *
+ * ✅ Code Review Fix: Techniciens ne voient que l'historique de leurs propres factures
  */
 export const getReminderHistory = query({
   args: {
@@ -303,6 +346,8 @@ export const getReminderHistory = query({
                 invoiceNumber: invoice.invoiceNumber,
                 clientName: invoice.clientName,
                 amountTTC: invoice.amountTTC,
+                // Include createdBy for filtering (not returned to client)
+                _createdBy: invoice.createdBy,
               }
             : null,
           user: eventUser
@@ -316,7 +361,25 @@ export const getReminderHistory = query({
       })
     );
 
-    return enrichedEvents;
+    // Filter for technicians: only show events for invoices they created
+    const filteredEvents = isAdmin(user)
+      ? enrichedEvents
+      : enrichedEvents.filter(
+          (event) => event.invoice && (event.invoice as any)._createdBy === user.userId
+        );
+
+    // Remove internal _createdBy field before returning
+    return filteredEvents.map((event) => ({
+      ...event,
+      invoice: event.invoice
+        ? {
+            _id: event.invoice._id,
+            invoiceNumber: event.invoice.invoiceNumber,
+            clientName: event.invoice.clientName,
+            amountTTC: event.invoice.amountTTC,
+          }
+        : null,
+    }));
   },
 });
 
@@ -810,6 +873,9 @@ export const generateSimulatedReminders = query({
 /**
  * ✅ V2 Interface : Récupère les relances pour l'onglet "Relances auto"
  * Format simplifié pour l'interface V2
+ *
+ * ✅ Bug Fix: Techniciens voient les relances de leurs factures (invoice.createdBy),
+ *    pas les relances qu'ils ont générées (reminder.userId)
  */
 export const getRemindersForAutoTab = query({
   args: {},
@@ -832,18 +898,11 @@ export const getRemindersForAutoTab = query({
     const user = await getUserWithOrg(ctx);
 
     // Récupérer tous les reminders de l'organisation
-    let reminders;
-    if (isAdmin(user)) {
-      reminders = await ctx.db
-        .query("reminders")
-        .withIndex("by_organization", (q) => q.eq("organizationId", user.organizationId))
-        .collect();
-    } else {
-      reminders = await ctx.db
-        .query("reminders")
-        .withIndex("by_user", (q) => q.eq("userId", user.userId))
-        .collect();
-    }
+    // On filtre ensuite par invoice.createdBy pour les techniciens
+    const reminders = await ctx.db
+      .query("reminders")
+      .withIndex("by_organization", (q) => q.eq("organizationId", user.organizationId))
+      .collect();
 
     // Filtrer pour garder uniquement :
     // - Les reminders "pending" (pas encore envoyés)
@@ -907,12 +966,14 @@ export const getRemindersForAutoTab = query({
             : undefined,
           emailSubject: reminder.data?.emailSubject,
           emailContent: reminder.data?.emailContent,
+          // Internal: for technician filtering
+          _invoiceCreatedBy: invoice.createdBy,
         };
       })
     );
 
-    // Filtrer les nulls et trier
-    const validReminders = enrichedReminders.filter((r) => r !== null) as Array<{
+    // Filtrer les nulls
+    const nonNullReminders = enrichedReminders.filter((r) => r !== null) as Array<{
       _id: any;
       invoiceId: any;
       invoiceNumber: string;
@@ -924,7 +985,28 @@ export const getRemindersForAutoTab = query({
       sentDate?: string;
       emailSubject?: string;
       emailContent?: string;
+      _invoiceCreatedBy: any;
     }>;
+
+    // Filter for technicians: only show reminders for invoices they created
+    const userFilteredReminders = isAdmin(user)
+      ? nonNullReminders
+      : nonNullReminders.filter((r) => r._invoiceCreatedBy === user.userId);
+
+    // Remove internal field and sort
+    const validReminders = userFilteredReminders.map((r) => ({
+      _id: r._id,
+      invoiceId: r.invoiceId,
+      invoiceNumber: r.invoiceNumber,
+      clientName: r.clientName,
+      amount: r.amount,
+      scheduledDate: r.scheduledDate,
+      reminderType: r.reminderType,
+      status: r.status,
+      sentDate: r.sentDate,
+      emailSubject: r.emailSubject,
+      emailContent: r.emailContent,
+    }));
 
     // Trier : planifiées d'abord (par date), puis envoyées (par date desc)
     return validReminders.sort((a, b) => {

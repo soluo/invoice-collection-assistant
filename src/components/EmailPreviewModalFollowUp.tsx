@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { X, Edit, Mail, Send, FileText } from "lucide-react";
+import { Edit, Mail, Send, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip } from "@/components/ui/simple-tooltip";
 import { toast } from "sonner";
@@ -147,146 +147,138 @@ export function EmailPreviewModalFollowUp({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-      <div className="bg-white w-full max-w-2xl rounded-lg shadow-lg overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Prévisualisation du mail
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl font-bold"
-            aria-label="Fermer"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+    <>
+      {/* Main Preview Dialog - ESC key support via shadcn Dialog */}
+      <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Prévisualisation du mail</DialogTitle>
+          </DialogHeader>
 
-        {/* Body */}
-        <div className="px-6 py-5 space-y-4">
-          {/* Email metadata */}
-          <div className="space-y-2 text-sm text-gray-700">
-            <p>
-              <span className="font-semibold text-gray-900">À :</span>{" "}
-              {recipientName} &lt;{recipientEmail}&gt;
-            </p>
-            <p>
-              <span className="font-semibold text-gray-900">De :</span>{" "}
-              {senderName} &lt;{senderEmail}&gt;
-            </p>
-            <p>
-              <span className="font-semibold text-gray-900">Objet :</span>{" "}
-              {reminder.data?.emailSubject || "Sans objet"}
-            </p>
+          {/* Body */}
+          <div className="space-y-4">
+            {/* Email metadata */}
+            <div className="space-y-2 text-sm text-gray-700">
+              <p>
+                <span className="font-semibold text-gray-900">À :</span>{" "}
+                {recipientName} &lt;{recipientEmail}&gt;
+              </p>
+              <p>
+                <span className="font-semibold text-gray-900">De :</span>{" "}
+                {senderName} &lt;{senderEmail}&gt;
+              </p>
+              <p>
+                <span className="font-semibold text-gray-900">Objet :</span>{" "}
+                {reminder.data?.emailSubject || "Sans objet"}
+              </p>
+            </div>
+
+            {/* Email content */}
+            <div className="border rounded-lg p-4 bg-gray-50">
+              <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+                {reminder.data?.emailContent || "Contenu indisponible"}
+              </div>
+            </div>
+
+            {/* Story 7.3: PDF attachment indicator (AC4) - clickable badge */}
+            {organization?.attachPdfToReminders !== false && (
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-gray-900">Pièce jointe</span>
+                {reminder.invoice?.pdfStorageId ? (
+                  <Tooltip content="Afficher la facture">
+                    <a
+                      href={pdfUrl || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={pdfUrl ? "inline-block" : "inline-block pointer-events-none"}
+                    >
+                      <Badge variant="secondary" className="gap-2 py-1.5 px-3 hover:bg-gray-200 transition-colors cursor-pointer">
+                        <FileText className="h-4 w-4" />
+                        facture-{reminder.invoice?.invoiceNumber || "N/A"}.pdf
+                      </Badge>
+                    </a>
+                  </Tooltip>
+                ) : (
+                  <span className="text-sm text-gray-400 italic">
+                    Aucun PDF disponible
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Status messages */}
+            {isSimulation && (
+              <div className="text-sm text-purple-600 bg-purple-50 p-3 rounded-lg">
+                Mode simulation — vous pouvez envoyer un test à votre adresse email.
+              </div>
+            )}
+
+            {alreadySent && !isSimulation && (
+              <div className="text-sm text-green-600 bg-green-50 p-3 rounded-lg">
+                Cette relance a déjà été envoyée avec succès.
+              </div>
+            )}
+
+            {!reminder.invoice?.contactEmail && (
+              <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+                Adresse email du client manquante : impossible d'envoyer la relance.
+              </div>
+            )}
+
+            {sendError && (
+              <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+                {sendError}
+              </div>
+            )}
           </div>
 
-          {/* Email content */}
-          <div className="border rounded-lg p-4 bg-gray-50">
-            <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-              {reminder.data?.emailContent || "Contenu indisponible"}
-            </div>
-          </div>
-
-          {/* Story 7.3: PDF attachment indicator (AC4) - clickable badge */}
-          {organization?.attachPdfToReminders !== false && (
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-gray-900">Pièce jointe</span>
-              {reminder.invoice?.pdfStorageId ? (
-                <Tooltip content="Afficher la facture">
-                  <a
-                    href={pdfUrl || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={pdfUrl ? "inline-block" : "inline-block pointer-events-none"}
-                  >
-                    <Badge variant="secondary" className="gap-2 py-1.5 px-3 hover:bg-gray-200 transition-colors cursor-pointer">
-                      <FileText className="h-4 w-4" />
-                      facture-{reminder.invoice?.invoiceNumber || "N/A"}.pdf
-                    </Badge>
-                  </a>
-                </Tooltip>
-              ) : (
-                <span className="text-sm text-gray-400 italic">
-                  Aucun PDF disponible
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Status messages */}
-          {isSimulation && (
-            <div className="text-sm text-purple-600 bg-purple-50 p-3 rounded-lg">
-              🔮 Mode simulation — vous pouvez envoyer un test à votre adresse email.
-            </div>
-          )}
-
-          {alreadySent && !isSimulation && (
-            <div className="text-sm text-green-600 bg-green-50 p-3 rounded-lg">
-              ✅ Cette relance a déjà été envoyée avec succès.
-            </div>
-          )}
-
-          {!reminder.invoice?.contactEmail && (
-            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
-              ⚠️ Adresse email du client manquante : impossible d'envoyer la relance.
-            </div>
-          )}
-
-          {sendError && (
-            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
-              {sendError}
-            </div>
-          )}
-        </div>
-
-        {/* Footer with actions */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
-          <Button
-            type="button"
-            onClick={onClose}
-            variant="outline"
-          >
-            Fermer
-          </Button>
-
-          {canEdit && onEdit && (
+          {/* Footer with actions */}
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               type="button"
-              onClick={onEdit}
+              onClick={onClose}
               variant="outline"
             >
-              <Edit className="h-4 w-4 mr-2" />
-              Modifier
+              Fermer
             </Button>
-          )}
 
-          {!isSimulation && (
-            <Button
-              type="button"
-              disabled={sending || !canSend}
-              onClick={handleSend}
-              className="bg-primary hover:bg-primary/90"
-            >
-              <Mail className="h-4 w-4 mr-2" />
-              {sending ? "Envoi..." : "Envoyer"}
-            </Button>
-          )}
+            {canEdit && onEdit && (
+              <Button
+                type="button"
+                onClick={onEdit}
+                variant="outline"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Modifier
+              </Button>
+            )}
 
-          {/* Test send button for simulations - admin only */}
-          {isSimulation && isAdmin && (
-            <Button
-              type="button"
-              onClick={handleOpenTestEmailDialog}
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              <Send className="h-4 w-4 mr-2" />
-              Envoyer en test
-            </Button>
-          )}
-        </div>
-      </div>
+            {!isSimulation && (
+              <Button
+                type="button"
+                disabled={sending || !canSend}
+                onClick={handleSend}
+                className="bg-primary hover:bg-primary/90"
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                {sending ? "Envoi..." : "Envoyer"}
+              </Button>
+            )}
+
+            {/* Test send button for simulations - admin only */}
+            {isSimulation && isAdmin && (
+              <Button
+                type="button"
+                onClick={handleOpenTestEmailDialog}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Envoyer en test
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Test Email Dialog */}
       <Dialog open={showTestEmailDialog} onOpenChange={setShowTestEmailDialog}>
@@ -328,6 +320,6 @@ export function EmailPreviewModalFollowUp({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

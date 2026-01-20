@@ -3,6 +3,14 @@ import { useAction, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 type ReminderRecord = {
   _id: string;
@@ -318,10 +326,10 @@ function ReminderPreviewModal({ reminder, organization, onClose }: ReminderPrevi
   const [sendError, setSendError] = useState<string | null>(null);
   const alreadySent = reminder.sendStatus === "sent";
   const isFailed = reminder.sendStatus === "failed";
-  const canSend = Boolean(reminder.invoice?.contactEmail) && !alreadySent; // ✅ V2 Phase 2.6 : Renommé de clientEmail
+  const canSend = Boolean(reminder.invoice?.contactEmail) && !alreadySent;
 
   const recipientName = reminder.invoice?.clientName ?? "Client inconnu";
-  const recipientEmail = reminder.invoice?.contactEmail ?? "Email indisponible"; // ✅ V2 Phase 2.6 : Renommé de clientEmail
+  const recipientEmail = reminder.invoice?.contactEmail ?? "Email indisponible";
   const senderName =
     organization?.emailAccountInfo?.name ??
     organization?.name ??
@@ -330,22 +338,39 @@ function ReminderPreviewModal({ reminder, organization, onClose }: ReminderPrevi
     organization?.emailAccountInfo?.email ??
     "Email expéditeur non configuré";
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-      <div className="bg-white w-full max-w-2xl rounded-lg shadow-lg overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">Prévisualisation du mail</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl font-bold"
-            aria-label="Fermer"
-          >
-            ×
-          </button>
-        </div>
+  const handleSend = async () => {
+    if (!canSend) {
+      setSendError(
+        alreadySent
+          ? "Cette relance a déjà été envoyée."
+          : "Adresse email du client manquante."
+      );
+      return;
+    }
+    try {
+      setSendError(null);
+      setSending(true);
+      await sendReminder({ reminderId: reminder._id as Id<"reminders"> });
+      toast.success("Relance envoyée via Outlook");
+      onClose();
+    } catch (error: any) {
+      console.error("Erreur envoi relance:", error);
+      const message = error?.message || "Échec de l'envoi de la relance";
+      setSendError(message);
+      toast.error(message);
+    } finally {
+      setSending(false);
+    }
+  };
 
-        <div className="px-6 py-5 space-y-4">
+  return (
+    <Dialog open={true} onOpenChange={(open) => !open && !sending && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Prévisualisation du mail</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
           <div className="space-y-2 text-sm text-gray-700">
             <p>
               <span className="font-semibold text-gray-900">À :</span>{" "}
@@ -369,20 +394,20 @@ function ReminderPreviewModal({ reminder, organization, onClose }: ReminderPrevi
 
           {alreadySent && (
             <div className="text-sm text-green-600 bg-green-50 p-3 rounded-lg">
-              ✅ Cette relance a déjà été envoyée avec succès.
+              Cette relance a déjà été envoyée avec succès.
             </div>
           )}
 
           {isFailed && reminder.sendError && (
             <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
-              <p className="font-semibold mb-1">⚠️ Erreur lors du dernier envoi :</p>
+              <p className="font-semibold mb-1">Erreur lors du dernier envoi :</p>
               <p>{reminder.sendError}</p>
             </div>
           )}
 
           {!reminder.invoice?.contactEmail && (
             <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
-              ⚠️ Adresse email du client manquante : impossible d'envoyer la relance.
+              Adresse email du client manquante : impossible d'envoyer la relance.
             </div>
           )}
 
@@ -393,53 +418,25 @@ function ReminderPreviewModal({ reminder, organization, onClose }: ReminderPrevi
           )}
         </div>
 
-        <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
-          <button
+        <DialogFooter>
+          <Button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+            variant="outline"
+            disabled={sending}
           >
             Fermer
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             disabled={sending || !canSend}
-            onClick={async () => {
-              if (!canSend) {
-                setSendError(
-                  alreadySent
-                    ? "Cette relance a déjà été envoyée."
-                    : "Adresse email du client manquante."
-                );
-                return;
-              }
-              try {
-                setSendError(null);
-                setSending(true);
-                await sendReminder({ reminderId: reminder._id as Id<"reminders"> });
-                toast.success("Relance envoyée via Outlook");
-                onClose();
-              } catch (error: any) {
-                console.error("Erreur envoi relance:", error);
-                const message = error?.message || "Échec de l'envoi de la relance";
-                setSendError(message);
-                toast.error(message);
-              } finally {
-                setSending(false);
-              }
-            }}
-            className={`px-4 py-2 text-sm font-semibold text-white rounded-md ${
-              sending || !canSend
-                ? "bg-blue-400 opacity-60 cursor-not-allowed"
-                : isFailed
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-blue-600 hover:bg-blue-700"
-            }`}
+            onClick={handleSend}
+            variant={isFailed ? "destructive" : "default"}
           >
             {sending ? "Envoi..." : isFailed ? "Réessayer l'envoi" : "Envoyer"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

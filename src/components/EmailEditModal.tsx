@@ -3,7 +3,14 @@ import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { X, Save } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Save } from "lucide-react";
 import { toast } from "sonner";
 
 interface EmailEditModalProps {
@@ -58,25 +65,14 @@ export function EmailEditModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-      <div className="bg-white w-full max-w-3xl rounded-lg shadow-lg overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Modifier l'email de relance
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-            disabled={isSaving}
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+    <Dialog open={true} onOpenChange={(open) => !open && !isSaving && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Modifier l'email de relance</DialogTitle>
+        </DialogHeader>
 
         {/* Body */}
-        <div className="px-6 py-5 space-y-4">
+        <div className="space-y-4">
           {/* Subject input */}
           <div>
             <label
@@ -119,7 +115,7 @@ export function EmailEditModal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
+        <DialogFooter>
           <Button
             type="button"
             onClick={onClose}
@@ -138,8 +134,8 @@ export function EmailEditModal({
             <Save className="h-4 w-4 mr-2" />
             {isSaving ? "Enregistrement..." : "Enregistrer"}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -6,13 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { X, Phone } from "lucide-react";
+import { Phone } from "lucide-react";
 import { toast } from "sonner";
 
 type PhoneCallOutcome =
@@ -73,36 +81,25 @@ export function PhoneCallCompleteModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-      <div className="bg-white w-full max-w-md rounded-lg shadow-lg overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
+    <Dialog open={true} onOpenChange={(open) => !open && !isSubmitting && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600">
               <Phone className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Marquer l'appel comme fait
-              </h3>
-              <p className="text-sm text-gray-500">
+              <DialogTitle>Marquer l'appel comme fait</DialogTitle>
+              <DialogDescription>
                 {reminder.invoice?.clientName || "Client"} -{" "}
                 {reminder.invoice?.invoiceNumber || "N/A"}
-              </p>
+              </DialogDescription>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-            disabled={isSubmitting}
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+        </DialogHeader>
 
         {/* Body */}
-        <div className="px-6 py-5 space-y-4">
+        <div className="space-y-4">
           {/* Outcome select */}
           <div className="space-y-2">
             <Label htmlFor="outcome">Résultat de l'appel</Label>
@@ -137,7 +134,7 @@ export function PhoneCallCompleteModal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
+        <DialogFooter>
           <Button
             type="button"
             onClick={onClose}
@@ -154,8 +151,8 @@ export function PhoneCallCompleteModal({
           >
             {isSubmitting ? "Enregistrement..." : "Enregistrer"}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

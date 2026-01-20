@@ -28,7 +28,8 @@
       "mcp__context7__resolve-library-id",
       "Bash(pnpm test:*)",
       "Bash(pnpm exec convex dev:*)",
-      "mcp__shadcn__get_item_examples_from_registries"
+      "mcp__shadcn__get_item_examples_from_registries",
+      "mcp__convex__data"
     ],
     "deny": [],
     "ask": []
