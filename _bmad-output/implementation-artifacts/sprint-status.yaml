@@ -1,5 +1,5 @@
 # generated: 2026-01-15
-# updated: 2026-01-20
+# updated: 2026-01-21
 # project: invoice-collection-assistant
 # project_key: relancezen
 # tracking_system: file-system
@@ -42,18 +42,16 @@ story_location: _bmad-output/implementation-artifacts
 
 development_status:
   # Epic 1: Invoice Detail View Enhancement (Priority 1)
-  # NOTE 2026-01-19: Stories 1.1-1.6 terminées. 1.7 ajoutée post-client (nice to have)
-  # MVP peut être livré sans 1.7
-  epic-1: in-progress
+  # NOTE 2026-01-21: Toutes stories complétées incluant 1.7 (envoi facture par email)
+  epic-1: done
   1-1-invoice-detail-drawer-with-status-display: done
   1-2-reminder-history-in-drawer: done
   1-3-mark-invoice-as-sent-action: done
   1-4-edit-due-date-action: done
   1-5-record-payment-actions: done
   1-6-invoice-notes: done
-  # Story 1.7 ajoutée pour tracker feature discutée avec client
-  # Nécessite: template email d'envoi facture + attacher PDF + UI choix envoi vs marquage
-  1-7-send-invoice-by-email: backlog  # POST-MVP
+  # Story 1.7: Implémentée via SendInvoiceEmailModal.tsx + convex/invoiceEmails.ts
+  1-7-send-invoice-by-email: done
   epic-1-retrospective: optional
 
   # Epic 2: Follow-up Dashboard Completion (Priority 2)
@@ -104,11 +102,12 @@ development_status:
   epic-6-retrospective: optional
 
   # Epic 7: Templates Email Avancés (Priority: Medium)
-  epic-7: in-progress
+  # NOTE 2026-01-21: Toutes stories complétées - SignatureEditor.tsx avec upload image
+  epic-7: done
   7-1-template-envoi-initial-facture: done
   7-2-template-email-invitation: done
   7-3-pieces-jointes-aux-relances: done
-  7-4-signature-email-avec-image: review
+  7-4-signature-email-avec-image: done
   epic-7-retrospective: optional
 
   # Epic 8: Gestion Chèques Avancée (Priority: Medium)

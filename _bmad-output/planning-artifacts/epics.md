@@ -153,61 +153,61 @@ This document provides the complete epic and story breakdown for invoice-collect
 
 | FR | Epic | Description |
 |----|------|-------------|
-| FR1 | Epic 1 | View invoice details (client, amount, dates, PDF) |
-| FR2 | Epic 1 | See invoice send status at a glance |
-| FR3 | Epic 1 | See invoice payment status at a glance |
-| FR4 | Epic 1 | See invoice reminder status and step |
-| FR5 | Epic 1 | See days overdue for unpaid invoices |
-| FR6 | Epic 1 | View complete reminder history |
-| FR7 | ✅ Implemented | Technician RBAC (own invoices only) |
-| FR8 | ✅ Implemented | Admin RBAC (all org invoices) |
-| FR9 | Epic 1 | Mark invoice as sent with date |
-| FR10 | Epic 1 | Edit due date |
-| FR11 | Epic 1 | Record bank transfer payment |
-| FR12 | Epic 1 | Record check payment with deposit date |
-| FR13 | Epic 1 | Pause reminders until check deposit |
-| FR14 | Epic 1 | Add notes to invoice |
-| FR15 | Epic 2 | View pending reminders on /follow-up |
-| FR16 | Epic 2 | View overdue reminders on /follow-up |
-| FR17 | Epic 2 | View reminder history on /follow-up |
-| FR18 | Epic 2 | Preview email before send |
-| FR19 | Epic 2 | Edit email before send |
-| FR20 | Epic 3 | Record phone call outcome |
-| FR21 | Epic 3 | Auto-snooze "no answer" to next business day |
-| FR22 | Epic 3 | Manual snooze to specific date |
-| FR23 | ✅ Implemented | Auto-generate reminders (cron) |
-| FR24 | ✅ Implemented | OAuth Microsoft connection |
-| FR25 | ✅ Implemented | Send emails via OAuth |
-| FR26 | ✅ Implemented | Configure email send time |
-| FR27 | Epic 5 | Send test email to custom address |
-| FR28 | ✅ Implemented | Store email send status |
-| FR29 | Epic 5 | Select target date for demo (simulation) |
-| FR30 | Epic 5 | Trigger reminder generation for date |
-| FR31 | Epic 5 | View generated reminders for date |
-| FR32 | Epic 5 | Send test reminders during demo |
-| FR33 | ✅ Implemented | Search by invoice number |
-| FR34 | ✅ Implemented | Search by amount (±5% tolerance) |
-| FR35 | ✅ Implemented | Filter by payment status |
-| FR36 | ✅ Implemented | Filter by overdue status |
-| FR37 | Epic 2 | Navigate from /follow-up to invoice |
+| FR1 | ✅ Epic 1 | View invoice details (client, amount, dates, PDF) |
+| FR2 | ✅ Epic 1 | See invoice send status at a glance |
+| FR3 | ✅ Epic 1 | See invoice payment status at a glance |
+| FR4 | ✅ Epic 1 | See invoice reminder status and step |
+| FR5 | ✅ Epic 1 | See days overdue for unpaid invoices |
+| FR6 | ✅ Epic 1 | View complete reminder history |
+| FR7 | ✅ Pre-existing | Technician RBAC (own invoices only) |
+| FR8 | ✅ Pre-existing | Admin RBAC (all org invoices) |
+| FR9 | ✅ Epic 1 | Mark invoice as sent with date |
+| FR10 | ✅ Epic 1 | Edit due date |
+| FR11 | ✅ Epic 1 | Record bank transfer payment |
+| FR12 | ✅ Epic 1 | Record check payment with deposit date |
+| FR13 | ✅ Epic 1 | Pause reminders until check deposit |
+| FR14 | ✅ Epic 1 | Add notes to invoice |
+| FR15 | ✅ Epic 2 | View pending reminders on /follow-up |
+| FR16 | ✅ Epic 2 | View overdue reminders on /follow-up |
+| FR17 | ✅ Epic 2 | View reminder history on /follow-up |
+| FR18 | ✅ Epic 2 | Preview email before send |
+| FR19 | ✅ Epic 2 | Edit email before send |
+| FR20 | 🔵 Backlog | Record phone call outcome |
+| FR21 | 🔵 Backlog | Auto-snooze "no answer" to next business day |
+| FR22 | 🔵 Backlog | Manual snooze to specific date |
+| FR23 | ✅ Pre-existing | Auto-generate reminders (cron) |
+| FR24 | ✅ Pre-existing | OAuth Microsoft connection |
+| FR25 | ✅ Pre-existing | Send emails via OAuth |
+| FR26 | ✅ Pre-existing | Configure email send time |
+| FR27 | ✅ Epic 5 | Send test email to custom address |
+| FR28 | ✅ Pre-existing | Store email send status |
+| FR29 | ✅ Epic 5 | Select target date for demo (simulation) |
+| FR30 | ✅ Epic 5 | Trigger reminder generation for date |
+| FR31 | ✅ Epic 5 | View generated reminders for date |
+| FR32 | ✅ Epic 5 | Send test reminders during demo |
+| FR33 | ✅ Pre-existing | Search by invoice number |
+| FR34 | ✅ Pre-existing | Search by amount (±5% tolerance) |
+| FR35 | ✅ Pre-existing | Filter by payment status |
+| FR36 | ✅ Pre-existing | Filter by overdue status |
+| FR37 | ✅ Epic 2 | Navigate from /follow-up to invoice |
 
-**Summary:** 26 FRs to implement across 4 Epics + 11 FRs already implemented (Epic 4 + backend FRs). Epic 6 merged into Epic 5.
+**Summary (2026-01-21):** 34/37 FRs implemented. 3 FRs in backlog (FR20-22: phone call workflow - client handles calls outside app).
 
 ## Epic List
 
-### Epic 1: Invoice Detail View Enhancement (Priority 1)
+### Epic 1: Invoice Detail View Enhancement - ✅ DONE
 
 **Goal:** User can see complete invoice status at a glance and take contextual actions directly from the invoice detail view.
 
-**User Value:** Clear visibility on invoice state (send, payment, reminder status, days overdue) with complete reminder history and ability to perform all relevant actions (mark sent, edit due date, record payments, add notes).
+**User Value:** Clear visibility on invoice state (send, payment, reminder status, days overdue) with complete reminder history and ability to perform all relevant actions (mark sent, edit due date, record payments, add notes, send invoice by email).
 
 **FRs covered:** FR1, FR2, FR3, FR4, FR5, FR6, FR9, FR10, FR11, FR12, FR13, FR14
 
-**Implementation Notes:** Redesign of existing /invoices/:id page. Must respect existing RBAC (FR7, FR8 already implemented).
+**Stories:** 1.1-1.7 all completed (including 1.7: Send invoice by email via `SendInvoiceEmailModal`).
 
 ---
 
-### Epic 2: Follow-up Dashboard Completion (Priority 2)
+### Epic 2: Follow-up Dashboard Completion - ✅ DONE
 
 **Goal:** User can review and manage daily reminders with email preview and editing capability from the /follow-up page.
 
@@ -215,19 +215,19 @@ This document provides the complete epic and story breakdown for invoice-collect
 
 **FRs covered:** FR15, FR16, FR17, FR18, FR19, FR37
 
-**Implementation Notes:** Complete UI for existing backend functionality. Backend reminder generation (FR23) already working.
+**Stories:** 2.1-2.4 all completed.
 
 ---
 
-### Epic 3: Phone Call Workflow
+### Epic 3: Suivi Manuel Post-Relances - ✅ DONE (Simplifié)
 
-**Goal:** User can manage phone call reminders with outcome recording and automatic/manual snooze functionality.
+**Goal:** User can identify invoices that have completed all automatic reminders and need manual follow-up.
 
-**User Value:** Efficient call management - record outcomes (will pay, no answer, dispute, voicemail), automatic rescheduling on no answer, manual snooze when needed.
+**User Value:** Filter to see invoices needing manual attention (phone calls handled outside app per client feedback).
 
-**FRs covered:** FR20, FR21, FR22
+**FRs covered:** Filter for `manual_followup` status. FR20-22 (phone call workflow) moved to backlog.
 
-**Implementation Notes:** Extends follow-up functionality for call-type reminders. Must handle business day calculation for auto-snooze.
+**Stories:** 3.1 completed. Stories 3.2-3.4 in backlog for future consideration.
 
 ---
 
@@ -248,35 +248,35 @@ This document provides the complete epic and story breakdown for invoice-collect
 
 ---
 
-### Epic 5: Email Test & Admin Simulation (Priority 3 + NEW Demo)
+### Epic 5: Email Test & Admin Simulation - ✅ DONE
 
 **Goal:** Admin can test emails, simulate reminders, and enable automatic email sending.
 
-**User Value:** Confidence in the system + powerful demo capability - test emails before go-live, show clients in 5 minutes what would happen over 30 days, and enable fully automatic reminder sending.
+**User Value:** Confidence in the system + powerful demo capability - test emails before go-live, show clients in 5 minutes what would happen over 30 days.
 
-**FRs covered:** FR27, FR29, FR30, FR31, FR32 + NFR1 (automatic send at configured time)
+**FRs covered:** FR27, FR29, FR30, FR31, FR32
 
-**Implementation Notes:** Admin-only features. Simulation reuses /follow-up page with date picker (minimal new code). Test send reuses OAuth email logic. Story 5.4 implements the actual automatic sending when `autoSendEnabled` is true.
+**Stories:** 5.1-5.3 completed. 5.4 (trigger cron manually) is a dev tool, ready-for-dev but not blocking MVP.
 
 ---
 
-### Epic 6: Améliorations Post-Demo (Quick Wins)
+### Epic 6: Améliorations Post-Demo (Quick Wins) - ✅ DONE
 
 **Goal:** Corriger les bugs et améliorer l'UX suite aux retours de démo client.
 
 **User Value:** Meilleure expérience utilisateur, correction de bugs bloquants.
 
-**Priority:** High (bugs) to Medium (UX)
+**Stories:** 6.1-6.4 all completed.
 
 ---
 
-### Epic 7: Templates Email Avancés
+### Epic 7: Templates Email Avancés - ✅ DONE
 
 **Goal:** Améliorer les capacités d'email avec nouveaux templates, pièces jointes et signatures.
 
 **User Value:** Communication plus professionnelle et personnalisée.
 
-**Priority:** Medium
+**Stories:** 7.1-7.4 all completed (including SignatureEditor with image upload).
 
 ---
 
@@ -306,7 +306,7 @@ This document provides the complete epic and story breakdown for invoice-collect
 
 ---
 
-### Story 1.1: Invoice Detail Drawer with Status Display
+### Story 1.1: Invoice Detail Drawer with Status Display - ✅ DONE
 
 As a **user (technician or admin)**,
 I want **to open an invoice detail drawer from the invoice list or follow-up page**,
@@ -336,7 +336,7 @@ So that **I can quickly see all important invoice information without losing my 
 
 ---
 
-### Story 1.2: Reminder History in Drawer
+### Story 1.2: Reminder History in Drawer - ✅ DONE
 
 As a **user**,
 I want **to see the complete history of reminders sent for an invoice**,
@@ -362,7 +362,7 @@ So that **I know what communications have already happened before taking action*
 
 ---
 
-### Story 1.3: Mark Invoice as Sent Action
+### Story 1.3: Mark Invoice as Sent Action - ✅ DONE
 
 As a **user**,
 I want **to mark an unsent invoice as sent with a specific date**,
@@ -390,7 +390,7 @@ So that **I can track when the invoice was delivered to the client and start the
 
 ---
 
-### Story 1.4: Edit Due Date Action
+### Story 1.4: Edit Due Date Action - ✅ DONE
 
 As a **user**,
 I want **to edit the due date of an invoice**,
@@ -415,7 +415,7 @@ So that **I can adjust payment terms based on client agreements or corrections**
 
 ---
 
-### Story 1.5: Record Payment Actions
+### Story 1.5: Record Payment Actions - ✅ DONE
 
 As a **user**,
 I want **to record one or more payments (bank transfer or checks) for an invoice**,
@@ -464,7 +464,7 @@ So that **I can track payments received and the system stops unnecessary reminde
 
 ---
 
-### Story 1.6: Invoice Notes
+### Story 1.6: Invoice Notes - ✅ DONE
 
 As a **user**,
 I want **to add notes to an invoice**,
@@ -492,6 +492,48 @@ So that **I can record important context about client communications or special 
 
 ---
 
+### Story 1.7: Send Invoice by Email - ✅ DONE
+
+As a **user**,
+I want **to send an invoice by email directly from the application**,
+So that **I can deliver the invoice professionally with the PDF attached**.
+
+**Acceptance Criteria:**
+
+**Given** I have the invoice detail drawer open
+**When** I click "Send by email" action
+**Then** a modal opens with email preview (subject, body, recipient)
+
+**Given** the email preview modal is open
+**When** I review the content
+**Then** I can see the recipient (contact email from invoice)
+**And** I can see the subject with invoice number
+**And** I can see the email body with invoice details
+**And** I can see the PDF attachment indicator
+
+**Given** I want to customize the email
+**When** I edit the subject or body
+**Then** my changes are preserved for sending
+
+**Given** the invoice has no contact email
+**When** I try to send
+**Then** I see an error prompting me to add a contact email first
+
+**Given** OAuth is not connected
+**When** I try to send
+**Then** I see a message with link to settings to connect email
+
+**Given** all requirements are met
+**When** I click "Send"
+**Then** the email is sent via Microsoft Graph API
+**And** the invoice status updates to "sent" with today's date
+**And** an `invoice_sent` event is created in the history
+**And** a success toast appears
+
+**Implementation:** `SendInvoiceEmailModal.tsx` + `convex/invoiceEmails.ts`
+
+---
+
 ## Epic 2: Follow-up Dashboard Completion
 
 **Goal:** User can review and manage daily reminders with email preview and editing capability from the /follow-up page.
@@ -500,7 +542,7 @@ So that **I can record important context about client communications or special 
 
 ---
 
-### Story 2.1: Pending and Overdue Reminders View
+### Story 2.1: Pending and Overdue Reminders View - ✅ DONE
 
 As a **user**,
 I want **to see all pending and overdue reminders on the /follow-up page**,
@@ -526,7 +568,7 @@ So that **I can quickly review my morning tasks and take action on urgent items*
 
 ---
 
-### Story 2.2: Reminders History (Filtered)
+### Story 2.2: Reminders History (Filtered) - ✅ DONE
 
 As a **user**,
 I want **to view the history of completed reminders only**,
@@ -554,7 +596,7 @@ So that **I can see what follow-up actions have been taken without noise from ot
 
 ---
 
-### Story 2.3: Email Preview with Send Action
+### Story 2.3: Email Preview with Send Action - ✅ DONE
 
 As a **user**,
 I want **to preview the email content before it is sent and manually trigger the send if needed**,
@@ -585,7 +627,7 @@ So that **I can verify the message is correct and send it immediately when ready
 
 ---
 
-### Story 2.4: Email Edit Before Send
+### Story 2.4: Email Edit Before Send - ✅ DONE
 
 As a **user**,
 I want **to edit the email content before sending**,
@@ -613,7 +655,7 @@ So that **I can personalize the message based on recent client interactions**.
 
 ---
 
-## Epic 3: Suivi Manuel Post-Relances (Simplifié)
+## Epic 3: Suivi Manuel Post-Relances (Simplifié) - ✅ DONE
 
 **Goal:** User can identify and track invoices that have completed all automatic reminders and need manual follow-up (phone calls, etc.).
 
@@ -623,15 +665,13 @@ So that **I can personalize the message based on recent client interactions**.
 - ✅ `reminderStatus = "manual_followup"` flag (auto-set when all steps done)
 - ✅ Invoice Notes with author + timestamp (Story 1.6)
 - ✅ Cron stops generating reminders for `manual_followup` invoices
+- ✅ Filter in /invoices to see `manual_followup` invoices (Story 3.1)
 
-**What's missing:**
-- ❌ Filter in /invoices to see `manual_followup` invoices
-
-**Original Stories 3.1-3.3 (DEPRECATED):** Phone call outcome recording, auto-snooze, manual snooze - moved to backlog for future consideration if in-app call management is needed.
+**Original Stories 3.2-3.4 (BACKLOG):** Phone call outcome recording, auto-snooze, manual snooze - preserved for future consideration if in-app call management is needed.
 
 ---
 
-### Story 3.1: Filtre "Suivi Manuel" sur Liste Factures
+### Story 3.1: Filtre "Suivi Manuel" sur Liste Factures - ✅ DONE
 
 As a **user**,
 I want **to filter invoices that have completed all automatic reminders**,
@@ -692,17 +732,17 @@ User can manually postpone any reminder to a specific future date.
 
 ---
 
-## Epic 5: Email Test & Admin Simulation
+## Epic 5: Email Test & Admin Simulation - ✅ DONE
 
 **Goal:** Admin can test emails and simulate reminders to demonstrate the system to clients.
 
 **Context:** Admin-only features. OAuth Microsoft connection already implemented (FR24). Simulation reuses /follow-up components for minimal code addition.
 
-**FRs covered:** FR27, FR29, FR30, FR31, FR32 (includes merged Epic 6)
+**FRs covered:** FR27, FR29, FR30, FR31, FR32
 
 ---
 
-### Story 5.1: Send Test Email to Custom Address
+### Story 5.1: Send Test Email to Custom Address - ✅ DONE
 
 As an **admin**,
 I want **to send a test email to a custom address**,
@@ -736,7 +776,7 @@ So that **I can verify email delivery works correctly before enabling automatic 
 
 ---
 
-### Story 5.2: Admin Date Simulation on /follow-up
+### Story 5.2: Admin Date Simulation on /follow-up - ✅ DONE
 
 As an **admin**,
 I want **to select a simulation date on /follow-up and see what reminders would be generated**,
@@ -767,7 +807,7 @@ So that **I can demonstrate the system behavior to clients without affecting rea
 
 ---
 
-### Story 5.3: Test Send and Cleanup Simulated Reminders
+### Story 5.3: Test Send and Cleanup Simulated Reminders - ✅ DONE
 
 As an **admin**,
 I want **to send test emails from simulated reminders and clean up all simulations when done**,
@@ -834,17 +874,15 @@ So that **I don't have to manually send each reminder and the system handles fol
 
 ---
 
-## Epic 6: Améliorations Post-Demo (Quick Wins)
+## Epic 6: Améliorations Post-Demo (Quick Wins) - ✅ DONE
 
 **Goal:** Corriger les bugs et améliorer l'UX suite aux retours de démo client.
 
 **User Value:** Meilleure expérience utilisateur, correction de bugs bloquants, et amélioration de la productivité au quotidien.
 
-**Priority:** High (bugs) to Medium (UX improvements)
-
 ---
 
-### Story 6.1: Bug - Vérifier Invitations et Filtres Techniciens
+### Story 6.1: Bug - Vérifier Invitations et Filtres Techniciens - ✅ DONE
 
 As an **admin**,
 I want **the invitation system and technician filters to work correctly**,
@@ -866,7 +904,7 @@ So that **new team members can join and technicians see only their invoices**.
 
 ---
 
-### Story 6.2: Échéance +14 Jours par Défaut
+### Story 6.2: Échéance +14 Jours par Défaut - ✅ DONE
 
 As a **user**,
 I want **the due date to default to +14 days when adding a new invoice**,
@@ -886,7 +924,7 @@ So that **I don't have to manually calculate and enter the standard payment term
 
 ---
 
-### Story 6.3: Modifier et Ré-associer une Facture
+### Story 6.3: Modifier et Ré-associer une Facture - ✅ DONE
 
 As a **user**,
 I want **to edit invoice details and reassign an invoice to another technician**,
@@ -909,7 +947,7 @@ So that **I can correct mistakes or transfer responsibility when needed**.
 
 ---
 
-### Story 6.4: Historique Filtré sur /follow-up + Historique Complet sur InvoiceDetails
+### Story 6.4: Historique Filtré sur /follow-up + Historique Complet sur InvoiceDetails - ✅ DONE
 
 As a **user**,
 I want **to see only reminder history on the /follow-up page, but full event history on invoice details**,
@@ -990,17 +1028,15 @@ So that **each view shows contextually relevant information without noise**.
 
 ---
 
-## Epic 7: Templates Email Avancés
+## Epic 7: Templates Email Avancés - ✅ DONE
 
 **Goal:** Améliorer les capacités d'email avec de nouveaux templates, pièces jointes et signatures personnalisées.
 
 **User Value:** Communication plus professionnelle et personnalisée avec les clients, meilleure image de marque.
 
-**Priority:** Medium
-
 ---
 
-### Story 7.1: Template Envoi Initial Facture
+### Story 7.1: Template Envoi Initial Facture - ✅ DONE
 
 As a **user**,
 I want **to send the initial invoice email using a dedicated template**,
@@ -1021,7 +1057,7 @@ So that **the first contact with the client is professional and includes all nec
 
 ---
 
-### Story 7.2: Template Email Invitation
+### Story 7.2: Template Email Invitation - ✅ DONE
 
 As an **admin**,
 I want **to customize the invitation email template**,
@@ -1040,7 +1076,7 @@ So that **new team members receive a branded, professional invitation**.
 
 ---
 
-### Story 7.3: Pièces Jointes aux Relances
+### Story 7.3: Pièces Jointes aux Relances - ✅ DONE
 
 As a **user**,
 I want **to attach the invoice PDF to reminder emails**,
@@ -1059,7 +1095,7 @@ So that **clients have easy access to the invoice without searching their archiv
 
 ---
 
-### Story 7.4: Signature Email avec Image
+### Story 7.4: Signature Email avec Image - ✅ DONE
 
 As an **admin**,
 I want **to configure an email signature with an image (logo)**,
